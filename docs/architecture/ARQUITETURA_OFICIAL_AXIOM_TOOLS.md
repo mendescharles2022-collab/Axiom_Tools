@@ -1,139 +1,211 @@
 # Arquitetura Oficial — Axiom Tools
 
-Versão: 1.0  
-Data: 16/08/2026
+Versão: 2.0  
+Data: 16/08/2026  
+Status: Oficial e vigente
 
 ## 1. Objetivo arquitetural
 
-O Axiom Tools deve permanecer uma aplicação utilitária modular, voltada ao ambiente Windows do escritório e capaz de operar sobre estruturas reais de arquivos sem acoplamento destrutivo ao filesystem.
+O Axiom Tools deve permanecer uma aplicação operacional modular, orientada ao ambiente Windows do escritório e capaz de atuar sobre estruturas reais de arquivos com comportamento conservador, auditável e testável.
 
-A arquitetura deve permitir crescimento incremental do antigo conjunto de BATs para uma aplicação com persistência, interface, OCR, conferência, PDF, impressão e integrações assistidas.
+A arquitetura deve permitir crescimento incremental sem acoplar interface, cadastro, OCR ou impressão diretamente às regras de filesystem.
 
-## 2. Tecnologias-base
+## 2. Princípios
 
-Base definida para o repositório:
+1. Segurança documental antes de conveniência.
+2. Regras de negócio independentes da interface.
+3. Filesystem real tratado como recurso externo sensível.
+4. Simulação e planejamento antes de operações críticas quando aplicável.
+5. Persistência não controla nem destrói o acervo físico.
+6. Módulos pequenos, responsabilidades claras e testes isolados.
+7. Dependências pesadas entram somente na Sprint que precisa delas.
+8. Interface Axiom consome o Axiom Framework; não cria Design System paralelo.
+9. Implementação deve ser substituível por módulo sem exigir reconstrução do projeto inteiro.
+10. Documentação oficial precede implementação.
 
-- Python 3.12;
-- persistência local própria;
-- SQLite como banco local previsto para cadastro, configurações e histórico;
+## 3. Tecnologias-base
+
+- Python 3.12 ou superior;
+- Windows como ambiente operacional principal;
 - filesystem como repositório dos documentos reais;
-- empacotamento para Windows a ser definido na Sprint apropriada;
-- bibliotecas de OCR/PDF escolhidas e fixadas apenas quando a implementação correspondente for iniciada.
+- SQLite previsto para persistência local a partir da AXT-003;
+- empacotamento Windows definido na AXT-008;
+- bibliotecas de OCR/PDF escolhidas e fixadas apenas na Sprint correspondente;
+- camada de interface introduzida na AXT-002.
 
-O banco não substitui os documentos físicos. Ele indexa, configura e registra operações.
+A AXT-001 não deve depender de framework web, banco de dados, OCR ou biblioteca de PDF.
 
-## 3. Organização de código
+## 4. Organização conceitual
 
 ```text
 src/axiom_tools/
 ├── core/
+│   ├── config/
+│   ├── logging/
+│   ├── errors/
+│   └── contracts/
 ├── modules/
 │   ├── folders/
+│   ├── clients/
 │   ├── ocr/
+│   ├── documents/
 │   ├── printing/
 │   ├── integrations/
 │   └── settings/
+├── interface/
 └── utils/
 ```
 
-A implementação poderá ganhar novos submódulos conforme as Sprints, especialmente para clientes, funcionários, documentos, PDF e persistência, desde que preserve separação de responsabilidades.
+Nem todos os diretórios precisam existir desde a AXT-001. Eles serão introduzidos quando a Sprint responsável começar.
 
-## 4. Responsabilidades
+## 5. Camadas
 
-### core
+### 5.1 Domínio / regras
 
-Infraestrutura compartilhada:
+Contém regras do negócio e contratos de operação. Não conhece HTML, navegador ou detalhes de apresentação.
 
-- inicialização;
-- persistência;
-- logging/auditoria;
-- tratamento de erros;
-- serviços comuns;
-- contratos internos entre módulos.
+### 5.2 Serviços
 
-### clients
+Orquestram casos de uso, como planejar estrutura, aplicar plano, importar clientes, classificar documento e consolidar lote.
 
-Quando implementado como domínio próprio:
+### 5.3 Infraestrutura
+
+Implementa acesso ao filesystem, persistência, OCR, PDF, impressão, navegador e outras dependências externas.
+
+### 5.4 Interface
+
+Será introduzida na AXT-002. Deve consumir os serviços e nunca reimplementar regras de filesystem.
+
+## 6. Módulos
+
+### `folders`
+
+Responsável por:
+
+- catálogo canônico de estruturas;
+- equivalências legadas;
+- inspeção;
+- planejamento;
+- aplicação segura;
+- conflitos;
+- `estrutura.cfg`;
+- funcionários/empregados;
+- relatórios de operação.
+
+É o único domínio funcional da AXT-001.
+
+### `clients`
+
+Introduzido na AXT-003:
 
 - cadastro PF/PJ;
 - CPF/CNPJ;
-- importação de planilha;
-- busca;
-- status;
-- vínculo com caminhos físicos;
-- prevenção de duplicidade.
-
-### folders
-
-- criação incremental de estrutura;
-- validação de estrutura existente;
-- compatibilidade com estruturas legadas/BAT;
-- PF/PJ;
-- funcionários;
-- versionamento de estrutura;
-- política de conflitos.
-
-### ocr
-
-- extração de texto/dados;
-- classificadores por tipo documental;
-- identificação de cliente;
-- identificação de competência;
-- nível de confiança;
-- encaminhamento para revisão;
-- sugestão de nome e destino.
-
-### printing
-
-- conferência;
-- seleção;
-- ordenação A–Z;
-- agrupamento por cliente;
-- consolidação PDF;
-- impressão em lote;
-- relatórios operacionais.
-
-### integrations
-
-- abertura assistida de portais;
-- monitoramento de pastas de download/entrada quando aprovado;
-- encaminhamento de arquivos baixados ao processamento local;
-- nunca contornar autenticação/CAPTCHA.
-
-### settings
-
-- caminhos configuráveis;
-- preferências operacionais;
-- convenções de estrutura;
-- parâmetros de OCR/conferência;
-- parâmetros de impressão;
-- configuração do navegador e entradas/saídas.
-
-### utils
-
-Somente funções realmente compartilhadas e pequenas. Não deverá virar depósito genérico de regras de negócio.
-
-## 5. Persistência
-
-A persistência deverá manter, conforme evolução:
-
-- clientes;
-- tipo PF/PJ;
-- CPF/CNPJ normalizado;
 - nome legal/original;
 - status;
 - caminho físico;
+- importação;
+- busca;
+- prevenção de duplicidade.
+
+### `ocr`
+
+Introduzido na AXT-004:
+
+- extração de texto/dados;
+- classificadores por documento;
+- identificação de cliente;
+- confiança;
+- revisão.
+
+### `documents`
+
+Pode ser introduzido a partir da AXT-004/005 para representar documento, competência, destino, conflito e estado de processamento sem misturar isso ao módulo de OCR.
+
+### `printing`
+
+Introduzido progressivamente na AXT-006/007:
+
+- conferência;
+- ordenação A–Z;
+- consolidação PDF;
+- lotes;
+- impressão.
+
+### `integrations`
+
+Introduzido na AXT-008:
+
+- abertura assistida de portais;
+- integração com navegador;
+- recebimento organizado de downloads;
+- sem contorno de autenticação ou CAPTCHA.
+
+### `settings`
+
+Introduzido na AXT-003 e ampliado nas Sprints seguintes:
+
+- caminhos;
+- preferências;
+- parâmetros operacionais.
+
+## 7. Arquitetura do motor de filesystem
+
+O motor de pastas deve seguir fluxo explícito:
+
+```text
+Solicitação
+   ↓
+Inspeção somente leitura
+   ↓
+Plano de operação
+   ↓
+Validação de conflitos
+   ↓
+[simulação termina aqui]
+   ↓
+Confirmação do chamador
+   ↓
+Revalidação do estado atual
+   ↓
+Aplicação somente de ações seguras
+   ↓
+Resultado auditável
+```
+
+A fase de planejamento não pode criar a pasta raiz nem qualquer outro artefato.
+
+## 8. Persistência
+
+A persistência local será introduzida somente na AXT-003.
+
+Quando existir, deverá registrar conforme necessário:
+
+- clientes;
 - configurações;
-- versão de estrutura;
-- histórico de operações;
-- resultado de classificações;
+- caminhos;
+- histórico operacional;
+- classificações;
 - estados de conferência.
 
-Registros não devem ser usados para destruir automaticamente o acervo físico.
+A exclusão de um registro nunca autoriza a exclusão automática de arquivos ou pastas físicas.
 
-## 6. Fluxo documental
+## 9. Interface e Axiom Framework
 
-Fluxo conceitual:
+A AXT-002 será responsável por definir e implementar a camada visual.
+
+Regras:
+
+- o Axiom Framework é a autoridade de UX/UI do Ecossistema Axiom;
+- não copiar o Axiom Tables como fonte normativa;
+- não criar CSS, tokens ou componentes paralelos quando houver equivalente oficial;
+- a interface deve consumir os serviços do Axiom Tools por contratos claros;
+- Login/Dashboard não podem ser dependência da AXT-001.
+
+A tecnologia concreta da camada web/local deverá ser definida e registrada na AXT-002 após inspeção do mecanismo efetivamente disponível no Axiom Framework. Não inventar integração inexistente.
+
+## 10. OCR e fluxo documental
+
+Fluxo conceitual futuro:
 
 ```text
 Entrada
@@ -142,54 +214,49 @@ Preservação do original
   ↓
 Leitura/OCR
   ↓
-Identificação do cliente
+Identificação de cliente/tipo/competência
   ↓
-Identificação do documento
-  ↓
-Identificação da competência
-  ↓
-Validação de confiança
-  ├── baixa confiança → Revisão
-  └── confiança suficiente
-          ↓
-     Sugestão de nome/destino
-          ↓
-     Verificação de conflito
-          ↓
-     Cópia/versão gerenciada
-          ↓
-     Conferência
-          ↓
-     Impressão/uso operacional
+Nível de confiança
+  ├── insuficiente → Revisão
+  └── suficiente → Sugestão
+                      ↓
+                 Verificação de conflito
+                      ↓
+                 Roteamento gerenciado
+                      ↓
+                 Conferência
+                      ↓
+                 Consolidação/Impressão
 ```
 
-## 7. Regras de código
+## 11. Regras de código
 
-- arquivos pequenos e responsabilidades claras;
-- evitar monólitos;
-- separar modelo, serviço, interface e integração quando a complexidade justificar;
-- regras de filesystem não devem ficar espalhadas pela interface;
-- caminhos não devem ficar hardcoded em múltiplos arquivos;
-- classificadores OCR devem ser extensíveis;
-- operações em lote devem ser testáveis sem executar destruição real;
-- rotinas críticas devem possuir modo de simulação/validação sempre que tecnicamente aplicável.
+- preferir arquivos de aproximadamente 300 linhas;
+- evitar ultrapassar 500 linhas sem justificativa;
+- não criar módulo monolítico;
+- não espalhar caminhos hardcoded;
+- não colocar regra de filesystem dentro da CLI ou UI;
+- testes automatizados usam diretórios temporários isolados;
+- operações críticas devem ser exercitáveis sem tocar a árvore real do escritório;
+- erros de conflito são dados do domínio, não exceções engolidas silenciosamente.
 
-## 8. Compatibilidade com legado
+## 12. Compatibilidade com legado
 
-O Axiom Tools nasce de rotinas que já criavam estruturas reais. Portanto:
+- reconhecer estruturas de BATs anteriores;
+- considerar `estrutura.cfg`;
+- comparar caminhos segundo comportamento case-insensitive esperado no Windows;
+- reconhecer equivalências conhecidas de acentuação;
+- preservar conteúdo desconhecido;
+- atualizar significa completar de forma incremental, nunca apagar e reconstruir.
 
-- a aplicação deve reconhecer árvores existentes;
-- metadados como `estrutura.cfg` devem ser considerados;
-- estruturas antigas podem conter nomes/pastas diferentes;
-- conteúdo desconhecido deve ser preservado;
-- atualização significa completar/evoluir, não apagar e reconstruir.
+## 13. Recomeço da implementação
 
-## 9. Segurança documental
+A reorganização de 16/08/2026 declara que a implementação funcional da AXT-001 será reiniciada do zero.
 
-A decisão AXT-001 é vinculante para toda a arquitetura.
+Código produzido em tentativas locais anteriores não deve ser copiado como base. Ideias só podem ser reaproveitadas se forem novamente justificadas e compatíveis com a documentação oficial.
 
-Nenhum módulo pode adotar comportamento destrutivo por conveniência local.
+Detalhamento em `docs/decisions/DEC-005_REINICIO_DA_IMPLEMENTACAO_E_FONTE_DE_VERDADE.md`.
 
-## 10. Evolução
+## 14. Evolução
 
-A arquitetura deve crescer pelas Sprints oficiais registradas em `docs/sprints/`, evitando antecipar dependências pesadas antes da funcionalidade que realmente as necessita.
+Cada Sprint deve implementar somente seu domínio aprovado. Alterações estruturais futuras exigem atualização documental antes do código.
