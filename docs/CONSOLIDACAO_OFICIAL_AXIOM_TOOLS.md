@@ -1,227 +1,192 @@
 # Axiom Tools — Consolidação Oficial do Projeto
 
-Versão: 1.1  
-Data de consolidação: 16/08/2026  
+Versão: 2.0  
+Data: 16/08/2026  
 Status: Documento mestre permanente
 
 ## 1. Finalidade
 
-O Axiom Tools é uma aplicação utilitária independente do Ecossistema Axiom destinada a automatizar e organizar rotinas locais de arquivos do escritório, com foco em estrutura de pastas de clientes, documentos de Departamento Pessoal, OCR, classificação, competências, conferência, impressão em lote e integrações assistidas com portais externos.
+O Axiom Tools é uma aplicação operacional local do Ecossistema Axiom destinada a organizar e automatizar rotinas de arquivos do escritório, evoluindo ferramentas antes executadas por BATs para uma solução modular, auditável, configurável e segura.
 
-O projeto evolui ferramentas e rotinas anteriormente executadas por arquivos BAT para uma aplicação estruturada, auditável, configurável e segura.
+Seu escopo consolidado inclui:
 
-## 2. Princípio central
+- estruturas de pastas PF/PJ e funcionários;
+- cadastro/indexação de clientes;
+- OCR e classificação documental;
+- competências e roteamento;
+- conferência e visualização de PDF;
+- impressão e consolidação em lote;
+- integrações assistidas com portais externos;
+- configurações e histórico operacional.
 
-O Axiom Tools trabalha sobre documentos reais do escritório. Por isso, segurança documental prevalece sobre conveniência.
+## 2. Fonte oficial de verdade
 
-Regras permanentes:
+A partir desta versão:
 
-1. Arquivos originais não serão excluídos automaticamente.
-2. Arquivos existentes não serão sobrescritos silenciosamente.
-3. A exclusão ou inativação de um cliente no cadastro interno não poderá excluir sua pasta física nem seus documentos.
-4. Toda movimentação automatizada deverá ser rastreável.
-5. Classificações por OCR deverão permitir conferência humana.
-6. Operações de baixa confiança deverão ir para revisão, e não para decisão destrutiva.
-7. A grafia legal/original do cliente deverá ser preservada no dado cadastrado; normalizações visuais não poderão destruir a informação original.
-8. Portais governamentais continuarão sob controle humano nas etapas de autenticação, CAPTCHA, confirmação e demais ações críticas.
+1. este repositório é a fonte oficial de requisitos do Axiom Tools;
+2. decisões permanentes usam prefixo `DEC-*`;
+3. Sprints de execução usam prefixo `AXT-*`;
+4. nenhum número de decisão corresponde automaticamente ao número de uma Sprint;
+5. implementações locais anteriores à reorganização documental de 16/08/2026 não são referência técnica e não devem ser reaproveitadas automaticamente;
+6. quando houver divergência, prevalece a ordem: decisão permanente mais específica → Sprint vigente → arquitetura oficial → consolidação mestre → README.
 
-## 3. Escopo funcional consolidado
+## 3. Princípio central: não destruição
 
-### 3.1 Estrutura de pastas
+O Axiom Tools trabalhará sobre documentos reais do escritório. Segurança documental prevalece sobre conveniência.
 
-A primeira fundação funcional do sistema será o motor de estrutura de pastas.
+São regras permanentes:
 
-O sistema deverá criar, conferir e atualizar estruturas padronizadas para PF e PJ, respeitando as diferenças aprovadas entre os dois tipos de cliente.
+- não excluir arquivos originais automaticamente;
+- não apagar pastas por exclusão/inativação cadastral;
+- não sobrescrever arquivos existentes silenciosamente;
+- não mover ou mesclar conteúdo legado de forma automática apenas para padronização;
+- preservar arquivos e pastas desconhecidos;
+- planejar/simular operações críticas antes de aplicá-las quando tecnicamente possível;
+- revalidar conflitos antes da execução;
+- manter rastreabilidade operacional;
+- encaminhar baixa confiança para revisão humana.
 
-A atualização de uma estrutura existente deverá:
+Detalhamento: `docs/decisions/DEC-001_SEGURANCA_DOCUMENTAL_E_NAO_DESTRUICAO.md`.
 
-- criar somente o que estiver ausente;
-- reconhecer equivalentes legados, inclusive diferenças conhecidas de acentuação e nomenclatura;
-- não criar duplicidades;
-- não excluir pastas;
-- não excluir arquivos;
-- não mover conteúdo existente automaticamente;
-- não sobrescrever arquivos;
-- preservar pastas desconhecidas;
-- reconhecer estruturas produzidas pelos BATs anteriores.
+## 4. Estruturas PF/PJ e funcionários
 
-A árvore oficial detalhada está registrada em `docs/decisions/AXT-002_CLIENTES_PF_PJ_E_ESTRUTURA_DE_PASTAS.md` e na Sprint AXT-001.
+A primeira Sprint funcional é dedicada exclusivamente ao motor seguro de estrutura de pastas.
 
-### 3.2 Funcionários / Empregados
+A estrutura oficial, equivalências de legado, tratamento de `estrutura.cfg`, `Funcionários`/`Empregados`, preservação de `Exames` legado e regras de conflitos ficam consolidadas em:
 
-Dentro de cada cliente, o Axiom Tools deverá administrar a estrutura de funcionários/empregados.
+- `docs/decisions/DEC-002_ESTRUTURAS_PF_PJ_FUNCIONARIOS_E_LEGADO.md`;
+- `docs/sprints/AXT-001_ESTRUTURA_DE_PASTAS_PF_PJ_E_FUNCIONARIOS.md`.
 
-Deverá suportar:
+A AXT-001 não implementa Login, Dashboard, cadastro completo de clientes, OCR, competências, conferência ou impressão.
 
-- localização de `Funcionários`, sua variante legada sem acentuação e `Empregados`;
-- criação de pasta individual com o nome completo informado;
-- criação da estrutura nova aprovada com `Documentos Pessoais`, `Documentos Gerados`, `Documentos Escaneados` e `Rescisão`;
-- preservação de `Exames` quando já existir em estrutura legada;
-- correção incremental da estrutura;
-- futura alteração de situação e reativação sem perda do histórico documental.
+## 5. Interface, Login e Dashboard
 
-### 3.3 Clientes
+A interface base passa a ser uma Sprint própria: **AXT-002**.
 
-O sistema deverá manter cadastro interno de clientes PF e PJ, identificados por CPF ou CNPJ.
+Ela deverá introduzir:
 
-O cadastro servirá como índice para localizar pastas, reconhecer documentos e executar rotinas em lote.
+- tela de login;
+- sessão e logout;
+- shell principal;
+- sidebar e topbar;
+- Dashboard;
+- temas claro/escuro/automático;
+- integração visual com o Axiom Framework;
+- fluxo visual para consumir o motor homologado da AXT-001.
 
-Deverá existir futuramente:
+A interface não poderá alterar as regras de segurança do filesystem.
 
-- inclusão manual;
-- importação de relação de clientes por planilha;
-- busca por nome e documento;
+## 6. Clientes e persistência
+
+O cadastro/indexação de clientes será introduzido somente após a homologação do motor de pastas e da base de interface.
+
+O núcleo deverá suportar futuramente:
+
+- PF/PJ;
+- CPF/CNPJ;
+- nome legal/original;
+- status;
+- caminho físico;
+- cadastro manual;
 - edição;
 - inativação/reativação;
-- exclusão cadastral controlada quando necessária para limpeza da lista importada;
-- prevenção de duplicidade por documento;
-- associação do cliente ao caminho físico correspondente;
-- status operacional, sem uso do status para apagar automaticamente arquivos.
+- exclusão apenas cadastral quando necessária;
+- importação de planilha;
+- prevenção de duplicidades;
+- configurações de caminhos;
+- histórico mínimo.
 
-A lista importada pode conter clientes que já saíram do escritório ou foram baixados. O usuário deverá poder tratar esses casos dentro do Axiom Tools sem precisar corrigir previamente a planilha de origem.
+A persistência será local e não substituirá o acervo físico.
 
-### 3.4 OCR e classificação documental
+## 7. OCR e classificação
 
-O Axiom Tools deverá possuir uma área de entrada para documentos a classificar.
-
-O motor deverá evoluir para reconhecer, entre outros:
+O Axiom Tools deverá possuir uma área de entrada documental e evoluir para reconhecer, entre outros:
 
 - DARF/DCTFWeb;
 - FGTS Digital;
 - contracheques;
 - pró-labore;
-- documentos sem movimento, quando identificáveis;
-- outros documentos aprovados nas Sprints correspondentes.
+- documentos adicionais aprovados em Sprint.
 
-A classificação deverá buscar cliente, tipo documental e competência, sugerir renomeação padronizada e encaminhar uma cópia/versão gerenciada ao destino adequado, mantendo o original conforme a política de segurança.
+O motor deverá identificar cliente, tipo documental e competência, atribuir nível de confiança e encaminhar incertezas para revisão.
 
-### 3.5 Competências
+Detalhamento permanente: `docs/decisions/DEC-003_OCR_CLASSIFICACAO_E_CONFIANCA.md`.
 
-Os documentos mensais deverão poder ser organizados por competência, com caminhos configuráveis.
+## 8. Competências e roteamento
 
-Exemplo conceitual: `Agosto/2026`.
+Documentos mensais deverão poder ser organizados por cliente, tipo e competência, com caminhos configuráveis.
 
-O reconhecimento de competência deverá ser validável antes de movimentações em lote.
+A competência não será inferida apenas pela data do arquivo. Roteamento em lote deverá ser validável antes da execução.
 
-### 3.6 Conferência
+## 9. Conferência e PDF
 
-O sistema deverá oferecer rotinas de conferência antes da impressão ou consolidação, permitindo identificar:
+O sistema deverá permitir conferência antes de impressão ou fechamento de lotes, incluindo:
 
-- documentos encontrados;
-- documentos faltantes;
-- documentos sem cliente reconhecido;
-- documentos sem competência reconhecida;
-- classificações de baixa confiança;
-- clientes sem movimento, quando aplicável;
-- divergências entre documentos esperados e encontrados.
+- encontrados x faltantes;
+- não reconhecidos;
+- baixa confiança;
+- divergências;
+- itens sem competência;
+- visualização de PDF;
+- relatórios de conferência.
 
-### 3.7 Impressão em lote
+## 10. Impressão e consolidação
 
-O Axiom Tools deverá permitir impressão e preparação de lotes em ordem alfabética A–Z.
+O Axiom Tools deverá permitir:
 
-Deverá suportar:
+- seleção de clientes;
+- ordenação A–Z;
+- agrupamento por empresa;
+- DARF + FGTS quando solicitado;
+- tipos documentais separados;
+- PDF consolidado ou múltiplos arquivos;
+- pré-visualização;
+- relatório do lote;
+- impressão controlada.
 
-- impressão agrupada por empresa;
-- agrupamento de DARF + FGTS quando solicitado;
-- impressão por tipo documental separadamente;
-- geração de arquivo único consolidado ou múltiplos arquivos;
-- conferência antes da impressão.
+## 11. Integrações assistidas
 
-### 3.8 Integrações assistidas
+Portais como eCAC, eSocial e Sintegra/SEFAZ GO serão tratados em fluxo assistido:
 
-O projeto poderá abrir portais e páginas externas para apoiar o usuário, inclusive eCAC, eSocial e Sintegra/SEFAZ GO.
-
-O fluxo esperado é assistido:
-
-1. abrir o portal no navegador;
-2. usuário realiza autenticação e ações obrigatórias;
+1. sistema abre o portal/navegador;
+2. usuário autentica e executa ações obrigatórias;
 3. documento é baixado/salvo;
-4. Axiom Tools recebe o arquivo na pasta configurada;
-5. OCR e classificação continuam o fluxo local.
+4. Axiom Tools recebe o arquivo em local configurado;
+5. processamento local continua.
 
-O sistema não deverá tentar contornar CAPTCHA, autenticação forte ou outras proteções.
+Não haverá contorno de CAPTCHA, autenticação forte ou confirmação humana.
 
-### 3.9 PDF
+Detalhamento: `docs/decisions/DEC-004_CONFERENCIA_IMPRESSAO_E_INTEGRACOES_ASSISTIDAS.md`.
 
-O projeto deverá evoluir para:
+## 12. Arquitetura e tecnologia
 
-- visualizar PDFs;
-- receber PDFs em uma área de entrada;
-- identificar e classificar PDFs;
-- salvar em PDF conteúdo externo quando tecnicamente permitido;
-- consolidar documentos para conferência/impressão;
-- manter os originais preservados.
+Base atual:
 
-### 3.10 Configurações
+- Python 3.12 ou superior;
+- Windows como ambiente operacional principal;
+- filesystem como repositório dos documentos reais;
+- SQLite previsto para persistência local a partir da Sprint apropriada;
+- módulos separados por domínio;
+- interface desacoplada das regras de filesystem;
+- dependências de OCR/PDF introduzidas somente quando necessárias;
+- interface visual consumidora do Axiom Framework quando a AXT-002 iniciar.
 
-Caminhos operacionais deverão ser configuráveis, incluindo, conforme a implantação:
+A arquitetura detalhada está em `docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md`.
 
-- base de clientes;
-- contratos e alterações;
-- movimentações mensais;
-- DARF;
-- FGTS;
-- contracheques;
-- pró-labore;
-- conferência;
-- entrada de OCR;
-- saídas temporárias e consolidadas.
+## 13. Roadmap oficial
 
-Nenhum caminho crítico deverá ficar espalhado de forma rígida pelo código.
+- **AXT-000 — Fundação documental e arquitetural:** concluída;
+- **AXT-001 — Motor seguro de estruturas PF/PJ e funcionários:** atual, implementação reiniciada do zero;
+- **AXT-002 — Login, Shell e Dashboard:** planejada;
+- **AXT-003 — Núcleo de clientes, importação e configurações:** planejada;
+- **AXT-004 — OCR e classificação documental:** planejada;
+- **AXT-005 — Competências e roteamento:** planejada;
+- **AXT-006 — Conferências e visualização de PDF:** planejada;
+- **AXT-007 — Impressão e consolidação:** planejada;
+- **AXT-008 — Integrações assistidas e operação Windows:** planejada.
 
-## 4. Dados e persistência
+## 14. Regra de evolução
 
-O Axiom Tools deverá possuir persistência própria para cadastro/indexação de clientes, configurações, histórico operacional e informações necessárias ao funcionamento local.
+Nenhuma Sprint futura deve ser antecipada dentro da Sprint atual por conveniência do executor.
 
-A persistência não substitui os arquivos físicos: ela referencia e organiza o acervo existente.
-
-A persistência cadastral será introduzida depois da homologação do motor de pastas.
-
-## 5. Arquitetura funcional
-
-O projeto será modular. Os domínios principais são:
-
-- `core`: infraestrutura comum;
-- `folders`: estrutura e manutenção de pastas;
-- `ocr`: reconhecimento e classificação;
-- `printing`: conferência, consolidação e impressão;
-- `integrations`: portais e integrações assistidas;
-- `settings`: configurações;
-- `utils`: utilitários compartilhados.
-
-A implementação deverá continuar fracionada em arquivos pequenos e responsabilidades claras, evitando arquivos monolíticos.
-
-## 6. Fora de escopo ou restrições
-
-Não fazem parte do comportamento automático seguro:
-
-- apagar pastas de clientes porque um cadastro foi excluído;
-- excluir arquivos originais após OCR;
-- sobrescrever documentos silenciosamente;
-- mover conteúdo legado apenas para padronizar nomes;
-- mesclar automaticamente estruturas ambíguas;
-- realizar autenticação governamental em nome do usuário de forma clandestina;
-- contornar CAPTCHA;
-- executar ações críticas em portais sem controle do usuário.
-
-## 7. Roadmap oficial
-
-A sequência atual foi formalmente ajustada para homologar o motor de pastas antes do núcleo cadastral:
-
-- AXT-000 — Fundação;
-- AXT-001 — Estrutura de pastas PF/PJ e funcionários;
-- AXT-002 — Núcleo de clientes, importação e configurações;
-- AXT-003 — OCR e classificação documental;
-- AXT-004 — Competências e roteamento;
-- AXT-005 — Conferências;
-- AXT-006 — Impressão e consolidação em lote.
-
-Integrações assistidas, visualização de PDF, auditoria e refinamentos de segurança são capacidades transversais e deverão ser introduzidas nas Sprints correspondentes sem quebrar os princípios permanentes deste documento.
-
-## 8. Regra de precedência
-
-Este documento consolida as decisões recuperadas do histórico do projeto.
-
-Quando houver detalhamento específico de árvore de pastas, prevalecem a decisão `AXT-002_CLIENTES_PF_PJ_E_ESTRUTURA_DE_PASTAS.md` e a Sprint funcional AXT-001, desde que não violem as regras permanentes de segurança e preservação documental.
-
-Mudanças futuras deverão ser registradas formalmente no repositório.
+Mudanças de arquitetura, escopo, estrutura de pastas ou ordem do roadmap devem ser registradas antes da implementação correspondente.
