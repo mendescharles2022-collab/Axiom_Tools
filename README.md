@@ -1,73 +1,63 @@
 # Axiom Tools
 
-Ferramentas operacionais do Ecossistema Axiom para automação local de arquivos, organização documental, OCR, conferência e apoio às rotinas do escritório.
+Aplicação operacional local do Ecossistema Axiom para organização segura de arquivos, estruturas de clientes, OCR, conferência, impressão e integrações assistidas.
 
-## Objetivo
+## Estado oficial
 
-O Axiom Tools evolui rotinas locais anteriormente executadas por BATs para uma aplicação modular, rastreável e segura, voltada principalmente para:
+- **AXT-000 — Fundação documental e arquitetural:** concluída.
+- **AXT-001 — Motor seguro de estruturas PF/PJ e funcionários:** Sprint funcional atual; implementação reiniciada do zero.
+- Implementações locais anteriores à reorganização documental de 16/08/2026 não constituem referência técnica e não devem ser reaproveitadas automaticamente.
+- A documentação deste repositório é a fonte oficial de verdade do projeto.
 
-- cadastro/indexação de clientes PF e PJ;
-- criação e atualização padronizada das pastas de clientes;
-- organização documental e estruturas de funcionários;
-- identificação, renomeação e classificação de PDFs por OCR;
-- separação de documentos por cliente e competência;
-- conferência e impressão em lote;
-- abertura assistida de portais externos;
-- preservação dos documentos originais e rastreabilidade das operações.
+Consulte primeiro [`docs/STATUS_ATUAL.md`](docs/STATUS_ATUAL.md).
 
-## Princípios
+## Princípios permanentes
 
-1. Nenhum arquivo original deve ser excluído automaticamente.
-2. Exclusão cadastral de cliente não exclui sua pasta física.
-3. Operações de movimentação devem ser rastreáveis.
-4. A classificação automática deve permitir conferência humana.
-5. Integrações governamentais devem respeitar autenticação, CAPTCHA e demais interações humanas obrigatórias.
-6. A estrutura deve permanecer modular.
-7. A grafia legal/original do cliente deve ser preservada.
+1. Nenhum arquivo original é excluído automaticamente.
+2. Nenhum arquivo existente é sobrescrito silenciosamente.
+3. Cadastro e filesystem são domínios distintos: excluir/inativar cadastro não elimina pasta física.
+4. Operações sobre arquivos devem ser planejáveis, rastreáveis e conservadoras.
+5. Estruturas legadas são reconhecidas e preservadas.
+6. Baixa confiança em OCR gera revisão humana, nunca decisão destrutiva.
+7. A grafia legal/original do cliente é preservada.
+8. Autenticação, CAPTCHA e ações críticas em portais externos permanecem sob controle humano.
+9. O código deve permanecer modular e testável.
+10. Interface e identidade visual devem obedecer ao Axiom Framework quando introduzidas.
 
 ## Documentação oficial
 
-A consolidação do histórico do projeto está registrada em:
-
-- [`docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md`](docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md) — documento mestre de escopo e regras;
+- [`docs/STATUS_ATUAL.md`](docs/STATUS_ATUAL.md) — situação atual e próximo passo;
+- [`docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md`](docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md) — escopo e regras do produto;
 - [`docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md`](docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md) — arquitetura oficial;
-- [`docs/decisions/`](docs/decisions/) — decisões permanentes;
-- [`docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md`](docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md) — sequência oficial de Sprints;
-- [`docs/sprints/AXT-001_ESTRUTURA_DE_PASTAS_PF_PJ_E_FUNCIONARIOS.md`](docs/sprints/AXT-001_ESTRUTURA_DE_PASTAS_PF_PJ_E_FUNCIONARIOS.md) — Sprint funcional atual.
-
-## Estrutura do repositório
-
-```text
-Axiom_Tools/
-├── config/
-├── docs/
-│   ├── architecture/
-│   ├── decisions/
-│   └── sprints/
-├── scripts/
-├── src/
-│   └── axiom_tools/
-│       ├── core/
-│       ├── modules/
-│       │   ├── folders/
-│       │   ├── ocr/
-│       │   ├── printing/
-│       │   ├── integrations/
-│       │   └── settings/
-│       └── utils/
-└── tests/
-```
+- [`docs/decisions/`](docs/decisions/) — decisões permanentes, identificadas por `DEC-*`;
+- [`docs/sprints/`](docs/sprints/) — Sprints oficiais, identificadas por `AXT-*`;
+- [`docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md`](docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md) — sequência oficial.
 
 ## Roadmap
 
-- AXT-000 — Fundação;
-- AXT-001 — Estrutura de pastas PF/PJ e funcionários;
-- AXT-002 — Núcleo de clientes, importação e configurações;
-- AXT-003 — OCR e classificação documental;
-- AXT-004 — Competências e roteamento;
-- AXT-005 — Conferências;
-- AXT-006 — Impressão e consolidação.
+- AXT-000 — Fundação documental e arquitetural;
+- AXT-001 — Motor seguro de estruturas PF/PJ e funcionários;
+- AXT-002 — Login, Shell e Dashboard;
+- AXT-003 — Núcleo de clientes, importação e configurações;
+- AXT-004 — OCR e classificação documental;
+- AXT-005 — Competências e roteamento;
+- AXT-006 — Conferências e visualização de PDF;
+- AXT-007 — Impressão e consolidação;
+- AXT-008 — Integrações assistidas e operação Windows.
 
-## Estado
+## Estrutura-base do código
 
-Fundação e consolidação documental concluídas. A primeira Sprint funcional oficial é a AXT-001, dedicada ao motor seguro de estrutura de pastas.
+```text
+src/axiom_tools/
+├── core/
+├── modules/
+│   ├── folders/
+│   ├── clients/          # introduzido quando a AXT-003 começar
+│   ├── ocr/
+│   ├── printing/
+│   ├── integrations/
+│   └── settings/
+└── utils/
+```
+
+A estrutura pode evoluir pelas Sprints, sem concentrar regras de negócio em arquivos monolíticos.
