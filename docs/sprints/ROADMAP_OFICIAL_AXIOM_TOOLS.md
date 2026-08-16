@@ -1,9 +1,11 @@
 # Roadmap Oficial — Axiom Tools
 
-Versão: 1.0  
+Versão: 1.1  
 Data: 16/08/2026
 
-Este documento consolida a sequência de Sprints discutida para o Axiom Tools. O detalhamento técnico de cada Sprint deverá respeitar os documentos permanentes em `docs/decisions/` e a arquitetura oficial.
+Este documento consolida a sequência oficial de Sprints do Axiom Tools. A ordem foi ajustada para iniciar pela criação e atualização segura das estruturas de pastas, conforme decisão do projeto em 16/08/2026.
+
+Toda Sprint deverá respeitar `docs/decisions/` e a arquitetura oficial.
 
 ## AXT-000 — Fundação
 
@@ -20,11 +22,34 @@ Escopo:
 - arquitetura;
 - roadmap.
 
-Status em 16/08/2026: concluída como fundação documental/estrutural.
+Status: concluída como fundação documental/estrutural.
 
-## AXT-001 — Núcleo de Clientes, Importação e Configurações
+## AXT-001 — Estrutura de Pastas PF/PJ e Funcionários
 
-Objetivo: criar o núcleo cadastral que servirá de referência para todas as rotinas documentais.
+Objetivo: construir e homologar primeiro o motor seguro de criação, reconhecimento, correção e atualização das estruturas físicas de clientes e funcionários.
+
+Escopo previsto:
+
+- estrutura oficial PJ;
+- estrutura oficial PF;
+- diferenças PF/PJ;
+- criação incremental;
+- atualização conservadora;
+- reconhecimento de equivalências de acentuação/nomenclatura;
+- compatibilidade com BATs anteriores;
+- reconhecimento de `estrutura.cfg`;
+- localização de `Funcionários` ou `Empregados`;
+- estrutura individual de funcionário;
+- preservação de estruturas legadas, inclusive `Exames` quando já existente;
+- `Corrigir Estrutura`;
+- simulação/relatório antes de operações em lote;
+- testes de não destruição.
+
+Critério essencial: criar somente o que falta, sem excluir, mover, substituir ou sobrescrever arquivos existentes.
+
+## AXT-002 — Núcleo de Clientes, Importação e Configurações
+
+Objetivo: criar o núcleo cadastral que passará a consumir o motor homologado da AXT-001.
 
 Escopo previsto:
 
@@ -45,27 +70,6 @@ Escopo previsto:
 - histórico mínimo de alterações.
 
 Critério essencial: excluir um cadastro não poderá excluir a pasta física do cliente.
-
-## AXT-002 — Estrutura de Pastas PF/PJ e Funcionários
-
-Objetivo: substituir/evoluir as rotinas BAT de criação e atualização de estruturas.
-
-Escopo previsto:
-
-- localizar pasta do cliente;
-- criar nova estrutura quando necessário;
-- atualizar estrutura existente de forma incremental;
-- diferenças PF/PJ;
-- recolhimentos;
-- documentos societários/cadastrais;
-- documentos do responsável;
-- funcionários/empregados;
-- subpastas individuais;
-- empregados demitidos;
-- compatibilidade com `estrutura.cfg` e estruturas legadas;
-- simulação/relatório antes de alterações em lote.
-
-Critério essencial: nunca apagar/recriar árvore existente para atualizá-la.
 
 ## AXT-003 — OCR e Classificação Documental
 
@@ -164,4 +168,4 @@ As seguintes capacidades atravessam as Sprints e serão implementadas quando sua
 
 ## Regra para novas Sprints
 
-Novas Sprints poderão ser adicionadas após AXT-006, mas não deverão renumerar ou reescrever silenciosamente esta sequência recuperada. Mudanças de escopo estrutural deverão ser registradas como nova decisão em `docs/decisions/`.
+Novas Sprints poderão ser adicionadas após AXT-006. Mudanças futuras de ordem ou escopo estrutural deverão ser registradas formalmente, sem apagar o histórico das decisões anteriores.
