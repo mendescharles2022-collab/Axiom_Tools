@@ -2,15 +2,21 @@
 
 Esta pasta concentra a documentação técnica da arquitetura do Axiom Tools.
 
-## Diretrizes iniciais
+## Documento oficial
+
+- `ARQUITETURA_OFICIAL_AXIOM_TOOLS.md` — arquitetura consolidada, responsabilidades dos módulos, persistência, fluxo documental, compatibilidade com legado e regras de evolução.
+
+## Diretrizes permanentes
 
 - aplicação modular;
 - Python 3.12 como base de execução;
-- separação entre infraestrutura compartilhada e módulos funcionais;
+- persistência local própria e filesystem documental preservado;
+- separação entre infraestrutura e módulos funcionais;
 - caminhos e regras de armazenamento configuráveis;
 - operações destrutivas evitadas por padrão;
 - OCR desacoplado das regras de organização de pastas;
-- integrações externas tratadas como adaptadores independentes;
-- testes automatizados para regras de classificação e movimentação de arquivos.
+- integrações externas tratadas como adaptadores assistidos;
+- testes automatizados para regras de classificação e movimentação;
+- compatibilidade segura com estruturas legadas/BAT.
 
-A arquitetura detalhada será consolidada nas Sprints oficiais do projeto.
+As decisões de `docs/decisions/` são vinculantes para a implementação.
