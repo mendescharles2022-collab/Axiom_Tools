@@ -1,171 +1,125 @@
 # Roadmap Oficial — Axiom Tools
 
-Versão: 1.1  
-Data: 16/08/2026
+Versão: 2.0  
+Data: 16/08/2026  
+Status: Oficial
 
-Este documento consolida a sequência oficial de Sprints do Axiom Tools. A ordem foi ajustada para iniciar pela criação e atualização segura das estruturas de pastas, conforme decisão do projeto em 16/08/2026.
+## Regra de leitura
 
-Toda Sprint deverá respeitar `docs/decisions/` e a arquitetura oficial.
+- `AXT-*` identifica Sprint de execução.
+- `DEC-*` identifica decisão permanente.
+- A Sprint seguinte só deve iniciar após homologação da anterior, salvo decisão formal em contrário.
+- Nenhum executor deve antecipar funcionalidades de Sprint futura.
 
-## AXT-000 — Fundação
+## Sequência oficial
 
-Objetivo: criar a base institucional e técnica do projeto.
+### AXT-000 — Fundação Documental e Arquitetural
 
-Escopo:
+Status: **Concluída**
 
-- repositório oficial;
-- README;
-- configuração Python;
-- estrutura modular;
-- diretórios de documentação;
-- regras permanentes;
-- arquitetura;
-- roadmap.
+Documento: `AXT-000_FUNDACAO_DOCUMENTAL_E_ARQUITETURAL.md`
 
-Status: concluída como fundação documental/estrutural.
+Entregou repositório, estrutura documental, arquitetura, decisões e roadmap.
 
-## AXT-001 — Estrutura de Pastas PF/PJ e Funcionários
+---
 
-Objetivo: construir e homologar primeiro o motor seguro de criação, reconhecimento, correção e atualização das estruturas físicas de clientes e funcionários.
+### AXT-001 — Estrutura de Pastas PF/PJ e Funcionários
 
-Escopo previsto:
+Status: **Atual — pronta para implementação do zero**
 
-- estrutura oficial PJ;
-- estrutura oficial PF;
-- diferenças PF/PJ;
-- criação incremental;
-- atualização conservadora;
-- reconhecimento de equivalências de acentuação/nomenclatura;
-- compatibilidade com BATs anteriores;
-- reconhecimento de `estrutura.cfg`;
-- localização de `Funcionários` ou `Empregados`;
-- estrutura individual de funcionário;
-- preservação de estruturas legadas, inclusive `Exames` quando já existente;
-- `Corrigir Estrutura`;
-- simulação/relatório antes de operações em lote;
-- testes de não destruição.
+Documento: `AXT-001_ESTRUTURA_DE_PASTAS_PF_PJ_E_FUNCIONARIOS.md`
 
-Critério essencial: criar somente o que falta, sem excluir, mover, substituir ou sobrescrever arquivos existentes.
+Objetivo: motor seguro de inspeção, planejamento, criação e correção incremental de estruturas PF/PJ e funcionários, com legado e testes de não destruição.
 
-## AXT-002 — Núcleo de Clientes, Importação e Configurações
+**Não inclui interface gráfica, Login ou Dashboard.**
 
-Objetivo: criar o núcleo cadastral que passará a consumir o motor homologado da AXT-001.
+---
 
-Escopo previsto:
+### AXT-002 — Login, Shell e Dashboard
 
-- persistência local;
-- cadastro PF/PJ;
-- CPF/CNPJ;
-- nome/razão social;
-- status;
-- caminho físico;
-- busca;
-- cadastro manual;
-- edição;
-- inativação/reativação;
-- exclusão cadastral controlada;
-- importação de planilha de clientes;
-- tratamento de duplicidades;
-- configurações de caminhos;
-- histórico mínimo de alterações.
+Status: **Planejada**
 
-Critério essencial: excluir um cadastro não poderá excluir a pasta física do cliente.
+Documento: `AXT-002_LOGIN_SHELL_DASHBOARD.md`
 
-## AXT-003 — OCR e Classificação Documental
+Objetivo: criar a camada visual base, autenticação inicial, shell, Dashboard e fluxo visual para o motor da AXT-001, obedecendo ao Axiom Framework.
 
-Objetivo: transformar a entrada documental em fluxo inteligente de identificação e classificação.
+---
 
-Escopo previsto:
+### AXT-003 — Núcleo de Clientes, Importação e Configurações
 
-- área de entrada;
-- leitura de PDF;
-- OCR quando necessário;
-- DARF/DCTFWeb;
-- FGTS Digital;
-- contracheques;
-- pró-labore;
-- identificação por CPF/CNPJ;
-- identificação por nome quando necessário;
-- nível de confiança;
-- fila de revisão;
-- renomeação sugerida;
-- detecção de conflito;
-- preservação do original.
+Status: **Planejada**
 
-Critério essencial: baixa confiança não pode gerar decisão destrutiva automática.
+Documento: `AXT-003_NUCLEO_CLIENTES_IMPORTACAO_CONFIGURACOES.md`
 
-## AXT-004 — Competências e Roteamento
+Objetivo: persistência local, cadastro PF/PJ, importação de planilha, busca, status, caminhos e configurações.
 
-Objetivo: organizar documentos reconhecidos por cliente, tipo e competência.
+---
 
-Escopo previsto:
+### AXT-004 — OCR e Classificação Documental
 
-- extração/validação de competência;
-- organização mensal;
-- caminhos de destino configuráveis;
-- roteamento de DARF;
-- roteamento de FGTS;
-- roteamento de contracheques;
-- roteamento de pró-labore;
-- regras para documentos sem movimento;
-- relatórios de itens não roteados;
-- validação antes do processamento em lote.
+Status: **Planejada**
 
-Critério essencial: competência não deve ser presumida apenas pela data do arquivo.
+Documento: `AXT-004_OCR_CLASSIFICACAO_DOCUMENTAL.md`
 
-## AXT-005 — Conferências
+Objetivo: entrada documental, leitura/OCR, classificação, confiança, revisão e preservação do original.
 
-Objetivo: permitir conferência operacional antes de impressão, consolidação e fechamento de lotes.
+---
 
-Escopo previsto:
+### AXT-005 — Competências e Roteamento
 
-- visão por cliente;
-- visão por competência;
-- A–Z;
-- encontrados x faltantes;
-- não reconhecidos;
-- pendentes de classificação;
-- divergências;
-- sem movimento confirmado;
-- relatórios de conferência;
-- visualização de PDFs.
+Status: **Planejada**
 
-Critério essencial: o usuário deve enxergar claramente o que o sistema entendeu e o que permanece pendente.
+Documento: `AXT-005_COMPETENCIAS_E_ROTEAMENTO.md`
 
-## AXT-006 — Impressão e Consolidação
+Objetivo: validar competência e rotear documentos reconhecidos para destinos configuráveis de forma segura.
 
-Objetivo: automatizar preparação e impressão de documentos em lote.
+---
 
-Escopo previsto:
+### AXT-006 — Conferências e Visualização de PDF
 
-- seleção de clientes;
-- ordenação A–Z;
-- agrupamento por empresa;
-- DARF + FGTS por empresa;
-- tipos separados;
-- arquivo único consolidado;
-- múltiplos arquivos;
-- pré-visualização;
-- relatório do lote;
-- impressão controlada.
+Status: **Planejada**
 
-Critério essencial: o lote deve ser reproduzível e rastreável sem alterar os originais.
+Documento: `AXT-006_CONFERENCIAS_E_VISUALIZACAO_PDF.md`
 
-## Capacidades transversais
+Objetivo: permitir conferência por cliente/competência, visualizar PDFs e evidenciar pendências e divergências.
 
-As seguintes capacidades atravessam as Sprints e serão implementadas quando suas dependências estiverem maduras:
+---
 
-- auditoria/logs;
-- tratamento de erros;
-- conflitos de nomes;
-- visualização PDF;
-- integrações assistidas com eCAC, eSocial e Sintegra/SEFAZ GO;
-- abertura do navegador;
-- recebimento organizado de downloads;
-- empacotamento para Windows;
-- testes automatizados;
-- simulação segura de operações de filesystem.
+### AXT-007 — Impressão e Consolidação
 
-## Regra para novas Sprints
+Status: **Planejada**
 
-Novas Sprints poderão ser adicionadas após AXT-006. Mudanças futuras de ordem ou escopo estrutural deverão ser registradas formalmente, sem apagar o histórico das decisões anteriores.
+Documento: `AXT-007_IMPRESSAO_E_CONSOLIDACAO.md`
+
+Objetivo: preparar lotes A–Z, agrupar documentos, consolidar PDFs e imprimir com rastreabilidade.
+
+---
+
+### AXT-008 — Integrações Assistidas e Operação Windows
+
+Status: **Planejada**
+
+Documento: `AXT-008_INTEGRACOES_ASSISTIDAS_E_OPERACAO_WINDOWS.md`
+
+Objetivo: integrar fluxos assistidos com portais externos, organizar downloads e consolidar execução/empacotamento Windows.
+
+## Dependências transversais
+
+Todas as Sprints respeitam:
+
+- `docs/decisions/DEC-001_SEGURANCA_DOCUMENTAL_E_NAO_DESTRUICAO.md`;
+- `docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md`;
+- `docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md`.
+
+Sprints específicas citam decisões adicionais.
+
+## Mudanças futuras
+
+Qualquer alteração de ordem, fusão, divisão ou renumeração deverá atualizar:
+
+1. este roadmap;
+2. `docs/STATUS_ATUAL.md`;
+3. `README.md`;
+4. a consolidação oficial quando o escopo estrutural for afetado.
+
+O histórico anterior permanece preservado pelo Git; documentos obsoletos não devem continuar ativos ao lado de documentos substitutos.
