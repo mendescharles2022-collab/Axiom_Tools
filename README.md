@@ -32,7 +32,8 @@ A consolidação do histórico do projeto está registrada em:
 - [`docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md`](docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md) — documento mestre de escopo e regras;
 - [`docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md`](docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md) — arquitetura oficial;
 - [`docs/decisions/`](docs/decisions/) — decisões permanentes;
-- [`docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md`](docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md) — sequência de Sprints recuperada do planejamento.
+- [`docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md`](docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md) — sequência oficial de Sprints;
+- [`docs/sprints/AXT-001_ESTRUTURA_DE_PASTAS_PF_PJ_E_FUNCIONARIOS.md`](docs/sprints/AXT-001_ESTRUTURA_DE_PASTAS_PF_PJ_E_FUNCIONARIOS.md) — Sprint funcional atual.
 
 ## Estrutura do repositório
 
@@ -60,8 +61,8 @@ Axiom_Tools/
 ## Roadmap
 
 - AXT-000 — Fundação;
-- AXT-001 — Núcleo de clientes, importação e configurações;
-- AXT-002 — Estrutura de pastas PF/PJ e funcionários;
+- AXT-001 — Estrutura de pastas PF/PJ e funcionários;
+- AXT-002 — Núcleo de clientes, importação e configurações;
 - AXT-003 — OCR e classificação documental;
 - AXT-004 — Competências e roteamento;
 - AXT-005 — Conferências;
@@ -69,4 +70,4 @@ Axiom_Tools/
 
 ## Estado
 
-Fundação e consolidação documental concluídas. A implementação funcional deverá seguir as Sprints oficiais e respeitar as decisões permanentes do projeto.
+Fundação e consolidação documental concluídas. A primeira Sprint funcional oficial é a AXT-001, dedicada ao motor seguro de estrutura de pastas.
