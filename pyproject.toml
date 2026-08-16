@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "axiom-tools"
+version = "0.1.0"
+description = "Ferramentas operacionais locais do Ecossistema Axiom"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+  { name = "Contabilidade Itapaci" }
+]
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
