@@ -1,28 +1,25 @@
-# Sprints Oficiais
+# Sprints Oficiais — Axiom Tools
 
-Esta pasta concentra as Sprints oficiais de implementação do Axiom Tools.
+Esta pasta contém exclusivamente documentos de execução identificados por `AXT-*`.
 
-## Sprint atual
+## Status atual
 
-A AXT-001 deve ser executada com **dois documentos obrigatórios**:
+- `AXT-000_FUNDACAO_DOCUMENTAL_E_ARQUITETURAL.md` — **Concluída**
+- `AXT-001_ESTRUTURA_DE_PASTAS_PF_PJ_E_FUNCIONARIOS.md` — **Atual / pronta para implementação do zero**
+- `AXT-002_LOGIN_SHELL_DASHBOARD.md` — Planejada
+- `AXT-003_NUCLEO_CLIENTES_IMPORTACAO_CONFIGURACOES.md` — Planejada
+- `AXT-004_OCR_CLASSIFICACAO_DOCUMENTAL.md` — Planejada
+- `AXT-005_COMPETENCIAS_E_ROTEAMENTO.md` — Planejada
+- `AXT-006_CONFERENCIAS_E_VISUALIZACAO_PDF.md` — Planejada
+- `AXT-007_IMPRESSAO_E_CONSOLIDACAO.md` — Planejada
+- `AXT-008_INTEGRACOES_ASSISTIDAS_E_OPERACAO_WINDOWS.md` — Planejada
 
-- `AXT-001_ESTRUTURA_DE_PASTAS_PF_PJ_E_FUNCIONARIOS.md` — motor seguro de criação, reconhecimento, correção e atualização das estruturas físicas;
-- `AXT-001_ADENDO_UX_UI_LOGIN_DASHBOARD.md` — login, sessão, shell, dashboard, UX, responsividade e integração visual obrigatória com o Axiom Framework.
+## Roadmap
 
-O adendo integra a AXT-001 e **não constitui nova Sprint**.
+Consulte `ROADMAP_OFICIAL_AXIOM_TOOLS.md` para a ordem oficial.
 
-## Roadmap consolidado
+## Regra
 
-- `ROADMAP_OFICIAL_AXIOM_TOOLS.md`
+Uma Sprint deve ser lida junto com as decisões `DEC-*` que ela declara como dependência e com a arquitetura oficial.
 
-Sequência oficial:
-
-- AXT-000 — Fundação;
-- AXT-001 — Estrutura de pastas PF/PJ e funcionários + fundação UX/UI;
-- AXT-002 — Núcleo de clientes, importação e configurações;
-- AXT-003 — OCR e classificação documental;
-- AXT-004 — Competências e roteamento;
-- AXT-005 — Conferências;
-- AXT-006 — Impressão e consolidação.
-
-Cada Sprint deverá registrar escopo, dependências, critérios de aceite, entregáveis, testes e limites da execução, preservando `docs/decisions/`, a arquitetura oficial e o Axiom Framework.
+Documentos de decisão não usam prefixo `AXT-*`.
