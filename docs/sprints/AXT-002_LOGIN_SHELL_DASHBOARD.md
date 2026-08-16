@@ -1,6 +1,6 @@
 # AXT-002 — Login, Shell e Dashboard
 
-Versão: 1.1  
+Versão: 1.2  
 Data: 16/08/2026  
 Status: **Planejada**
 
@@ -8,7 +8,28 @@ Status: **Planejada**
 
 - AXT-001 homologada;
 - `docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md`;
-- Axiom Framework vigente.
+- Axiom Framework vigente;
+- `docs/framework_import/README.md` e a base normativa importada para esta Sprint.
+
+### Leitura obrigatória do Framework para esta Sprint
+
+Antes de implementar a interface, o executor deverá ler a cópia de referência disponível em `docs/framework_import/`, em especial:
+
+- `002_Architecture/AFX-026_Shared_Components.md`;
+- `002_Architecture/AFX-033_Theme_Architecture.md`;
+- `002_Architecture/AFX-034_Authentication_Architecture.md`;
+- `006_Interface/AFX-071_Interface_Standards.md`;
+- `006_Interface/AFX-072_Design_System.md`;
+- `006_Interface/AFX-073_Layout_Guidelines.md`;
+- `006_Interface/AFX-074_Forms.md`;
+- `006_Interface/AFX-075_Buttons_and_Actions.md`;
+- `006_Interface/AFX-076_Navigation.md`;
+- `006_Interface/AFX-077_Data_Grids.md`;
+- `006_Interface/AFX-078_Feedback_and_Messages.md`;
+- `006_Interface/AFX-079_Accessibility.md`;
+- `006_Interface/AFX-080_Responsive_Design.md`.
+
+Essa cópia facilita a execução local, mas não substitui o repositório `Axiom_Framework` como autoridade normativa.
 
 ## Objetivo
 
