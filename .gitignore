@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# IDE / editor
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Dados locais e temporários
+data/
+storage/
+temp/
+tmp/
+logs/
+*.log
+
+# Bancos locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+config/local.*
+
+# Arquivos processados pelo OCR
+inbox/
+processed/
+output/
