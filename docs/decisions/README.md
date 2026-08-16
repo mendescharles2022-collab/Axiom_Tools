@@ -1,23 +1,20 @@
-# Decisões do Projeto
+# Decisões Permanentes — Axiom Tools
 
-Esta pasta guarda decisões permanentes do Axiom Tools. Elas têm precedência sobre implementações locais de Sprint quando tratam de segurança, preservação documental e comportamento estrutural.
+Esta pasta contém decisões arquiteturais e funcionais permanentes identificadas por `DEC-*`.
 
-## Índice atual
+## Decisões vigentes
 
-- `AXT-001_SEGURANCA_PRESERVACAO_E_RASTREABILIDADE.md` — política não destrutiva, separação entre cadastro e filesystem, grafia e controle humano.
-- `AXT-002_CLIENTES_PF_PJ_E_ESTRUTURA_DE_PASTAS.md` — cadastro PF/PJ, importação, estruturas físicas, funcionários e compatibilidade com legado.
-- `AXT-003_OCR_CLASSIFICACAO_E_COMPETENCIAS.md` — entrada documental, OCR, tipos prioritários, competências, confiança e roteamento seguro.
-- `AXT-004_CONFERENCIA_IMPRESSAO_E_INTEGRACOES_ASSISTIDAS.md` — conferência, lotes A–Z, PDF, impressão e portais assistidos.
+- `DEC-001_SEGURANCA_DOCUMENTAL_E_NAO_DESTRUICAO.md` — segurança documental, simulação, conflitos e não destruição;
+- `DEC-002_ESTRUTURAS_PF_PJ_FUNCIONARIOS_E_LEGADO.md` — árvores oficiais PF/PJ, funcionários, legado e `estrutura.cfg`;
+- `DEC-003_OCR_CLASSIFICACAO_E_CONFIANCA.md` — OCR, classificação, competência preliminar e confiança;
+- `DEC-004_CONFERENCIA_IMPRESSAO_E_INTEGRACOES_ASSISTIDAS.md` — conferência, PDF, impressão e portais assistidos;
+- `DEC-005_REINICIO_DA_IMPLEMENTACAO_E_FONTE_DE_VERDADE.md` — reinício limpo, documentação oficial e convenções.
 
-## Regras permanentes já estabelecidas
+## Convenção
 
-1. Documentos originais não devem ser excluídos automaticamente.
-2. Exclusão cadastral não exclui arquivos nem pastas físicas.
-3. A movimentação e classificação de arquivos deve manter rastreabilidade.
-4. Resultados de OCR e classificação automática devem admitir conferência humana.
-5. Autenticações e desafios humanos de portais governamentais não devem ser contornados.
-6. Caminhos de origem, destino e estruturas de clientes devem ser configuráveis.
-7. A grafia legal/original deve ser preservada no dado cadastrado.
-8. O projeto deve permanecer independente e modular.
+- `DEC-*` = decisão permanente;
+- `AXT-*` = Sprint de execução.
 
-Novas decisões estruturais deverão ser registradas aqui antes ou junto da implementação correspondente.
+Um número de decisão não corresponde automaticamente ao número de uma Sprint.
+
+Documentos antigos com prefixo `AXT-*` nesta pasta foram substituídos pela nova convenção e permanecem recuperáveis pelo histórico do Git.
