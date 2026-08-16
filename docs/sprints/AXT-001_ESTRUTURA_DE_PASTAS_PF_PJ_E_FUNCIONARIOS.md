@@ -1,86 +1,70 @@
 # AXT-001 — Estrutura de Pastas PF/PJ e Funcionários
 
-Versão: 1.0  
+Versão: 2.0  
 Data: 16/08/2026  
-Prioridade: Crítica  
-Tipo: Fundação funcional / Filesystem seguro
+Status: **Atual — pronta para implementação do zero**  
+Prioridade: Crítica
 
-## Dependências
+## Dependências obrigatórias
 
-- AXT-000 — Fundação do Axiom Tools
-- `docs/decisions/AXT-001_SEGURANCA_PRESERVACAO_E_RASTREABILIDADE.md`
-- `docs/decisions/AXT-002_CLIENTES_PF_PJ_E_ESTRUTURA_DE_PASTAS.md`
+- `docs/STATUS_ATUAL.md`
+- `docs/decisions/DEC-001_SEGURANCA_DOCUMENTAL_E_NAO_DESTRUICAO.md`
+- `docs/decisions/DEC-002_ESTRUTURAS_PF_PJ_FUNCIONARIOS_E_LEGADO.md`
+- `docs/decisions/DEC-005_REINICIO_DA_IMPLEMENTACAO_E_FONTE_DE_VERDADE.md`
 - `docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md`
 
----
+## 1. Objetivo
 
-# IMPORTANTE AO MATT
+Construir do zero o primeiro módulo funcional do Axiom Tools: um motor seguro para criar, reconhecer, inspecionar e corrigir estruturas de pastas de clientes PF/PJ e funcionários sem destruir conteúdo existente.
 
-Esta é a primeira Sprint funcional do Axiom Tools.
+A regra central é:
 
-Ela **não cria o cadastro completo de clientes**.
+> **Criar somente o que estiver faltando e preservar tudo o que já existir.**
 
-Ela **não implementa OCR**.
+## 2. Escopo
 
-Ela **não implementa competências, conferência mensal ou impressão em lote**.
+Implementar:
 
-Ela **não deve criar um sistema monolítico**.
+- estrutura oficial de novo cliente PJ;
+- estrutura oficial de novo cliente PF;
+- criação incremental;
+- inspeção somente leitura;
+- planejamento/simulação sem alteração física;
+- aplicação segura após plano;
+- idempotência;
+- equivalências legadas de acentuação/nomenclatura;
+- compatibilidade com `Funcionários`, `Funcionarios` e `Empregados`;
+- estrutura individual de funcionário;
+- preservação de `Exames` legado;
+- reconhecimento e criação controlada de `estrutura.cfg`;
+- conflitos entre variantes equivalentes;
+- conflito entre arquivo e diretório esperado;
+- resultado estruturado/auditável;
+- CLI/script mínimo para homologação técnica;
+- testes automatizados em diretórios temporários.
 
-O objetivo é construir e homologar primeiro o componente mais sensível do projeto: o **motor seguro de criação, reconhecimento, correção e atualização das estruturas físicas de pastas de clientes e funcionários**.
+## 3. Fora de escopo
 
-O Axiom Tools trabalhará futuramente sobre arquivos reais do escritório. Portanto, nesta Sprint, segurança do filesystem é requisito funcional e não detalhe técnico.
+Não implementar nesta Sprint:
 
-A regra principal é simples:
+- Login;
+- Dashboard;
+- interface gráfica completa;
+- Axiom Framework;
+- cadastro persistente de clientes;
+- importação de planilha;
+- SQLite;
+- OCR;
+- competência;
+- conferência;
+- visualização PDF;
+- impressão;
+- integrações com portais;
+- mecanismo definitivo de demissão/reativação de funcionário.
 
-> **criar somente o que estiver faltando e preservar absolutamente tudo o que já existe.**
+Esses itens pertencem às Sprints posteriores.
 
-Nenhuma implementação será aceita se puder apagar, substituir, sobrescrever, mover ou reconstruir automaticamente documentos já existentes.
-
----
-
-# 1. OBJETIVO
-
-Entregar um motor modular capaz de:
-
-1. criar a estrutura oficial de um novo cliente PJ;
-2. criar a estrutura oficial de um novo cliente PF;
-3. reconhecer uma estrutura já existente;
-4. reconhecer equivalentes legados sem acentuação;
-5. atualizar/corrigir uma estrutura existente criando somente pastas ausentes;
-6. localizar tanto `Funcionários` quanto `Empregados`;
-7. criar a pasta individual de um funcionário;
-8. corrigir a estrutura de um funcionário existente;
-9. reconhecer e preservar conteúdo legado;
-10. gerar uma simulação/plano antes de modificar o filesystem;
-11. produzir resultado auditável da operação;
-12. ser idempotente: executar duas vezes não deve criar duplicidades.
-
----
-
-# 2. PRINCÍPIO NÃO DESTRUTIVO
-
-São proibições absolutas nesta Sprint:
-
-- excluir arquivos;
-- excluir pastas;
-- mover arquivos existentes automaticamente;
-- mover pastas existentes automaticamente;
-- sobrescrever arquivos;
-- substituir arquivos existentes;
-- limpar conteúdo de diretórios;
-- renomear automaticamente pasta legada apenas para padronizar acentuação;
-- mesclar automaticamente duas pastas equivalentes que já possuam conteúdo;
-- reconstruir a árvore apagando a anterior;
-- alterar arquivos desconhecidos;
-- usar `shutil.rmtree`, exclusões recursivas ou comportamento equivalente no fluxo funcional.
-
-Se uma situação não puder ser resolvida com segurança, o motor deverá **reportar a divergência e não tomar uma decisão destrutiva**.
-
----
-
-# 3. ESTRUTURA OFICIAL — PESSOA JURÍDICA
-
-Para novos clientes PJ, usar os nomes canônicos em Português (Brasil), com acentuação:
+## 4. Estrutura oficial — PJ
 
 ```text
 <Cliente PJ>/
@@ -102,13 +86,7 @@ Para novos clientes PJ, usar os nomes canônicos em Português (Brasil), com ace
 └── Funcionários/
 ```
 
-Não simplificar, reorganizar ou trocar esses nomes sem decisão posterior aprovada.
-
----
-
-# 4. ESTRUTURA OFICIAL — PESSOA FÍSICA
-
-Para novos clientes PF:
+## 5. Estrutura oficial — PF
 
 ```text
 <Cliente PF>/
@@ -128,127 +106,17 @@ Para novos clientes PF:
 └── Funcionários/
 ```
 
-## Diferenças obrigatórias PF x PJ
+PF não cria `DAS - Simples Nacional`, `CNPJ e Inscrição Estadual` nem `Contrato Social e Alterações`.
 
-PF:
+## 6. Funcionários
 
-- **não** cria `DAS - Simples Nacional`;
-- usa `Inscrições - CAEPF, CEI e Estadual`;
-- **não** cria `CNPJ e Inscrição Estadual`;
-- **não** cria `Contrato Social e Alterações`.
+Área funcional válida:
 
-A estrutura textual aprovada para PF manteve as demais pastas da PJ, inclusive `Notas Fiscais`.
-
----
-
-# 5. COMPATIBILIDADE COM OS BATs ANTERIORES
-
-O escritório já utilizou BATs para criar estruturas.
-
-Por isso, o motor não pode considerar diferenças de acentuação como pastas diferentes.
-
-Exemplos de equivalência que devem ser reconhecidos:
-
-| Canônico atual | Legado conhecido |
-|---|---|
-| `CNPJ e Inscrição Estadual` | `CNPJ e Inscricao Estadual` |
-| `Inscrições - CAEPF, CEI e Estadual` | `Inscricoes - CAEPF, CEI e Estadual` |
-| `Declarações` | `Declaracoes` |
-| `Relatórios` | `Relatorios` |
-| `Funcionários` | `Funcionarios` |
-| `Rescisão` | `Rescisao` |
-
-A comparação no Windows também deverá respeitar a natureza case-insensitive do filesystem e evitar duplicidades apenas por variação de maiúsculas/minúsculas.
-
-## Regra
-
-Se a pasta legada equivalente já existir:
-
-- reutilizar a pasta existente;
-- não criar a versão acentuada ao lado dela;
-- não renomear automaticamente;
-- não mover o conteúdo;
-- registrar no resultado que foi reconhecida uma equivalência legada.
-
----
-
-# 6. AMBIGUIDADES E CONFLITOS
-
-Se duas estruturas equivalentes coexistirem, por exemplo:
-
-```text
-Funcionários/
-Empregados/
-```
-
-ou duas variantes que representem o mesmo papel funcional e ambas possuam conteúdo, o motor **não deverá mesclar nem mover nada automaticamente**.
-
-Deverá:
-
-1. sinalizar `CONFLITO`;
-2. descrever as duas localizações;
-3. interromper somente a operação que depende dessa escolha;
-4. preservar integralmente as duas árvores.
-
-O restante do plano que não dependa do conflito poderá continuar, desde que seja seguro.
-
----
-
-# 7. `estrutura.cfg`
-
-Estruturas anteriores podem conter arquivo `estrutura.cfg`.
-
-Formato legado conhecido:
-
-```text
-Tipo=PJ
-VersaoEstrutura=1.0
-```
-
-ou:
-
-```text
-Tipo=PF
-VersaoEstrutura=1.0
-```
-
-## Regras
-
-- reconhecer `estrutura.cfg` quando existir;
-- não apagar o arquivo;
-- não substituir silenciosamente seu conteúdo;
-- preservar chaves desconhecidas;
-- detectar divergência entre `Tipo` informado e tipo solicitado;
-- em divergência, reportar conflito e não converter a estrutura automaticamente;
-- para nova estrutura, manter compatibilidade com as chaves `Tipo` e `VersaoEstrutura`;
-- nesta Sprint, usar `VersaoEstrutura=1.0`, pois é o formato efetivamente conhecido do legado; qualquer nova versão exige decisão posterior explícita.
-
----
-
-# 8. FUNCIONÁRIOS / EMPREGADOS
-
-O histórico do projeto determinou que a rotina procure uma área chamada:
-
-- `Funcionários`; ou
+- `Funcionários`;
+- `Funcionarios`;
 - `Empregados`.
 
-A existência de `Empregados` deve ser tratada como estrutura legada válida.
-
-## Regra de localização
-
-- se existir somente `Funcionários`, usar essa pasta;
-- se existir somente `Funcionarios`, reconhecer como equivalente;
-- se existir somente `Empregados`, usar essa pasta;
-- se nenhuma existir, em uma nova estrutura oficial criar `Funcionários`;
-- se mais de uma área equivalente existir com conteúdo, reportar conflito e não mesclar automaticamente.
-
----
-
-# 9. ESTRUTURA INDIVIDUAL DO FUNCIONÁRIO
-
-A pasta individual deverá usar o **nome completo informado**.
-
-A estrutura nova aprovada é exatamente:
+Novo funcionário:
 
 ```text
 <Nome Completo do Funcionário>/
@@ -258,52 +126,45 @@ A estrutura nova aprovada é exatamente:
 └── Rescisão/
 ```
 
-Não adicionar novas subpastas por iniciativa própria.
+`Exames` não é criada em funcionário novo. Se existir no legado, deve permanecer intocada.
 
-## `Exames` legado
+## 7. `estrutura.cfg`
 
-BATs anteriores também criavam:
+Na raiz do cliente.
+
+PJ:
 
 ```text
-Exames/
+Tipo=PJ
+VersaoEstrutura=1.0
 ```
 
-O escopo posteriormente aprovado passou a utilizar quatro subpastas novas.
+PF:
 
-Portanto:
+```text
+Tipo=PF
+VersaoEstrutura=1.0
+```
 
-- **não criar `Exames` automaticamente em novo funcionário**;
-- se `Exames` já existir em funcionário legado, preservar integralmente;
-- `Corrigir Estrutura` não poderá remover `Exames`;
-- conteúdo adicional desconhecido dentro da pasta do funcionário também deverá ser preservado.
+Se já existir:
 
----
+- ler sem destruir;
+- preservar chaves desconhecidas;
+- não sobrescrever silenciosamente;
+- divergência de tipo gera conflito;
+- não converter PF↔PJ automaticamente.
 
-# 10. SITUAÇÃO DO FUNCIONÁRIO
+## 8. Planejamento e aplicação
 
-No histórico do projeto foram aprovadas funções futuras de:
+Fluxo obrigatório:
 
-- `Alterar Situação`;
-- `Reativar Funcionário`;
-- `Corrigir Estrutura`.
+```text
+Inspecionar → Planejar/Simular → Revisar conflitos → Confirmar → Revalidar → Aplicar → Relatar
+```
 
-Nesta AXT-001, implementar integralmente **`Corrigir Estrutura`**.
+A simulação é 100% somente leitura. Ela não pode criar nem a pasta raiz.
 
-`Alterar Situação` e `Reativar Funcionário` deverão ter seus contratos/encaixes previstos, mas **não inventar nesta Sprint um mecanismo de movimentação ou renomeação para representar demissão**, pois o mecanismo exato de persistência do status será consolidado junto ao núcleo cadastral.
-
-Nenhuma mudança de situação poderá, futuramente, excluir documentos.
-
----
-
-# 11. MOTOR DE PLANEJAMENTO
-
-Toda alteração deverá passar primeiro por um plano de operação.
-
-O motor deverá separar pelo menos duas fases:
-
-## Fase A — Planejar / Simular
-
-Inspeciona a árvore e retorna ações propostas, por exemplo:
+Estados mínimos do plano:
 
 - `EXISTE`;
 - `CRIAR_PASTA`;
@@ -313,258 +174,112 @@ Inspeciona a árvore e retorna ações propostas, por exemplo:
 - `CONFLITO`;
 - `IGNORADO_COM_SEGURANCA`.
 
-Nenhuma alteração física ocorre nesta fase.
+## 9. Conflitos
 
-## Fase B — Aplicar
+São exemplos de conflito:
 
-Executa somente as ações seguras produzidas pelo plano.
+- `Tipo=PF` solicitado como PJ;
+- `Tipo=PJ` solicitado como PF;
+- `Declarações/` e `Declaracoes/` coexistindo como representações equivalentes;
+- `Funcionários/` e `Empregados/` coexistindo com conteúdo relevante;
+- arquivo existente onde o catálogo exige diretório;
+- estado do filesystem alterado entre planejamento e aplicação.
 
-O código de execução não deverá descobrir uma nova regra destrutiva durante o `apply`. Se a realidade do filesystem mudar entre planejamento e execução, revalidar e abortar a ação conflitante.
+Em conflito, preservar conteúdo e impedir apenas a ação incompatível.
 
----
+## 10. Organização de código
 
-# 12. OPERAÇÕES PRINCIPAIS
-
-O módulo deverá expor serviços claros para, no mínimo:
-
-1. `planejar_estrutura_cliente`;
-2. `criar_ou_corrigir_estrutura_cliente`;
-3. `planejar_estrutura_funcionario`;
-4. `criar_ou_corrigir_estrutura_funcionario`;
-5. `inspecionar_estrutura`;
-6. `resolver_equivalencias_conhecidas`.
-
-Os nomes internos podem seguir convenção Python em inglês ou português, desde que a responsabilidade seja equivalente e o relatório ao usuário use Português (Brasil).
-
-Não concentrar toda a implementação em um único arquivo.
-
----
-
-# 13. ORGANIZAÇÃO MÍNIMA DO CÓDIGO
-
-Trabalhar dentro de:
+Trabalhar principalmente em:
 
 ```text
 src/axiom_tools/modules/folders/
 ```
 
-Separar responsabilidades, por exemplo:
+Separar, no mínimo, as responsabilidades de:
 
-```text
-folders/
-├── __init__.py
-├── catalog.py
-├── models.py
-├── matcher.py
-├── planner.py
-├── service.py
-└── report.py
-```
+- catálogo;
+- modelos/resultado;
+- matching/equivalências;
+- inspeção;
+- planejamento;
+- aplicação/serviço;
+- relatório.
 
-A nomenclatura pode ser ajustada se houver justificativa, mas as responsabilidades deverão continuar separadas.
+A nomenclatura interna pode variar. Preferir arquivos próximos de 300 linhas e evitar ultrapassar 500 sem justificativa.
 
-Evitar arquivos excessivamente grandes. Preferir arquivos de até aproximadamente 300 linhas; somente ultrapassar isso quando realmente necessário e sem criar arquivo monolítico.
+A CLI não pode conter regra de negócio que deveria estar no módulo `folders`.
 
----
+## 11. CLI de homologação
 
-# 14. INTERFACE MÍNIMA DE HOMOLOGAÇÃO
+Pode usar `argparse` da biblioteca padrão.
 
-Não construir interface gráfica completa nesta Sprint.
-
-Entregar uma forma simples e segura de homologar o motor localmente, por CLI/script, permitindo:
+Deve permitir, no mínimo:
 
 - informar pasta-base de teste;
-- informar PF ou PJ;
-- informar nome do cliente;
-- simular criação/correção;
-- visualizar o plano;
-- executar após confirmação explícita;
-- apontar uma pasta de cliente existente;
-- informar nome completo de funcionário;
-- simular/corrigir estrutura do funcionário.
+- PF/PJ;
+- nome do cliente;
+- simular;
+- visualizar plano;
+- aplicar somente após confirmação explícita;
+- apontar pasta existente;
+- informar funcionário;
+- simular/corrigir funcionário.
 
-A simulação deverá ser a ação padrão.
+Nunca vir configurada para apontar automaticamente para a árvore real do escritório.
 
-Nenhum script de homologação poderá vir configurado para apontar automaticamente para a pasta real dos clientes do escritório.
+## 12. Testes obrigatórios
 
----
+Todos em diretórios temporários isolados.
 
-# 15. TESTES AUTOMATIZADOS OBRIGATÓRIOS
+Cobrir:
 
-Usar diretórios temporários isolados.
+- árvore exata PJ;
+- árvore exata PF;
+- ausência de DAS para PF;
+- `Notas Fiscais` para PF e PJ;
+- segunda execução idempotente;
+- equivalências sem acento;
+- case-insensitive esperado no Windows;
+- `Funcionários`/`Funcionarios`/`Empregados`;
+- funcionário novo com exatamente quatro subpastas;
+- preservação de `Exames`;
+- preservação de pasta desconhecida;
+- preservação byte a byte de arquivos existentes;
+- `mtime` de arquivos existentes não alterado pelo motor;
+- `estrutura.cfg` novo/existente;
+- chaves desconhecidas preservadas;
+- divergência PF/PJ bloqueante;
+- conflito entre equivalentes coexistentes;
+- conflito arquivo x diretório;
+- simulação criando zero artefatos;
+- revalidação antes de aplicar;
+- nenhuma exclusão/movimentação automática.
 
-Nunca executar testes automatizados sobre a árvore real do escritório.
+## 13. Critérios de aceite
 
-Cobrir no mínimo:
+A Sprint só pode ser homologada se:
 
-### Cliente PJ novo
+1. todos os testes automatizados passarem;
+2. simulação for realmente somente leitura;
+3. criação de PF/PJ for exata;
+4. segunda execução não criar duplicidade;
+5. legado for reconhecido sem renomear/mover;
+6. conflitos forem reportados sem conversão automática;
+7. arquivos existentes permanecerem intactos;
+8. regras estiverem separadas da CLI;
+9. não houver código destrutivo no fluxo funcional;
+10. a implementação não antecipar AXT-002 ou posteriores.
 
-- cria exatamente a árvore oficial PJ;
-- cria `DAS - Simples Nacional`;
-- cria `Notas Fiscais`;
-- cria `CNPJ e Inscrição Estadual`;
-- cria `Contrato Social e Alterações`.
+## 14. Entrega esperada do executor
 
-### Cliente PF novo
+O executor deve fornecer arquivos completos, com caminho, função e conteúdo, conforme o fluxo operacional adotado pelo usuário.
 
-- cria exatamente a árvore oficial PF;
-- não cria `DAS - Simples Nacional`;
-- não cria `CNPJ e Inscrição Estadual`;
-- não cria `Contrato Social e Alterações`;
-- cria `Inscrições - CAEPF, CEI e Estadual`;
-- cria `Notas Fiscais`.
+Ao final, produzir `RELATORIO_AXT-001.md` contendo:
 
-### Idempotência
-
-- executar a mesma atualização duas vezes não duplica nenhuma pasta;
-- segunda execução resulta essencialmente em `EXISTE/PRESERVAR`.
-
-### Acentuação / legado
-
-- `Funcionarios` é reconhecido como `Funcionários`;
-- `Declaracoes` é reconhecido como `Declarações`;
-- `Relatorios` é reconhecido como `Relatórios`;
-- `CNPJ e Inscricao Estadual` é reconhecido como equivalente;
-- `Inscricoes - CAEPF, CEI e Estadual` é reconhecido como equivalente;
-- não cria duplicatas acentuadas.
-
-### Funcionários / Empregados
-
-- estrutura com `Funcionários` é localizada;
-- estrutura com `Empregados` é localizada;
-- nova estrutura usa `Funcionários`;
-- novo funcionário recebe exatamente as quatro subpastas aprovadas;
-- `Exames` legado é preservado, mas não criado para funcionário novo.
-
-### Preservação
-
-Criar arquivos fictícios em diversas pastas antes da correção e comprovar que após a execução:
-
-- continuam existentes;
-- conteúdo permanece byte a byte idêntico;
-- timestamps não são alterados intencionalmente pelo motor;
-- não houve substituição.
-
-### Pastas desconhecidas
-
-- criar subpastas não previstas;
-- executar correção;
-- comprovar que permanecem intactas.
-
-### Conflitos
-
-- `Funcionários` e `Empregados` coexistindo;
-- duas variantes equivalentes coexistindo;
-- `estrutura.cfg` com tipo divergente;
-- confirmar que o motor reporta e não mescla/apaga/converte automaticamente.
-
-### `estrutura.cfg`
-
-- reconhecer arquivo existente;
-- preservar chaves desconhecidas;
-- criar arquivo para estrutura nova;
-- não sobrescrever silenciosamente arquivo existente.
-
----
-
-# 16. RELATÓRIO DA OPERAÇÃO
-
-A execução deverá produzir um resultado estruturado contendo, no mínimo:
-
-- caminho-base;
-- tipo PF/PJ;
-- nome do cliente ou funcionário;
-- data/hora;
-- ações planejadas;
-- ações executadas;
-- pastas já existentes;
-- equivalências legadas encontradas;
-- itens preservados;
-- conflitos;
-- erros;
-- resultado final.
-
-Não é necessário nesta Sprint criar banco de auditoria definitivo; o resultado estruturado deve estar preparado para ser persistido futuramente pela AXT-002.
-
----
-
-# 17. FORA DO ESCOPO
-
-Não implementar nesta Sprint:
-
-- cadastro completo de clientes;
-- importação XLS/XLSX;
-- banco definitivo de clientes;
-- OCR;
-- classificação documental;
-- competência mensal;
-- impressão em lote;
-- integrações governamentais;
-- exclusão cadastral;
-- movimentação automática de clientes inativos;
-- regras definitivas de demissão/reativação de funcionário;
-- interface web completa;
-- instalador final do Axiom Tools.
-
----
-
-# 18. CRITÉRIOS DE ACEITE
-
-A AXT-001 será considerada aprovada somente se:
-
-1. a árvore PJ for criada conforme este documento;
-2. a árvore PF for criada conforme este documento;
-3. as diferenças PF/PJ estiverem corretas;
-4. estruturas existentes forem atualizadas sem perda de conteúdo;
-5. equivalências legadas forem reconhecidas sem duplicação;
-6. `Funcionários` e `Empregados` forem tratados corretamente;
-7. funcionário novo possuir exatamente as quatro subpastas aprovadas;
-8. `Exames` legado for preservado;
-9. reexecução for idempotente;
-10. `estrutura.cfg` for tratado com segurança;
-11. conflitos não produzirem merge/movimentação destrutiva;
-12. a simulação mostrar claramente o que será feito;
-13. todos os testes automatizados obrigatórios passarem;
-14. nenhum teste depender de pasta real do escritório;
-15. nenhuma rotina funcional apagar, mover, substituir ou sobrescrever arquivo existente;
-16. o código permanecer modular e preparado para ser consumido pela AXT-002.
-
----
-
-# 19. ENTREGÁVEIS DO MATT
-
-Entregar um único pacote:
-
-```text
-AXIOM_TOOLS_AXT-001.zip
-```
-
-O pacote deverá conter:
-
-- repositório/código atualizado da AXT-001;
-- testes automatizados;
-- interface mínima de homologação;
-- `RELATORIO_AXT-001.md`;
-- instruções simples de execução e teste.
-
-O `RELATORIO_AXT-001.md` deverá informar:
-
-- arquivos criados;
-- arquivos alterados;
+- arquivos criados/alterados;
 - arquitetura implementada;
-- regras de equivalência;
-- proteção contra operações destrutivas;
-- testes executados e respectivos resultados;
-- limitações reais ainda existentes;
-- qualquer divergência encontrada no legado;
-- confirmação explícita de que testes não foram executados na árvore real do escritório.
+- testes executados e resultados;
+- confirmação de uso exclusivo de diretórios temporários nos testes;
+- limitações reais restantes.
 
----
-
-# 20. ORIENTAÇÃO DE ENTREGA
-
-Não criar uma AXT-001A ou Sprint corretiva para defeitos encontrados durante a própria implementação.
-
-Antes da entrega, realizar auditoria integral da AXT-001 e corrigir dentro desta mesma Sprint todo defeito tecnicamente solucionável.
-
-A entrega deverá chegar pronta para nossa validação e homologação, preservando integralmente as decisões históricas consolidadas no repositório.
+Não criar Sprint corretiva para defeitos encontrados na própria AXT-001: corrigir dentro dela antes de homologação.
