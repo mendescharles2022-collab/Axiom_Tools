@@ -1,6 +1,6 @@
 # Axiom Tools — Consolidação Oficial do Projeto
 
-Versão: 1.0  
+Versão: 1.1  
 Data de consolidação: 16/08/2026  
 Status: Documento mestre permanente
 
@@ -27,13 +27,46 @@ Regras permanentes:
 
 ## 3. Escopo funcional consolidado
 
-### 3.1 Clientes
+### 3.1 Estrutura de pastas
+
+A primeira fundação funcional do sistema será o motor de estrutura de pastas.
+
+O sistema deverá criar, conferir e atualizar estruturas padronizadas para PF e PJ, respeitando as diferenças aprovadas entre os dois tipos de cliente.
+
+A atualização de uma estrutura existente deverá:
+
+- criar somente o que estiver ausente;
+- reconhecer equivalentes legados, inclusive diferenças conhecidas de acentuação e nomenclatura;
+- não criar duplicidades;
+- não excluir pastas;
+- não excluir arquivos;
+- não mover conteúdo existente automaticamente;
+- não sobrescrever arquivos;
+- preservar pastas desconhecidas;
+- reconhecer estruturas produzidas pelos BATs anteriores.
+
+A árvore oficial detalhada está registrada em `docs/decisions/AXT-002_CLIENTES_PF_PJ_E_ESTRUTURA_DE_PASTAS.md` e na Sprint AXT-001.
+
+### 3.2 Funcionários / Empregados
+
+Dentro de cada cliente, o Axiom Tools deverá administrar a estrutura de funcionários/empregados.
+
+Deverá suportar:
+
+- localização de `Funcionários`, sua variante legada sem acentuação e `Empregados`;
+- criação de pasta individual com o nome completo informado;
+- criação da estrutura nova aprovada com `Documentos Pessoais`, `Documentos Gerados`, `Documentos Escaneados` e `Rescisão`;
+- preservação de `Exames` quando já existir em estrutura legada;
+- correção incremental da estrutura;
+- futura alteração de situação e reativação sem perda do histórico documental.
+
+### 3.3 Clientes
 
 O sistema deverá manter cadastro interno de clientes PF e PJ, identificados por CPF ou CNPJ.
 
 O cadastro servirá como índice para localizar pastas, reconhecer documentos e executar rotinas em lote.
 
-Deverá existir:
+Deverá existir futuramente:
 
 - inclusão manual;
 - importação de relação de clientes por planilha;
@@ -47,29 +80,6 @@ Deverá existir:
 
 A lista importada pode conter clientes que já saíram do escritório ou foram baixados. O usuário deverá poder tratar esses casos dentro do Axiom Tools sem precisar corrigir previamente a planilha de origem.
 
-### 3.2 Estrutura de pastas
-
-O sistema deverá criar, conferir e atualizar estruturas padronizadas de pastas para PF e PJ, respeitando diferenças entre os dois tipos de cliente.
-
-A atualização de uma estrutura existente deverá criar somente o que estiver ausente e preservar todo conteúdo já existente.
-
-O sistema deverá reconhecer estruturas legadas produzidas pelos BATs anteriores e evoluí-las sem destruição.
-
-### 3.3 Funcionários
-
-Dentro de cada cliente, o Axiom Tools deverá administrar a estrutura de funcionários/empregados.
-
-Deverá suportar:
-
-- localização tanto de `Funcionários` quanto de estruturas legadas equivalentes;
-- criação de pasta individual do empregado;
-- documentos pessoais;
-- documentos escaneados;
-- documentos gerados;
-- rescisão;
-- preservação de pastas legadas adicionais, como exames, quando já existentes;
-- identificação do empregado demitido sem perda do histórico documental.
-
 ### 3.4 OCR e classificação documental
 
 O Axiom Tools deverá possuir uma área de entrada para documentos a classificar.
@@ -81,13 +91,13 @@ O motor deverá evoluir para reconhecer, entre outros:
 - contracheques;
 - pró-labore;
 - documentos sem movimento, quando identificáveis;
-- documentos relacionados a contratos e alterações, conforme regras futuras da classificação.
+- outros documentos aprovados nas Sprints correspondentes.
 
-A classificação deverá buscar cliente, tipo documental e competência, renomear de forma padronizada e encaminhar uma cópia/versão gerenciada ao destino adequado, mantendo o original conforme a política de segurança.
+A classificação deverá buscar cliente, tipo documental e competência, sugerir renomeação padronizada e encaminhar uma cópia/versão gerenciada ao destino adequado, mantendo o original conforme a política de segurança.
 
 ### 3.5 Competências
 
-Os documentos mensais deverão poder ser organizados por competência, com caminhos configuráveis e estrutura de ano/mês ou mês/ano definida pelo sistema.
+Os documentos mensais deverão poder ser organizados por competência, com caminhos configuráveis.
 
 Exemplo conceitual: `Agosto/2026`.
 
@@ -165,6 +175,8 @@ O Axiom Tools deverá possuir persistência própria para cadastro/indexação d
 
 A persistência não substitui os arquivos físicos: ela referencia e organiza o acervo existente.
 
+A persistência cadastral será introduzida depois da homologação do motor de pastas.
+
 ## 5. Arquitetura funcional
 
 O projeto será modular. Os domínios principais são:
@@ -186,17 +198,19 @@ Não fazem parte do comportamento automático seguro:
 - apagar pastas de clientes porque um cadastro foi excluído;
 - excluir arquivos originais após OCR;
 - sobrescrever documentos silenciosamente;
+- mover conteúdo legado apenas para padronizar nomes;
+- mesclar automaticamente estruturas ambíguas;
 - realizar autenticação governamental em nome do usuário de forma clandestina;
 - contornar CAPTCHA;
 - executar ações críticas em portais sem controle do usuário.
 
-## 7. Roadmap recuperado
+## 7. Roadmap oficial
 
-A construção foi organizada conceitualmente nas seguintes etapas:
+A sequência atual foi formalmente ajustada para homologar o motor de pastas antes do núcleo cadastral:
 
 - AXT-000 — Fundação;
-- AXT-001 — Núcleo de clientes, importação e configurações;
-- AXT-002 — Estrutura de pastas PF/PJ e funcionários;
+- AXT-001 — Estrutura de pastas PF/PJ e funcionários;
+- AXT-002 — Núcleo de clientes, importação e configurações;
 - AXT-003 — OCR e classificação documental;
 - AXT-004 — Competências e roteamento;
 - AXT-005 — Conferências;
@@ -206,6 +220,8 @@ Integrações assistidas, visualização de PDF, auditoria e refinamentos de seg
 
 ## 8. Regra de precedência
 
-Este documento consolida as decisões recuperadas do histórico do projeto e passa a ser referência oficial do repositório.
+Este documento consolida as decisões recuperadas do histórico do projeto.
 
-Quando uma Sprint futura detalhar uma funcionalidade, ela poderá evoluir a implementação, mas não deverá violar as regras permanentes de preservação documental, rastreabilidade e controle humano sem uma decisão formal registrada em `docs/decisions/`.
+Quando houver detalhamento específico de árvore de pastas, prevalecem a decisão `AXT-002_CLIENTES_PF_PJ_E_ESTRUTURA_DE_PASTAS.md` e a Sprint funcional AXT-001, desde que não violem as regras permanentes de segurança e preservação documental.
+
+Mudanças futuras deverão ser registradas formalmente no repositório.
