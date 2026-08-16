@@ -1,36 +1,31 @@
 # AXT-002 — Clientes PF/PJ e Estrutura de Pastas
 
-Status: Aprovado  
+Status: Aprovado e corrigido conforme histórico do projeto  
 Data: 16/08/2026
 
-## 1. Cadastro de clientes
+## 1. Regra de precedência
 
-O Axiom Tools deverá trabalhar com clientes Pessoa Física (PF) e Pessoa Jurídica (PJ).
+Este documento registra a estrutura de pastas efetivamente discutida e aprovada no histórico do Axiom Tools e substitui interpretações anteriores que tenham divergido desses nomes ou comportamentos.
 
-Cada cliente terá identificação cadastral suficiente para indexar documentos e localizar sua estrutura física, incluindo nome/razão social, CPF ou CNPJ, tipo PF/PJ, status e caminho de armazenamento.
+A implementação deverá reconhecer estruturas legadas criadas pelos BATs anteriores, inclusive versões sem acentuação, sem duplicar pastas equivalentes.
 
-O documento deverá ser único após normalização e servirá como chave de prevenção de duplicidade.
+## 2. Atualização conservadora
 
-A base inicial poderá ser alimentada por planilha. O usuário deverá poder cadastrar, editar, inativar, reativar e excluir registros cadastrais que não devam permanecer na relação operacional.
+A criação/atualização de pastas deve ser incremental e não destrutiva:
 
-A exclusão cadastral não exclui arquivos nem diretórios físicos.
+- criar somente o que estiver faltando;
+- localizar equivalentes com diferenças de acentuação ou nomenclatura já conhecidas;
+- não duplicar pastas equivalentes;
+- não excluir pastas;
+- não excluir arquivos;
+- não mover arquivos existentes automaticamente;
+- não sobrescrever ou substituir arquivos existentes;
+- preservar documentos e subpastas desconhecidas;
+- corrigir/completar a estrutura sem apagar e reconstruir a árvore.
 
-## 2. Atualização de estruturas
+## 3. Estrutura oficial — Cliente PJ
 
-A criação/atualização de pastas deve ser incremental:
-
-- criar o que estiver faltando;
-- reconhecer estrutura já existente;
-- não excluir pastas desconhecidas;
-- não recriar pasta apenas para corrigir estrutura;
-- preservar documentos e subpastas existentes;
-- registrar versão da estrutura quando aplicável.
-
-Estruturas legadas produzidas por BATs devem ser reconhecidas e evoluídas com segurança.
-
-## 3. Estrutura de referência — PJ
-
-Estrutura consolidada de referência:
+A estrutura aprovada para Pessoa Jurídica é:
 
 ```text
 <Cliente PJ>/
@@ -39,28 +34,26 @@ Estrutura consolidada de referência:
 │   ├── Recolhimentos/
 │   │   ├── DARF DCTFWeb/
 │   │   ├── FGTS Digital/
-│   │   ├── DAS SN/
+│   │   ├── DAS - Simples Nacional/
 │   │   └── Outros/
 │   ├── Declarações/
 │   ├── Relatórios/
 │   ├── Notas Fiscais/
 │   └── Arquivos Diversos/
-├── CNPJ e IE/
+├── CNPJ e Inscrição Estadual/
 ├── Contrato Social e Alterações/
 ├── Documentos Diversos/
 ├── Documentos do Responsável/
 └── Funcionários/
 ```
 
-O sistema deverá permitir evolução futura sem quebrar estruturas existentes.
+## 4. Estrutura oficial — Cliente PF
 
-## 4. Estrutura de referência — PF
-
-Estrutura consolidada de referência:
+A estrutura aprovada para Pessoa Física utiliza a mesma base operacional da PJ, com as diferenças próprias de PF.
 
 ```text
 <Cliente PF>/
-├── Inscrições/
+├── Inscrições - CAEPF, CEI e Estadual/
 ├── Arquivos/
 │   ├── Atestados/
 │   ├── Recolhimentos/
@@ -71,41 +64,90 @@ Estrutura consolidada de referência:
 │   ├── Relatórios/
 │   ├── Notas Fiscais/
 │   └── Arquivos Diversos/
-├── Documentos Diversos/
 ├── Documentos do Responsável/
+├── Documentos Diversos/
 └── Funcionários/
 ```
 
-A estrutura PF não deve criar `DAS SN` por padrão.
+### Diferenças PF x PJ
 
-A pasta `Inscrições` poderá receber documentos como CAEPF, CEI, Inscrição Estadual e CNO conforme a realidade do cliente e as regras aprovadas em Sprint.
+- PF não cria `DAS - Simples Nacional`.
+- PF utiliza `Inscrições - CAEPF, CEI e Estadual` no lugar de `CNPJ e Inscrição Estadual`.
+- PF não utiliza `Contrato Social e Alterações`.
+- A estrutura textual aprovada para PF manteve as demais pastas da PJ, inclusive `Notas Fiscais`.
 
-## 5. Funcionários/empregados
+### Compatibilidade com BAT legado
 
-O sistema deverá reconhecer a área de funcionários existente e criar estruturas individuais sem destruir conteúdo anterior.
+Os BATs anteriores podem apresentar nomes sem acentuação, como:
 
-Estrutura funcional consolidada:
+- `CNPJ e Inscricao Estadual`;
+- `Inscricoes - CAEPF, CEI e Estadual`;
+- `Declaracoes`;
+- `Relatorios`;
+- `Funcionarios`;
+- `Rescisao`.
+
+Esses nomes devem ser reconhecidos como equivalentes às formas atuais acentuadas. A atualização não deverá criar uma segunda pasta apenas por diferença de acentuação.
+
+Algumas estruturas PF legadas podem não possuir `Notas Fiscais`; isso não autoriza exclusão ou reconstrução. A atualização deverá apenas completar a estrutura oficial quando executada.
+
+## 5. Funcionários / Empregados
+
+No fluxo de funcionário, o Axiom Tools deverá localizar tanto uma pasta chamada `Funcionários` quanto uma pasta legada chamada `Empregados`.
+
+Não deverá criar `Funcionários` ao lado de `Empregados` se uma área equivalente já existir.
+
+A pasta individual do funcionário deverá usar o nome completo informado.
+
+A estrutura nova aprovada para funcionário é:
 
 ```text
-<Funcionário>/
+<Nome Completo do Funcionário>/
 ├── Documentos Pessoais/
-├── Documentos Escaneados/
 ├── Documentos Gerados/
+├── Documentos Escaneados/
 └── Rescisão/
 ```
 
-Pastas legadas adicionais, inclusive `Exames`, deverão ser preservadas quando existentes.
+### Compatibilidade com estrutura antiga de funcionário
 
-O sistema deverá suportar a identificação de empregado demitido sem apagar seu histórico. A marcação `Demitido` poderá ser utilizada na convenção de organização, desde que a implementação preserve rastreabilidade e documentos.
+BATs anteriores também criavam a pasta `Exames`.
 
-## 6. Nomes
+A regra atual é:
 
-O nome físico da pasta deverá seguir regra de normalização controlada e previsível, sem destruir a grafia legal armazenada no cadastro.
+- se `Exames` já existir, preservar integralmente;
+- não apagar nem mover seu conteúdo;
+- a estrutura nova mínima aprovada possui quatro subpastas e não exige criar `Exames` automaticamente.
 
-Casos especiais e siglas devem poder ser preservados.
+## 6. Situação do funcionário
 
-## 7. Arquivo de estrutura legado
+O histórico do projeto aprovou funcionalidades de:
 
-Estruturas anteriores podem conter metadados como `estrutura.cfg`, incluindo tipo do cliente e versão da estrutura.
+- `Alterar Situação`;
+- `Reativar Funcionário`;
+- `Corrigir Estrutura`.
 
-O Axiom Tools deverá tratar esse tipo de metadado como fonte de compatibilidade, não como autorização para apagar/recriar a árvore.
+A alteração de situação/demissão nunca poderá apagar o histórico do funcionário ou seus documentos.
+
+Como o mecanismo exato de representação do status no filesystem não ficou consolidado de forma inequívoca no material recuperado, nenhuma Sprint poderá inventar movimentação destrutiva, exclusão ou substituição de arquivos para representar a situação.
+
+## 7. `estrutura.cfg`
+
+Estruturas legadas podem conter `estrutura.cfg` com metadados como:
+
+```text
+Tipo=<PF ou PJ>
+VersaoEstrutura=1.0
+```
+
+O Axiom Tools deverá reconhecer esse arquivo como metadado de compatibilidade.
+
+Sua existência não autoriza apagar/recriar a estrutura.
+
+## 8. Nomes e equivalências
+
+A aplicação deverá usar nomes canônicos em Português (Brasil), com acentuação, nas novas estruturas.
+
+Ao atualizar estruturas existentes, deverá localizar equivalências conhecidas de acento/nomenclatura e reutilizar a pasta existente em vez de duplicá-la.
+
+O nome original/legal do cliente ou funcionário deve ser preservado; normalização não poderá destruir a grafia de origem.
