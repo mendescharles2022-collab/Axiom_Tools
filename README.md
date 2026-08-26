@@ -1,13 +1,15 @@
 # Axiom Tools
 
-Aplicação operacional local do Ecossistema Axiom para organização segura de arquivos, estruturas de clientes, OCR, conferência, impressão e integrações assistidas.
+Aplicação operacional local do Ecossistema Axiom para Departamento Pessoal, organização documental, processamento inteligente, conferência mensal, entregas, impressão e integrações assistidas.
 
-## Estado oficial
+## Estado operacional atual
 
-- **AXT-000 — Fundação documental e arquitetural:** concluída.
-- **AXT-001 — Motor seguro de estruturas PF/PJ e funcionários:** Sprint funcional atual; implementação reiniciada do zero.
-- Implementações locais anteriores à reorganização documental de 16/08/2026 não constituem referência técnica e não devem ser reaproveitadas automaticamente.
-- A documentação deste repositório é a fonte oficial de verdade do projeto.
+- **Instalação estável confirmada:** V5.6.14V7 — 26/08/2026.
+- **V8:** em reformulação arquitetural; ainda não homologada nem instalada.
+- O ambiente oficial Windows opera com backend `5201`, gateway `5200` e worker de processamento.
+- O sistema já possui cadastro de clientes, processamento documental, especialistas Domínio/eSocial/e-CAC/FGTS, eConsignado, Central de Conferência, Central de Entregas, Centro de Impressão, Afastamentos e Fechamento Mensal.
+
+> Importante: a documentação deste repositório foi atualizada em 26/08/2026 para refletir o sistema real. A árvore histórica de código da `main` ainda precisa de ressincronização integral com a cópia operacional do servidor antes de ser tratada como espelho byte a byte da instalação.
 
 Consulte primeiro [`docs/STATUS_ATUAL.md`](docs/STATUS_ATUAL.md).
 
@@ -15,49 +17,37 @@ Consulte primeiro [`docs/STATUS_ATUAL.md`](docs/STATUS_ATUAL.md).
 
 1. Nenhum arquivo original é excluído automaticamente.
 2. Nenhum arquivo existente é sobrescrito silenciosamente.
-3. Cadastro e filesystem são domínios distintos: excluir/inativar cadastro não elimina pasta física.
-4. Operações sobre arquivos devem ser planejáveis, rastreáveis e conservadoras.
-5. Estruturas legadas são reconhecidas e preservadas.
-6. Baixa confiança em OCR gera revisão humana, nunca decisão destrutiva.
-7. A grafia legal/original do cliente é preservada.
-8. Autenticação, CAPTCHA e ações críticas em portais externos permanecem sob controle humano.
-9. O código deve permanecer modular e testável.
-10. Interface e identidade visual devem obedecer ao Axiom Framework quando introduzidas.
+3. Cadastro e filesystem são domínios distintos.
+4. OCR é fallback; leitura nativa vem primeiro e o conteúdo lido deve ser reutilizado.
+5. Processamento deve ser idempotente, incremental, rastreável e preparado para lotes grandes.
+6. Baixa confiança ou conflito de identidade gera revisão humana, nunca decisão destrutiva.
+7. Grafia legal/original do cliente é preservada.
+8. Retificações preservam o fechamento anterior e criam nova versão comparável.
+9. Entregas e impressão usam documentos vigentes e respeitam o perfil do cliente.
+10. A interface deve manter identidade visual única e não criar trabalho manual desnecessário.
 
-## Documentação oficial
+## Arquitetura operacional
 
-- [`docs/STATUS_ATUAL.md`](docs/STATUS_ATUAL.md) — situação atual e próximo passo;
-- [`docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md`](docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md) — escopo e regras do produto;
-- [`docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md`](docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md) — arquitetura oficial;
-- [`docs/decisions/`](docs/decisions/) — decisões permanentes, identificadas por `DEC-*`;
-- [`docs/sprints/`](docs/sprints/) — Sprints oficiais, identificadas por `AXT-*`;
-- [`docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md`](docs/sprints/ROADMAP_OFICIAL_AXIOM_TOOLS.md) — sequência oficial.
+Fluxo documental principal:
 
-## Roadmap
+`Domínio → eSocial → e-CAC/DARF → FGTS Digital → cruzamento incremental`
 
-- AXT-000 — Fundação documental e arquitetural;
-- AXT-001 — Motor seguro de estruturas PF/PJ e funcionários;
-- AXT-002 — Login, Shell e Dashboard;
-- AXT-003 — Núcleo de clientes, importação e configurações;
-- AXT-004 — OCR e classificação documental;
-- AXT-005 — Competências e roteamento;
-- AXT-006 — Conferências e visualização de PDF;
-- AXT-007 — Impressão e consolidação;
-- AXT-008 — Integrações assistidas e operação Windows.
+Motores especialistas principais:
 
-## Estrutura-base do código
+- Domínio;
+- eSocial;
+- e-CAC/DARF;
+- FGTS Digital.
 
-```text
-src/axiom_tools/
-├── core/
-├── modules/
-│   ├── folders/
-│   ├── clients/          # introduzido quando a AXT-003 começar
-│   ├── ocr/
-│   ├── printing/
-│   ├── integrations/
-│   └── settings/
-└── utils/
-```
+Especialistas reutilizáveis incluem identidade, competência, valores, pessoas, dados operacionais, eConsignado e validação/cruzamento.
 
-A estrutura pode evoluir pelas Sprints, sem concentrar regras de negócio em arquivos monolíticos.
+## Fechamento mensal — direção aprovada para V8
+
+A separação de responsabilidades aprovada é:
+
+- **Fechamento Mensal:** abre a competência e acompanha o status dos clientes; não executa processamento nem exige fechamento manual.
+- **Processamento de Arquivos:** trabalha somente no contexto de competência(s) aberta(s) no Fechamento Mensal e executa leitura, classificação, extração e reprocessamento.
+- **Central de Conferência:** é a mesa de trabalho para divergências, ausências, sem movimento mensal, justificativas, anexos e reprocessamento.
+- **Fechado:** deve ser consequência automática da conferência aplicável concluída, e não de um botão manual.
+
+Detalhes: [`docs/architecture/ARQUITETURA_OPERACIONAL_FECHAMENTO_V8.md`](docs/architecture/ARQUITETURA_OPERACIONAL_FECHAMENTO_V8.md).

@@ -1,73 +1,71 @@
 # Axiom Tools — Status Atual
 
-Data: 16/08/2026  
-Status: Oficial
+Data: 26/08/2026  
+Status: **Operacional em servidor / V5.6.14V7 estável / V8 em reformulação**
 
-## Onde estamos
+## Instalação estável confirmada
 
-O projeto está documentalmente organizado e pronto para reiniciar a implementação funcional de forma limpa.
+**V5.6.14V7 — Ciclo Mensal com Fechamento Automático**
 
-### Concluído
+A instalação V7 foi aplicada com sucesso no servidor em 26/08/2026, preservando banco, serviços, histórico e retificações.
 
-- AXT-000 — Fundação documental e arquitetural.
-- Consolidação oficial do escopo.
-- Arquitetura oficial.
-- Decisões permanentes de segurança, estruturas, OCR e operação.
-- Roadmap reorganizado.
+### Capacidades operacionais existentes
 
-### Sprint atual
+- cadastro de clientes PF/PJ e parâmetros operacionais;
+- processamento em fila com worker;
+- leitura nativa de PDFs e OCR como fallback;
+- classificação documental e extração analítica;
+- motores especialistas Domínio, eSocial, e-CAC/DARF e FGTS Digital;
+- competência, valores, identidade e dados operacionais;
+- repositório documental;
+- Central de Conferência;
+- eConsignado MTE/Dataprev;
+- afastamentos e ocorrências;
+- Central de Entregas;
+- Centro de Impressão;
+- relatórios e auditoria;
+- Fechamento Mensal;
+- histórico e retificação inteligente versionada;
+- máscaras e grafias técnicas em padrão brasileiro.
 
-**AXT-001 — Estrutura de Pastas PF/PJ e Funcionários**
+## Situação da V8
 
-Situação: **pronta para implementação do zero**.
+A V8 **não está concluída** e não deve ser considerada versão de instalação.
 
-A AXT-001 deve implementar somente:
+A reformulação aprovada em 26/08/2026 redefine responsabilidades entre três áreas:
 
-- motor seguro de estruturas PF/PJ;
-- funcionários/empregados;
-- equivalências legadas;
-- `estrutura.cfg`;
-- planejamento/simulação;
-- aplicação segura;
-- relatórios de operação;
-- testes automatizados.
+1. **Fechamento Mensal** — somente abrir competência e exibir a evolução/status dos clientes.
+2. **Processamento de Arquivos** — operar dentro da competência aberta, sem misturar apurações históricas na visão operacional.
+3. **Central de Conferência** — resolver exceções, justificar ausências, marcar sem movimento na competência, anexar documentos e reprocessar sem sair da tela.
 
-Não fazem parte da AXT-001:
+O fechamento do cliente passa a ser resultado automático do batimento/conferência concluída.
 
-- Login;
-- Dashboard;
-- interface gráfica completa;
-- cadastro de clientes;
-- SQLite;
-- OCR;
-- competências;
-- conferência;
-- impressão;
-- integrações externas.
+## Regras já aprovadas e preservadas
 
-## Próxima Sprint
+- sem movimento permanente do cadastro é diferente de sem movimento de uma competência específica;
+- sem movimento mensal não deve ser herdado silenciosamente no mês seguinte;
+- retificação de competência fechada é detectada por mudança material e preserva versões anteriores;
+- dados repetidos não criam retificação;
+- saída automática fica bloqueada enquanto houver retificação candidata pendente;
+- DARF deve ser conferido pela composição aplicável: previdenciário, IRRF, PIS folha, SENAR/Funrural e outros débitos reconhecidos;
+- FGTS só é esperado quando aplicável ao perfil/evidências do cliente;
+- eConsignado só aparece quando houver evidência positiva;
+- clientes eletrônicos recebem DARF e FGTS separados por padrão; unificação é opt-in;
+- contracheques de entrega eletrônica podem ser agrupados por empresa;
+- impressão prioriza retirada/office-boy, mantendo seleção manual de outros clientes.
 
-**AXT-002 — Login, Shell e Dashboard**
+## Atenção — sincronização do repositório
 
-Será iniciada somente depois da homologação da AXT-001.
+A documentação da `main` foi atualizada para refletir o sistema real. A árvore histórica de código do GitHub ainda é anterior às atualizações operacionais instaladas entre 17 e 26/08/2026. Antes de usar a `main` como fonte byte a byte para nova implementação, deve-se concluir a ressincronização integral do código com uma cópia atual do servidor.
 
-## Regra para executores
+## Próximo trabalho
 
-Qualquer executor deve:
+Concluir a V8 com:
 
-1. ler este arquivo;
-2. ler a Sprint atual;
-3. ler as decisões permanentes citadas como dependência;
-4. respeitar a arquitetura oficial;
-5. não antecipar Sprint futura;
-6. não reaproveitar automaticamente código de tentativas anteriores;
-7. entregar código testável e modular.
-
-## Fonte de verdade
-
-- Sprints: `docs/sprints/`
-- Decisões: `docs/decisions/`
-- Arquitetura: `docs/architecture/ARQUITETURA_OFICIAL_AXIOM_TOOLS.md`
-- Consolidação: `docs/CONSOLIDACAO_OFICIAL_AXIOM_TOOLS.md`
-
-Em caso de dúvida, a Sprint atual e suas decisões permanentes específicas prevalecem sobre descrições genéricas.
+- Fechamento Mensal simplificado;
+- Processamento totalmente orientado pela competência aberta;
+- Conferência como mesa operacional de resolução;
+- isolamento visual/funcional entre competências;
+- anexar/reprocessar diretamente na Conferência;
+- fechamento automático por regras aplicáveis;
+- testes de regressão sobre os fluxos já homologados da V7.
