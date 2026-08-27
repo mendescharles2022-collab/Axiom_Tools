@@ -123,7 +123,18 @@ A própria ficha do cliente deve permitir, quando aplicável:
 - anexar documento faltante;
 - reprocessar documento existente;
 - abrir documentos da empresa;
+- registrar ocorrência/evidência manual sem sair da tela;
 - registrar decisão manual auditável.
+
+A área da ocorrência deve funcionar como mesa de resolução, permitindo **Anexar documento**, **Reprocessar**, **Registrar ocorrência**, **Resolver/Justificar** e **Ver documentos** sem abandonar a Central de Conferência.
+
+Documentos anexados a partir de uma ocorrência devem herdar cliente, competência e contexto da ocorrência, entrar no motor especialista correspondente e provocar novo cálculo automático da conferência quando o reprocessamento terminar.
+
+### FGTS rescisório e múltiplas evidências
+
+A conferência não deve pressupor uma única guia de FGTS por cliente/competência. Pode haver recolhimento rescisório antecipado em razão do vencimento da rescisão e, posteriormente, recolhimento mensal da competência.
+
+O motor deve preservar cada documento individualmente e somar as evidências aplicáveis ao mesmo cliente/competência para o batimento. Divergência deve desaparecer quando a composição documental explicar integralmente o valor esperado, sem necessidade de ignorar manualmente uma diferença válida.
 
 ### Justificativas previstas
 
@@ -131,6 +142,7 @@ A própria ficha do cliente deve permitir, quando aplicável:
 - afastamento integral;
 - admissão pendente;
 - rescisão pendente;
+- FGTS rescisório recolhido antecipadamente;
 - documento ainda não emitido;
 - compensação/suspensão de débito;
 - ausência de incidência;
@@ -158,9 +170,11 @@ Quando chegam novos dados para cliente/competência já fechados:
 
 ## 8. Regras de expectativa documental
 
-A Conferência não deve cobrar indiscriminadamente todas as fontes.
+A Conferência não deve cobrar indiscriminadamente todas as fontes. O **perfil cadastrado do cliente é fonte obrigatória para determinar quais documentos e cruzamentos são aplicáveis**.
 
 - FGTS: somente quando aplicável ao perfil/evidências.
+- **MEI:** quando o cadastro do cliente estiver marcado como MEI, não cobrar guia FGTS Digital autônoma no fluxo normal. O recolhimento aplicável de FGTS do empregado integra o **DAE do MEI**; a expectativa documental e o batimento devem usar DAE/regra específica do perfil MEI. A marcação MEI no cadastro deve prevalecer sobre heurísticas genéricas de incidência que hoje possam criar falsa divergência de FGTS Digital.
+- **MEI com situação excepcional:** eventual evidência extraordinária deve ser tratada explicitamente, sem transformar a exceção em expectativa mensal padrão.
 - eConsignado: somente com evidência positiva.
 - Sem movimento mensal: reduz expectativas daquela competência sem alterar cadastro permanente.
 - DARF: comparação pela composição aplicável, incluindo previdenciário, IRRF, PIS sobre folha, SENAR/Funrural e outros débitos reconhecidos.
@@ -197,6 +211,8 @@ Documentação não substitui sincronização do código operacional. Sempre que
 - V5.6.14V8A foi aplicada em 27/08/2026 com backup automático e preservação dos motores/documentos.
 - Foi identificado que a interface ainda pode exibir estados antecipados de `Em conferência` e comandos técnicos que não pertencem ao fluxo normal; isso deve ser corrigido sem reescrever os motores.
 - Foi identificada nomenclatura inadequada `Com pendências` nas sessões tecnicamente concluídas; a semântica aprovada está definida na seção 4 e fica registrada para atualização futura.
+- Foi identificada falsa expectativa de FGTS Digital em cliente cadastrado como MEI. A correção aprovada é tornar o perfil cadastral determinante: MEI usa expectativa de DAE e não deve receber cobrança mensal genérica de guia FGTS Digital autônoma.
+- Foi aprovada a evolução da ocorrência da Central de Conferência para permitir anexar, reprocessar, registrar evidências/ocorrências e resolver justificativas sem sair da tela, inclusive composição de múltiplas guias de FGTS e FGTS rescisório antecipado.
 
 ## 12. Critério de conclusão da V8
 
@@ -207,7 +223,8 @@ A V8 só será concluída após:
 - composição mensal e chamadas validadas operacionalmente;
 - estados do ciclo coerentes com o estágio real;
 - anexar/reprocessar diretamente na Conferência;
+- expectativas documentais respeitando o perfil cadastral, inclusive MEI/DAE;
 - fechamento automático validado;
 - retificação preservada;
-- regressão sobre Domínio, eSocial, e-CAC/DARF, FGTS e eConsignado;
+- regressão sobre Domínio, eSocial, e-CAC/DARF, FGTS, DAE/MEI e eConsignado;
 - pacote Windows com backup, rollback e validação funcional.
