@@ -1,51 +1,119 @@
 # Arquitetura Operacional — Fechamento V8
 
 Status: **Aprovada conceitualmente / implementação em andamento**  
-Data: 26/08/2026
+Data inicial: 26/08/2026  
+Última atualização: 27/08/2026
 
 ## 1. Princípio central
 
 Fechamento Mensal, Processamento de Arquivos e Central de Conferência têm papéis distintos e não devem duplicar responsabilidades.
 
-## 2. Fechamento Mensal
+Regra operacional: **o fluxo normal deve acontecer sozinho; intervenção humana é para exceções**.
 
-Responsabilidade: **abrir competência e acompanhar o ciclo**.
+O Axiom Tools não é apenas extrator. Ele também administra o acervo e as estruturas de pastas de clientes ativos, inativos, baixados, com movimento e sem movimento. Por isso, estar cadastrado no Tools não significa participar automaticamente do fechamento mensal.
 
-Ao abrir uma competência, o sistema carrega os clientes ativos e passa a refletir, sem exigir seleção manual de rotina:
+## 2. Competência como origem única do ciclo
 
-- aguardando documentos;
+A competência deve ser aberta **uma única vez**, no Fechamento Mensal.
+
+- Fechamento Mensal fica antes de Processamento de Arquivos no fluxo e na navegação.
+- Processamento, Conferência, Entregas e Impressão herdam o contexto da competência operacional.
+- O Processamento não deve exigir nova digitação, aplicação ou abertura da competência.
+- Histórico e retificações podem consultar competências anteriores sem trocar silenciosamente a competência operacional ativa.
+
+## 3. Fechamento Mensal e composição da competência
+
+Responsabilidade: **abrir competência, definir o universo operacional mensal e acompanhar o ciclo**.
+
+Ao abrir uma competência, o sistema cria a composição mensal sem alterar o cadastro mestre nem as pastas físicas.
+
+Cada cliente pode ser classificado na competência como:
+
+- `Com movimento`;
+- `Sem movimento`;
+- fora do ciclo/não aplicável, quando pertinente.
+
+A visão operacional padrão deve privilegiar **clientes ativos com movimento**, mantendo filtros para consultar os demais.
+
+As caixas de seleção servem para ações administrativas em lote, e não para determinar manualmente quem será processado.
+
+### Chamadas
+
+A competência admite chamadas sucessivas: 1ª, 2ª, 3ª e seguintes, sem limite artificial.
+
+Clientes adiados devem registrar motivo e histórico auditável. Motivos previstos incluem:
+
+- aguardando registro;
+- rescisão pendente;
+- decisão administrativa;
+- aguardando apontamento do cartão de ponto;
+- outro motivo documentado.
+
+A mudança deve preservar usuário, data/hora, chamada anterior, nova chamada, motivo e observação quando houver.
+
+Clientes `Com movimento` liberados na chamada atual entram automaticamente no contexto operacional do Processamento. Clientes em chamada futura e clientes `Sem movimento` ficam fora do processamento normal até mudança válida de estado.
+
+### Estados do ciclo
+
+O Fechamento deve refletir estados reais, sem antecipar a Conferência:
+
+- aguardando processamento;
 - em processamento;
 - em conferência;
-- pendente;
-- divergente;
+- pendente/divergente na conferência;
 - sem movimento na competência;
 - próxima chamada/impedida;
 - fechada;
 - retificação detectada/em conferência/retificada.
 
+Um cliente sem evidência documental processada **não deve aparecer como `Em conferência`**. Antes disso, o estado correto é `Aguardando processamento` ou `Em processamento`, conforme o caso.
+
 Não deve existir fluxo normal de `Fechar selecionadas`.
 
 O cliente é considerado fechado quando a Central de Conferência concluir todas as expectativas aplicáveis ou registrar justificativas válidas.
 
-## 3. Processamento de Arquivos
+## 4. Processamento de Arquivos
 
-Responsabilidade: **infraestrutura documental**.
+Responsabilidade: **infraestrutura documental e execução técnica**.
 
 Deve:
 
 - receber arquivos;
+- herdar competência e chamada do Fechamento Mensal;
 - identificar cliente e competência;
 - classificar documento;
 - extrair dados;
-- reprocessar;
+- reprocessar falhas técnicas;
 - manter fila, hash, cache e checkpoints;
-- expor apenas o contexto operacional da competência aberta no Fechamento Mensal, evitando mistura visual com apurações anteriores.
+- expor apenas o contexto operacional corrente, evitando mistura visual com apurações anteriores.
 
 Dados históricos continuam preservados e acessíveis em visão própria, mas não contaminam a operação corrente.
 
-## 4. Central de Conferência
+### Semântica das sessões de processamento — decisão de 27/08/2026
+
+A visualização das sessões deve representar **somente o progresso técnico do processamento**, sem misturar resultado de conferência.
+
+Regras aprovadas para atualização futura:
+
+- nenhum arquivo processado → `0% · Processo não iniciado`;
+- processamento em andamento → `X% · Processando`;
+- todos os itens percorridos sem falha técnica → `100% · Processamento concluído`;
+- todos os itens percorridos com falhas técnicas reais → `100% · Concluído com falhas técnicas`;
+- execução interrompida → `X% · Interrompido`.
+
+`100%` significa que o motor percorreu 100% da sessão; **não significa que os documentos estejam corretos ou que o cliente esteja fechado**.
+
+Uma sessão tecnicamente concluída não deve aparecer como `Com pendências` apenas porque a Conferência encontrou ausência, divergência ou incompletude documental.
+
+A aba `Pendências` do Processamento deve ser reservada a **pendências técnicas**, como arquivo ilegível, identificação impossível, erro de extração ou falha de motor. Pendências documentais, contábeis e de batimento pertencem à Central de Conferência.
+
+Quando útil, uma sessão concluída pode informar separadamente quantos itens/clientes foram encaminhados à Conferência, sem alterar o status técnico da execução.
+
+## 5. Central de Conferência
 
 Responsabilidade: **mesa de trabalho do fechamento**.
+
+A Conferência deve receber apenas clientes que efetivamente alcançaram o estágio de conferência, e não toda a composição mensal antecipadamente.
 
 A própria ficha do cliente deve permitir, quando aplicável:
 
@@ -69,15 +137,15 @@ A própria ficha do cliente deve permitir, quando aplicável:
 - próxima chamada;
 - outro motivo documentado.
 
-## 5. Fechamento automático
+## 6. Fechamento automático
 
 Fluxo:
 
-`Competência aberta → documentos processados → conferência → expectativas aplicáveis satisfeitas/justificadas → FECHADO`
+`Competência aberta → composição/chamada → documentos processados → conferência → expectativas aplicáveis satisfeitas/justificadas → FECHADO`
 
 O status fechado deve registrar data/hora e versão do fechamento.
 
-## 6. Retificação inteligente
+## 7. Retificação inteligente
 
 Quando chegam novos dados para cliente/competência já fechados:
 
@@ -88,7 +156,7 @@ Quando chegam novos dados para cliente/competência já fechados:
 - comparação Vn → Vn+1 deve destacar deltas de valores, pessoas e documentos;
 - saídas automáticas ficam bloqueadas enquanto a retificação não for concluída.
 
-## 7. Regras de expectativa documental
+## 8. Regras de expectativa documental
 
 A Conferência não deve cobrar indiscriminadamente todas as fontes.
 
@@ -97,7 +165,7 @@ A Conferência não deve cobrar indiscriminadamente todas as fontes.
 - Sem movimento mensal: reduz expectativas daquela competência sem alterar cadastro permanente.
 - DARF: comparação pela composição aplicável, incluindo previdenciário, IRRF, PIS sobre folha, SENAR/Funrural e outros débitos reconhecidos.
 
-## 8. Saídas
+## 9. Saídas
 
 Após fechamento:
 
@@ -108,12 +176,36 @@ Após fechamento:
 - unificação é parametrizável por cliente;
 - contracheques podem ser agrupados por empresa.
 
-## 9. Critério de conclusão da V8
+## 10. Histórico de decisões e governança do repositório
+
+O repositório deve permanecer atualizado como fonte de continuidade do projeto, registrando de forma rastreável:
+
+- melhorias aprovadas;
+- falhas encontradas;
+- causas identificadas;
+- correções e resoluções adotadas;
+- decisões funcionais e arquiteturais;
+- versões instaladas e homologadas;
+- pendências conhecidas e melhorias futuras.
+
+Documentação não substitui sincronização do código operacional. Sempre que houver acesso à instalação real, a árvore do repositório deve ser confrontada com ela antes de ser tratada como espelho fiel da instalação.
+
+## 11. Situação operacional registrada em 27/08/2026
+
+- V5.6.14T9 (24/08/2026) permanece referência histórica de baseline comprovada na competência 05/2026.
+- V5.6.14V8 introduziu competência única, composição mensal e chamadas.
+- V5.6.14V8A foi aplicada em 27/08/2026 com backup automático e preservação dos motores/documentos.
+- Foi identificado que a interface ainda pode exibir estados antecipados de `Em conferência` e comandos técnicos que não pertencem ao fluxo normal; isso deve ser corrigido sem reescrever os motores.
+- Foi identificada nomenclatura inadequada `Com pendências` nas sessões tecnicamente concluídas; a semântica aprovada está definida na seção 4 e fica registrada para atualização futura.
+
+## 12. Critério de conclusão da V8
 
 A V8 só será concluída após:
 
 - integração dos três módulos sem duplicidade;
-- isolamento consistente por competência;
+- competência aberta uma única vez e herdada pelos módulos;
+- composição mensal e chamadas validadas operacionalmente;
+- estados do ciclo coerentes com o estágio real;
 - anexar/reprocessar diretamente na Conferência;
 - fechamento automático validado;
 - retificação preservada;
