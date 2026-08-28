@@ -1,0 +1,104 @@
+--- a/app/src/axiom_tools/modules/processing/motors/dominio_engine.py
++++ b/app/src/axiom_tools/modules/processing/motors/dominio_engine.py
+@@ -3,6 +3,7 @@
+ import re
+ from datetime import datetime
+ from . import legacy
++from ..identity import detectar_identificadores, resolver_cliente_documento
+ from .dominio_advanced import (
+     analisar_comunicado_credito, analisar_relatorio_s1299, enriquecer_extrato_federal,
+ )
+@@ -31,11 +32,49 @@
+     return hits[0] if len(hits)==1 else None
+ 
+ def _especialista_identidade(texto, con):
+-    doc=legacy.cnpj(texto)
+-    cli=legacy.client(con,doc) if doc else None
+-    if not cli: cli=_cliente_por_nome(con,texto)
+-    return {"cnpj":doc,"cliente_id":int(cli["id"]) if cli else None,
+-            "cliente_nome":(cli["nome_apresentacao"] or cli["nome"]) if cli else None}
++    identificadores = detectar_identificadores(texto)
++    resolvidos = []
++    ambiguidades = []
++    for chave in ("cnpj", "caepf", "cpf"):
++        valor = identificadores.get(chave)
++        if not valor:
++            continue
++        cli, metodo = resolver_cliente_documento(con, valor)
++        if cli:
++            resolvidos.append((chave, valor, cli, metodo))
++        elif metodo and metodo.startswith("AMBIGUO_"):
++            ambiguidades.append(metodo)
++
++    ids = {int(item[2]["id"]) for item in resolvidos}
++    cli = None
++    metodo = None
++    documento_contribuinte = None
++    if len(ids) > 1:
++        metodo = "CONFLITO_IDENTIFICADORES"
++    elif len(ids) == 1:
++        # CNPJ > CAEPF > CPF apenas escolhe a chave representativa; todos os
++        # identificadores resolvidos precisam apontar para o mesmo cliente.
++        escolhido = next(item for item in resolvidos if int(item[2]["id"]) in ids)
++        cli = escolhido[2]
++        metodo = escolhido[3]
++        documento_contribuinte = escolhido[1]
++    elif ambiguidades:
++        metodo = ambiguidades[0]
++    else:
++        cli = _cliente_por_nome(con, texto)
++        if cli:
++            metodo = "NOME_CLIENTE_EXATO"
++            documento_contribuinte = cli["documento"]
++
++    return {
++        "cnpj": identificadores.get("cnpj"),
++        "caepf": identificadores.get("caepf"),
++        "cpf": identificadores.get("cpf"),
++        "documento_contribuinte": documento_contribuinte,
++        "cliente_id": int(cli["id"]) if cli else None,
++        "cliente_nome": (cli["nome_apresentacao"] or cli["nome"]) if cli else None,
++        "identidade_metodo": metodo,
++    }
+ 
+ def _periodo_datas(valor):
+     if not valor:return None,None
+--- a/app/src/axi_tools/modules/processing/ecac_rules.py
++++ b/app/src/axi_tools/modules/processing/ecac_rules.py
+@@ -12,6 +12,8 @@
+ import sqlite3
+ from datetime import datetime
+ 
++from .identity import resolver_cliente_documento
++
+ VERSAO = "ECAC-REGRAS-2.5-14S8C"
+ 
+ 
+@@ -112,24 +114,9 @@
+ 
+ 
+ def cliente_por_documento(con: sqlite3.Connection, documento: str | None):
+-    """Resolve primeiro o cadastro principal e depois vínculos manuais persistentes."""
+-    digits = _digits(documento)
+-    if not digits:
+-        return None
+-    row = con.execute(
+-        "SELECT id,documento,nome,nome_apresentacao FROM clientes WHERE REPLACE(REPLACE(REPLACE(REPLACE(documento,'.',''),'/',''),'-',''),' ','')=? LIMIT 1",
+-        (digits,),
+-    ).fetchone()
+-    if row:
+-        return row
+-    return con.execute(
+-        """SELECT c.id,c.documento,c.nome,c.nome_apresentacao
+-             FROM processamento_identidade_vinculo v
+-             JOIN clientes c ON c.id=v.cliente_id
+-            WHERE REPLACE(REPLACE(REPLACE(REPLACE(v.documento,'.',''),'/',''),'-',''),' ','')=?
+-            LIMIT 1""",
+-        (digits,),
+-    ).fetchone()
++    """Resolve documento principal, inscrição oficial e vínculo manual persistente."""
++    row, _metodo = resolver_cliente_documento(con, documento)
++    return row
+ 
+ 
+ def resolver_cliente_arquivo(con: sqlite3.Connection, nome: str | None):
