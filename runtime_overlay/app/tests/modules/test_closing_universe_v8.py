@@ -46,7 +46,7 @@ class ClosingUniverseV8Tests(unittest.TestCase):
         self.assertEqual(universe.clientes_participantes_ids(con, '09/2026'), {1,2,3,4,5})
         self.assertEqual(universe.clientes_chamada_atual_ids(con, '09/2026'), {1})
         self.assertEqual(universe.clientes_retificacao_ids(con, '09/2026'), {4})
-        self.assertEqual(universe.clientes_conferencia_ids(con, '09/2026'), {1,4})
+        self.assertEqual(universe.clientes_conferencia_ids(con, '09/2026'), {1})
         self.assertEqual(universe.clientes_fechados_ids(con, '09/2026'), {3})
         self.assertEqual(universe.clientes_chamada_futura_ids(con, '09/2026'), {5})
         con.close()
@@ -62,14 +62,15 @@ class ClosingUniverseV8Tests(unittest.TestCase):
         self.assertNotIn(2, universe.clientes_conferencia_ids(con, '09/2026'))
         con.close()
 
-    def test_retification_remains_in_conference_even_sem_movimento(self):
+    def test_retification_stays_out_of_live_cycle_and_in_own_universe(self):
         con = make_con()
-        self.assertIn(4, universe.clientes_conferencia_ids(con, '09/2026'))
+        self.assertNotIn(4, universe.clientes_conferencia_ids(con, '09/2026'))
+        self.assertIn(4, universe.clientes_retificacao_ids(con, '09/2026'))
         con.close()
 
     def test_service_wrappers_use_canonical_universe(self):
         con = make_con()
-        self.assertEqual(closing.clientes_conferencia_ids(con, '09/2026'), {1,4})
+        self.assertEqual(closing.clientes_conferencia_ids(con, '09/2026'), {1})
         self.assertEqual(closing.clientes_fechados_ids(con, '09/2026'), {3})
         con.close()
 
@@ -84,7 +85,7 @@ class ClosingUniverseV8Tests(unittest.TestCase):
             self.assertEqual(len(universe.clientes_participantes_ids(con, '08/2026')), 339)
             self.assertEqual(len(universe.clientes_chamada_atual_ids(con, '08/2026')), 30)
             self.assertEqual(len(universe.clientes_retificacao_ids(con, '08/2026')), 7)
-            self.assertEqual(len(universe.clientes_conferencia_ids(con, '08/2026')), 37)
+            self.assertEqual(len(universe.clientes_conferencia_ids(con, '08/2026')), 30)
             self.assertEqual(len(universe.clientes_fechados_ids(con, '08/2026')), 296)
             self.assertEqual(len(universe.clientes_chamada_futura_ids(con, '08/2026')), 5)
             self.assertTrue(universe.clientes_conferencia_ids(con, '08/2026').isdisjoint(universe.clientes_fechados_ids(con, '08/2026')))
