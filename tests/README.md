@@ -28,54 +28,34 @@ O repositório já possui, porém, uma suíte real para o tooling de auditoria, 
 - `test_clone_sqlite_for_migration.py` — **6 aprovados**;
 - `test_run_sqlite_invariants.py` — **8 aprovados**.
 
-Essas quatro suítes cobrem:
-
-- `integrity_check`;
-- `foreign_key_check`;
-- inventário/hash do schema;
-- contagens de registros;
-- ausência de mutação da origem;
-- cópia consistente via `sqlite3.Connection.backup()`;
-- proteção contra sobrescrita do destino;
-- limpeza de `.partial` em falha;
-- comparação pré/pós-migração;
-- nova violação de FK como regressão;
-- falha nova de integridade como regressão;
-- remoção de objeto e queda de registros como avisos que exigem justificativa, não como conclusão automática;
-- execução de invariantes lógicas por especificação versionada;
-- regra `zero linhas = invariante atendida`;
-- severidade `error` e `warning` separadas;
-- bloqueio de SQL mutante inclusive quando disfarçado em CTE;
-- bloqueio de `PRAGMA` dentro das invariantes;
-- execução em conexão SQLite somente leitura.
+Essas quatro suítes cobrem `integrity_check`, `foreign_key_check`, inventário/hash de schema, contagens, cópia consistente, comparação pré/pós-migração, ausência de mutação da origem e invariantes lógicas somente leitura.
 
 ### Backup / rollback verificável
 
-- `test_rollback_bundle.py` — **8 aprovados**.
+- `test_rollback_bundle.py` — **8 aprovados**;
+- `test_restore_rollback_bundle.py` — **6 aprovados**.
 
-Cobre:
+Cobertura atual:
 
 - bundle criado apenas a partir de lista explícita de arquivos controlados;
-- preservação integral dos arquivos e banco de origem;
-- cópia SQLite consistente via API nativa `backup()`;
-- `integrity_check` e `foreign_key_check` no banco copiado;
-- bloqueio de path traversal;
-- proteção contra destino já existente;
-- limpeza de diretório `.partial` quando a criação falha;
-- detecção de arquivo adulterado;
-- detecção de arquivo extra fora do manifesto;
-- detecção de adulteração do próprio manifesto;
-- verificação independente antes de qualquer restauração.
+- preservação integral das origens;
+- cópia SQLite consistente via `sqlite3.Connection.backup()`;
+- manifesto com tamanho e SHA-256;
+- bloqueio de path traversal e destino existente;
+- limpeza de `.partial` em falha;
+- detecção de arquivo/manifesto adulterado e arquivo extra;
+- verificação independente antes de restaurar;
+- restauração somente em diretório novo de ensaio;
+- nova validação de hashes, `integrity_check` e `foreign_key_check` depois da restauração;
+- geração de `RESTORE_REHEARSAL.json` para prova do ensaio.
 
 ## Contagem atual
 
-- **78 testes definidos**;
-- **75 testes aprovados em execuções controladas**;
+- **84 testes definidos**;
+- **81 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
-
-Suíte completa do tooling V8:
 
 ```bash
 python -m unittest discover -s tests -p "test_*.py" -v
@@ -85,23 +65,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 Nenhum desses testes substitui a suíte operacional do runtime V7/V8.
 
-Após a reconciliação, continuam obrigatórios testes de:
-
-- reprocessamento candidato/versionado;
-- Conference GET somente leitura;
-- gate único de Impressão/Entregas;
-- universo por competência/chamada;
-- 2ª chamada e concorrência lógica;
-- aplicabilidade DARF/FGTS/DAE;
-- multi-Extrato e multi-GFD;
-- identidade CPF/CNPJ/CAEPF/matrícula;
-- eConsignado contextual/idempotente;
-- retificação/versionamento;
-- invariantes lógicas V8 específicas do schema operacional;
-- autenticação/CSRF/autorização;
-- banco ↔ filesystem;
-- regressão dos 28 casos reais de 08/2026;
-- rollback real código + banco + configuração no Windows.
+Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança, banco ↔ filesystem, regressão dos 28 casos e rollback real no Windows.
 
 ## Princípio
 
