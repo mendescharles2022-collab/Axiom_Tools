@@ -27,6 +27,10 @@ FORBIDDEN_EXTENSIONS = {
     ".pem", ".key", ".jks", ".kdb", ".kdbx",
     ".zip", ".7z", ".rar",
 }
+SENSITIVE_FILENAMES = {
+    "credentials.json", "credential.json", "secrets.json", "secret.json",
+    "token.json", "tokens.json", "service-account.json", "service_account.json",
+}
 TEXT_EXTENSIONS = {
     ".py", ".ps1", ".js", ".ts", ".html", ".css", ".json", ".toml",
     ".yaml", ".yml", ".ini", ".cfg", ".conf", ".txt", ".md", ".bat", ".cmd",
@@ -37,19 +41,28 @@ ASSIGNMENT_RE = re.compile(
 )
 PRIVATE_KEY_RE = re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----")
 PLACEHOLDER_RE = re.compile(
-    r"(example|dummy|placeholder|changeme|change-me|test|none|null|your_|seu_|"
-    r"env\[|getenv|os\.environ|\$\{|%[^%]+%)",
+    r"(example|dummy|placeholder|changeme|change-me|test|fake|mock|sample|fixture|"
+    r"none|null|your_|seu_|not[-_ ]?a[-_ ]?real|env\[|getenv|os\.environ|"
+    r"\$\{|%[^%]+%)",
     re.IGNORECASE,
 )
 LABEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
 CANDIDATES = (
     ("app/src", "app/src"),
+    ("src", "src"),
     ("app/tests", "app/tests"),
+    ("tests", "tests"),
     ("app/scripts", "app/scripts"),
-    ("app/migrations", "app/migrations"),
-    ("app/alembic", "app/alembic"),
     ("scripts", "scripts"),
+    ("app/migrations", "app/migrations"),
+    ("migrations", "migrations"),
+    ("app/alembic", "app/alembic"),
+    ("alembic", "alembic"),
+    ("app/templates", "app/templates"),
+    ("templates", "templates"),
+    ("app/static", "app/static"),
+    ("static", "static"),
     ("app/pyproject.toml", "app/pyproject.toml"),
     ("app/requirements.txt", "app/requirements.txt"),
     ("app/requirements-dev.txt", "app/requirements-dev.txt"),
@@ -118,7 +131,7 @@ def forbidden_name(path: Path) -> bool:
             return True
         if name == ".env" or name.startswith(".env."):
             return True
-        if re.search(r"(secret|token|credential|senha|password)", name, re.IGNORECASE):
+        if name in SENSITIVE_FILENAMES:
             return True
     return False
 
@@ -216,6 +229,20 @@ def copy_entrypoints(root: Path, stage: Path, copied: list[str]) -> None:
             copied.append((relative_base / source.name).as_posix())
 
 
+def output_overlaps_source(root: Path, output_dir: Path) -> str | None:
+    for source_rel, _ in CANDIDATES:
+        source = root / source_rel
+        if not source.exists() or not source.is_dir():
+            continue
+        source_resolved = source.resolve()
+        try:
+            output_dir.relative_to(source_resolved)
+            return source_rel
+        except ValueError:
+            pass
+    return None
+
+
 def generate_manifest(stage: Path) -> list[dict[str, str | int]]:
     rows: list[dict[str, str | int]] = []
     for path in sorted(stage.rglob("*")):
@@ -266,7 +293,8 @@ def write_info(stage: Path, root: Path, copied: list[str], count: int) -> None:
         "- sem junction/symlink/reparse point nas origens copiadas",
         "- bloqueio se houver possível segredo hardcoded",
         "",
-        "Este exportador não altera nem remove arquivos da raiz operacional.",
+        "Nenhum arquivo operacional de origem foi alterado ou removido.",
+        "A única escrita ocorre no diretório de saída informado/configurado.",
     ]
     (stage / INFO_NAME).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -278,7 +306,11 @@ def create_zip(stage: Path, zip_path: Path) -> None:
                 zf.write(path, path.relative_to(stage).as_posix())
 
 
-def export_runtime(root: Path, output_dir: Path | None = None, label: str = "runtime-reconciliation-v8") -> ExportResult:
+def export_runtime(
+    root: Path,
+    output_dir: Path | None = None,
+    label: str = "runtime-reconciliation-v8",
+) -> ExportResult:
     if not LABEL_RE.fullmatch(label):
         raise ExportError("Label inválido; use apenas letras, números, ponto, sublinhado ou hífen.")
 
@@ -287,6 +319,11 @@ def export_runtime(root: Path, output_dir: Path | None = None, label: str = "run
         raise ExportError(f"Raiz operacional inválida: {root}")
 
     output_dir = (output_dir or (root / "temp")).resolve()
+    overlap = output_overlaps_source(root, output_dir)
+    if overlap:
+        raise ExportError(
+            f"Diretório de saída não pode ficar dentro da origem exportada '{overlap}': {output_dir}"
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
@@ -366,7 +403,7 @@ def main() -> int:
     print(f"ZIP:   {result.zip_path}")
     print(f"SHA256: {result.zip_sha256}")
     print(f"Arquivos: {result.file_count}")
-    print("A raiz operacional não foi modificada.")
+    print("Nenhum arquivo operacional de origem foi alterado; somente a saída foi criada.")
     return 0
 
 
