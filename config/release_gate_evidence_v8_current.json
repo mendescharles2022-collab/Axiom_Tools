@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "audit": "V8",
+  "gates": [
+    {
+      "gate_id": "CI_TOOLING",
+      "status": "PASS",
+      "evidence": [
+        "github-actions:run/33194834851",
+        "commit:568f878bf8b99dc8b63466a8ab556233d7fd83b0",
+        "result:142-tests-OK"
+      ],
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14."
+    },
+    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
+    {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
+    {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
+    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes específicas dependem do schema real."},
+    {"gate_id":"BENCHMARK_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Benchmark representativo depende do runtime real."},
+    {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Segurança dinâmica depende das rotas reais reconciliadas."},
+    {"gate_id":"REPORT_A4","status":"NOT_RUN","evidence":[],"notes":"Preview/impressão final ainda não homologados."},
+    {"gate_id":"WINDOWS_INSTALLATION","status":"NOT_RUN","evidence":[],"notes":"Pacote final ainda não autorizado."},
+    {"gate_id":"ROLLBACK_WINDOWS","status":"NOT_RUN","evidence":[],"notes":"Rollback físico depende do pacote/runtime final."}
+  ]
+}
