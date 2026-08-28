@@ -1,0 +1,43 @@
+--- a/app/src/axiom_tools/web/app.py
++++ b/app/src/axiom_tools/web/app.py
+@@
+-from flask import Flask, jsonify, render_template, session
++from flask import Flask, g, jsonify, render_template, request, session
+@@
+ from axiom_tools.web.auth.service import RepositorioUsuarios
++from axiom_tools.web.audit import registrar_evento
+@@
++    @app.before_request
++    def _correlacionar_requisicao():
++        g.axiom_request_id = secrets.token_hex(8)
++
+     @app.before_request
+     def _limpeza_temp_diaria():
+         settings_views.executar_limpeza_automatica_se_necessario()
++
++    @app.after_request
++    def _auditar_mutacao_http(response):
++        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
++            try:
++                request_id = getattr(g, "axiom_request_id", None)
++                sucesso = int(response.status_code or 500) < 400
++                registrar_evento(
++                    "HTTP_MUTACAO" if sucesso else "HTTP_MUTACAO_BLOQUEADA",
++                    categoria="SEGURANCA",
++                    entidade="endpoint",
++                    entidade_id=request.endpoint or request.path,
++                    descricao=f"{request.method} {request.path} -> HTTP {response.status_code}",
++                    detalhes={
++                        "request_id": request_id,
++                        "endpoint": request.endpoint,
++                        "status_http": int(response.status_code or 0),
++                        "campos_formulario": sorted(str(k) for k in request.form.keys()),
++                    },
++                    sucesso=sucesso,
++                    nivel="INFO" if sucesso else "ATENCAO",
++                )
++                if request_id:
++                    response.headers["X-Axiom-Request-ID"] = request_id
++            except Exception:
++                app.logger.exception("Falha ao registrar auditoria HTTP de mutação")
++        return response
