@@ -39,6 +39,22 @@ class RuntimeExporterTests(unittest.TestCase):
             self.assertFalse((result.stage / "documentos").exists())
             self.assertTrue(result.zip_path.exists())
 
+    def test_export_supports_root_src_layout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            root = base / "runtime"
+            write(root / "src" / "pkg" / "a.py", "x=1\n")
+            result = module.export_runtime(root, base / "out", "case")
+            self.assertTrue((result.stage / "src/pkg/a.py").exists())
+
+    def test_legitimate_token_service_filename_is_preserved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            root = base / "runtime"
+            write(root / "app" / "src" / "token_service.py", "def load_token():\n    return None\n")
+            result = module.export_runtime(root, base / "out", "case")
+            self.assertTrue((result.stage / "app/src/token_service.py").exists())
+
     def test_export_manifest_covers_payload_exactly(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
@@ -65,7 +81,7 @@ class RuntimeExporterTests(unittest.TestCase):
             base = Path(tmp)
             root = base / "runtime"
             out = base / "out"
-            write(root / "app" / "src" / "pkg" / "a.py", 'api_key = "REAL_SECRET_123456"\n')
+            write(root / "app" / "src" / "pkg" / "a.py", 'api_key = "sk_live_ABC123456789"\n')
 
             with self.assertRaises(module.ExportError):
                 module.export_runtime(root, out, "case")
@@ -77,6 +93,13 @@ class RuntimeExporterTests(unittest.TestCase):
             write(root / "app" / "src" / "a.py", "x=1\n")
             with self.assertRaises(module.ExportError):
                 module.export_runtime(root, Path(tmp) / "out", "../escape")
+
+    def test_export_rejects_output_inside_source_tree(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "runtime"
+            write(root / "app" / "src" / "a.py", "x=1\n")
+            with self.assertRaises(module.ExportError):
+                module.export_runtime(root, root / "app" / "src" / "export", "case")
 
     def test_export_zip_contains_manifest_and_info(self):
         with tempfile.TemporaryDirectory() as tmp:
