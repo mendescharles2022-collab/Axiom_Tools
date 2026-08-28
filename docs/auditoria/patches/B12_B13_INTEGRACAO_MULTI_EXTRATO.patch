@@ -1,0 +1,103 @@
+--- a/app/src/axiom_tools/modules/processing/conference.py
++++ b/app/src/axiom_tools/modules/processing/conference.py
+@@ -10,6 +10,7 @@
+ import unicodedata
+ from typing import Any
+ 
++from axiom_tools.modules.processing.composition import compor_extratos_mensais
+ 
+ 
+ def _money(v):
+@@ -90,6 +91,15 @@
+     inss_esperado = _money(exd.get("darf_folha_esperado"))
+     total_esperado = _money(exd.get("saldo_total_apuracao_dominio"))
+     detalhada = bool(exd.get("apuracao_federal_detalhada"))
++    composicao_extratos = exd.get("_composicao_extratos") or {}
++    if composicao_extratos.get("saldo_federal_conflitante"):
++        return {
++            "status": "BASE_CONFLITANTE", "diferenca": None, "esperado": None,
++            "inss_esperado": inss_esperado, "previdenciario_darf": None,
++            "composicao": _composicao_darf(dd), "justificativas": [],
++            "mensagem": "Extratos Mensais trazem saldos federais consolidados diferentes; revise as fontes antes de conferir o DARF.",
++            "saldos_federais": composicao_extratos.get("saldo_federal_consolidado_valores") or [],
++        }
+     justificativas = list(exd.get("darf_folha_justificativas") or [])
+     darf_total = _money(dd.get("valor_total"))
+     comp = _composicao_darf(dd)
+@@ -270,7 +280,11 @@
+         return []
+     acoes: list[dict] = []
+     st_darf = (checks.get("inss") or {}).get("status")
+-    if st_darf == "BASE_INSUFICIENTE":
++    if st_darf == "BASE_CONFLITANTE":
++        acoes.append({"codigo":"REVISAR_EXTRATOS_DOMINIO","tipo":"CONFERENCIA","prioridade":"CRITICA",
++                      "rotulo":"Revisar composição dos Extratos Mensais",
++                      "detalhe":"Há mais de um saldo federal consolidado entre os Extratos da competência; não some nem escolha uma fonte automaticamente."})
++    elif st_darf == "BASE_INSUFICIENTE":
+         if not extr:
+             acoes.append({"codigo":"ENVIAR_EXTRATO_DOMINIO","tipo":"UPLOAD","prioridade":"ATENCAO",
+                           "rotulo":"Enviar Extrato Mensal do Domínio",
+@@ -348,7 +362,7 @@
+         darf = _ultimo_tipo(emp, "DARF")
+         gfd = _ultimo_tipo(emp, "GUIA_FGTS_DIGITAL")
+         comunicado = _ultimo_tipo(emp, "COMUNICADO_CREDITO_TRABALHADOR")
+-        exd = (extr or {}).get("dados") or {}
++        exd = compor_extratos_mensais(emp.get("documentos") or []) or ((extr or {}).get("dados") or {})
+         dd = (darf or {}).get("dados") or {}
+         gd = (gfd or {}).get("dados") or {}
+         cd = (comunicado or {}).get("dados") or {}
+@@ -413,7 +427,7 @@
+             auto = "CONFERIDO"
+             if statuses & {"DIVERGENTE", "DARF_AUSENTE_INESPERADO"}:
+                 auto = "DIVERGENTE"
+-            elif statuses & {"AUSENTE", "BASE_INSUFICIENTE", "AGUARDANDO_FONTES"}:
++            elif statuses & {"AUSENTE", "BASE_INSUFICIENTE", "BASE_CONFLITANTE", "AGUARDANDO_FONTES"}:
+                 auto = "INCOMPLETO"
+             elif checks["inss"]["status"] == "AUSENCIA_JUSTIFICADA_AFASTAMENTO":
+                 auto = "JUSTIFICADO"
+@@ -446,6 +460,7 @@
+             "apuracao_federal_detalhada": bool(exd.get("apuracao_federal_detalhada")),
+             "escrita_fiscal_ignorada": bool(exd.get("escrita_fiscal_ignorada_motor_darf_folha")),
+             "escrita_fiscal_itens": exd.get("escrita_fiscal_itens") or [],
++            "composicao_extratos": exd.get("_composicao_extratos") or {},
+             "fgts_dominio": fgts_dom, "fgts_gfd": fgts_gfd,
+             "econsignado_mte": mte["valor_previsto"], "econsignado_contratos": mte["contratos"],
+             "econsignado_trabalhadores": mte["trabalhadores"],
+--- a/app/src/axiom_tools/modules/closing/retification.py
++++ b/app/src/axiom_tools/modules/closing/retification.py
+@@ -10,6 +10,7 @@
+ import json
+ import sqlite3
+ 
++from axiom_tools.modules.processing.composition import compor_extratos_mensais
+ from datetime import datetime
+ 
+ MATERIAL_TYPES = {
+@@ -103,22 +104,23 @@
+ 
+ 
+ def snapshot_cliente_competencia(con: sqlite3.Connection, cliente_id: int, competencia: str) -> dict:
+-    rows = con.execute("""SELECT id,documento_tipo,dados_json FROM processamento_arquivo
++    rows = con.execute("""SELECT id,documento_tipo,dados_json,nome_original,sha256,status,competencia FROM processamento_arquivo
+         WHERE cliente_id=? AND competencia=? AND status='PROCESSADO'
+           AND COALESCE(documento_vigente,1)=1
+           AND UPPER(COALESCE(documento_tipo,'')) NOT LIKE 'LOTE%ZIP'
+         ORDER BY id""", (int(cliente_id), competencia)).fetchall()
+     snap = {"competencia": competencia, "cliente_id": int(cliente_id), "folha": {}, "darf": {}, "fgts": {}, "esocial": {}, "consignado": {}}
+ 
+-    extr = _latest(rows, "EXTRATO_MENSAL")
+-    if extr:
+-        d = _row_data(extr)
++    extratos = [dict(r) for r in rows if str(r["documento_tipo"] or "").upper() == "EXTRATO_MENSAL"]
++    d = compor_extratos_mensais(extratos)
++    if d:
+         snap["folha"].update({
+             "proventos": _money(d.get("total_proventos")), "descontos": _money(d.get("total_descontos")),
+             "liquido": _money(d.get("liquido_geral")), "inss": _money(d.get("total_inss")),
+             "fgts_dominio": _money(d.get("fgts_total")), "darf_esperado": _money(d.get("saldo_total_apuracao_dominio")),
+             "previdenciario_esperado": _money(d.get("darf_folha_esperado")),
+             "econsignado_dominio": _money(d.get("econsignado_total")),
++            "composicao_extratos": d.get("_composicao_extratos") or {},
+         })
+ 
+     pessoas = {}
