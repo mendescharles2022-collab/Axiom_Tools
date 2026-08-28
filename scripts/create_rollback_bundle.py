@@ -74,6 +74,22 @@ def _validate_identity(value: str, field: str) -> str:
     return value
 
 
+def _normalize_target_identity(target_identity: dict | None) -> dict | None:
+    if target_identity is None:
+        return None
+    if not isinstance(target_identity, dict):
+        raise RollbackError("target_identity deve ser objeto.")
+    expected = {"app_version", "schema_version", "commit_sha"}
+    if set(target_identity) != expected:
+        raise RollbackError(
+            "target_identity deve conter exatamente app_version, schema_version e commit_sha."
+        )
+    return {
+        key: _validate_identity(str(target_identity[key]), f"target_{key}")
+        for key in ("app_version", "schema_version", "commit_sha")
+    }
+
+
 def _copy_sqlite_consistent(source: Path, destination: Path) -> dict:
     source = source.resolve()
     if not source.is_file():
@@ -121,6 +137,7 @@ def create_bundle(
     app_version: str,
     schema_version: str,
     commit_sha: str,
+    target_identity: dict | None = None,
 ) -> dict:
     source_root = source_root.resolve()
     db_path = db_path.resolve()
@@ -133,6 +150,7 @@ def create_bundle(
     app_version = _validate_identity(app_version, "app_version")
     schema_version = _validate_identity(schema_version, "schema_version")
     commit_sha = _validate_identity(commit_sha, "commit_sha")
+    target_identity = _normalize_target_identity(target_identity)
 
     normalized_plan = {"version": PLAN_VERSION, "files": []}
     seen = set()
@@ -180,6 +198,11 @@ def create_bundle(
         db_target = partial / "database" / "axiom_tools.sqlite3"
         db_meta = _copy_sqlite_consistent(db_path, db_target)
 
+        previous_identity = {
+            "app_version": app_version,
+            "schema_version": schema_version,
+            "commit_sha": commit_sha,
+        }
         manifest = {
             "format_version": 1,
             "product": "Axiom Tools",
@@ -187,6 +210,8 @@ def create_bundle(
             "app_version": app_version,
             "schema_version": schema_version,
             "commit_sha": commit_sha,
+            "previous_identity": previous_identity,
+            "target_identity": target_identity,
             "files": copied,
             "database": {
                 "path": "database/axiom_tools.sqlite3",
@@ -224,7 +249,29 @@ def main() -> int:
     parser.add_argument("--app-version", required=True)
     parser.add_argument("--schema-version", required=True)
     parser.add_argument("--commit-sha", required=True)
+    parser.add_argument("--target-app-version")
+    parser.add_argument("--target-schema-version")
+    parser.add_argument("--target-commit-sha")
     args = parser.parse_args()
+
+    target_values = (
+        args.target_app_version,
+        args.target_schema_version,
+        args.target_commit_sha,
+    )
+    if any(target_values) and not all(target_values):
+        print(
+            "ROLLBACK_BUNDLE_ERRO: identidade alvo deve informar versão, schema e commit.",
+            file=sys.stderr,
+        )
+        return 2
+    target_identity = None
+    if all(target_values):
+        target_identity = {
+            "app_version": args.target_app_version,
+            "schema_version": args.target_schema_version,
+            "commit_sha": args.target_commit_sha,
+        }
 
     try:
         plan = load_plan(args.plan)
@@ -236,6 +283,7 @@ def main() -> int:
             app_version=args.app_version,
             schema_version=args.schema_version,
             commit_sha=args.commit_sha,
+            target_identity=target_identity,
         )
     except RollbackError as exc:
         print(f"ROLLBACK_BUNDLE_ERRO: {exc}", file=sys.stderr)
