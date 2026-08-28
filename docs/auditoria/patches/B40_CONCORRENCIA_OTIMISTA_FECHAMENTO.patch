@@ -1,0 +1,99 @@
+--- a/app/src/axiom_tools/modules/closing/service.py
++++ b/app/src/axiom_tools/modules/closing/service.py
+@@
+     CREATE TABLE IF NOT EXISTS fechamento_mensal_cliente (
+@@
+-        impedimento_tipo TEXT, impedimento_observacao TEXT, fechado_em TEXT,
++        impedimento_tipo TEXT, impedimento_observacao TEXT, fechado_em TEXT,
++        revisao_estado INTEGER NOT NULL DEFAULT 0,
+@@
+     if "movimento_competencia" not in cols:
+         con.execute("ALTER TABLE fechamento_mensal_cliente ADD COLUMN movimento_competencia TEXT NOT NULL DEFAULT 'COM_MOVIMENTO'")
++    if "revisao_estado" not in cols:
++        con.execute("ALTER TABLE fechamento_mensal_cliente ADD COLUMN revisao_estado INTEGER NOT NULL DEFAULT 0")
+@@
++class ConflitoEstadoMensal(RuntimeError):
++    """A linha mensal mudou depois da leitura usada para decidir a transição."""
++
++
++def _atualizar_mensal_otimista(con, competencia, cliente_id, revisao_esperada, set_sql, params):
++    cur = con.execute(
++        f"UPDATE fechamento_mensal_cliente SET {set_sql}, revisao_estado=revisao_estado+1, "
++        "atualizado_em=datetime('now','localtime') "
++        "WHERE competencia=? AND cliente_id=? AND revisao_estado=?",
++        (*params, competencia, int(cliente_id), int(revisao_esperada)),
++    )
++    if int(cur.rowcount or 0) != 1:
++        con.rollback()
++        raise ConflitoEstadoMensal(
++            f"Estado mensal alterado por outra rotina: {competencia} cliente {int(cliente_id)}. Recarregue antes de gravar."
++        )
+@@
+-        con.execute("""UPDATE fechamento_mensal_cliente SET status=?,chamada=?,impedimento_tipo=?,impedimento_observacao=?,
+-            atualizado_em=datetime('now','localtime') WHERE competencia=? AND cliente_id=?""", (...))
++        _atualizar_mensal_otimista(con, competencia, cid, int(row["revisao_estado"] or 0),
++            "status=?,chamada=?,impedimento_tipo=?,impedimento_observacao=?", (...))
+@@
+-        con.execute("UPDATE fechamento_mensal_cliente SET movimento_competencia=? ...")
++        _atualizar_mensal_otimista(con, competencia, int(r['cliente_id']), int(r['revisao_estado'] or 0),
++            "movimento_competencia=?", (desejado,))
+@@
+-            versao=registrar_versao_fechada(con,competencia,cid)
++            versao=registrar_versao_fechada(con,competencia,cid,commit=False)
+@@
+-        con.execute("""UPDATE fechamento_mensal_cliente SET movimento_competencia=?,status=?, ...""", (...))
++        _atualizar_mensal_otimista(con, competencia, cid, int(old["revisao_estado"] or 0),
++            "movimento_competencia=?,status=?,fechado_em=?,impedimento_tipo=CASE WHEN ?='FECHADA' THEN NULL ELSE impedimento_tipo END,impedimento_observacao=CASE WHEN ?='FECHADA' THEN NULL ELSE impedimento_observacao END",
++            (movimento, novo_status, fechado_em, novo_status, novo_status))
+@@
+-        versao=registrar_versao_fechada(con,competencia,int(cid))
++        versao=registrar_versao_fechada(con,competencia,int(cid),commit=False)
+@@
+-        con.execute("""UPDATE fechamento_mensal_cliente SET status='FECHADA', ...""", (...))
++        _atualizar_mensal_otimista(con, competencia, int(cid), int(atual["revisao_estado"] or 0),
++            "status='FECHADA',fechado_em=?,impedimento_tipo=NULL,impedimento_observacao=NULL,retificacao_detectada_em=NULL",
++            (fechado_em,))
+@@
+-        con.execute("""UPDATE fechamento_mensal_cliente SET status=?,chamada=?, ... WHERE competencia=? AND cliente_id=?""", (...))
++        _atualizar_mensal_otimista(con, competencia, cid, int(old["revisao_estado"] or 0),
++            "status=?,chamada=?,impedimento_tipo=?,impedimento_observacao=?,fechado_em=NULL", (...))
+@@
+-        versao=registrar_versao_fechada(con,competencia,cid)
++        versao=registrar_versao_fechada(con,competencia,cid,commit=False)
+@@
+-        con.execute("""UPDATE fechamento_mensal_cliente SET status='FECHADA',chamada=?, ...""", (...))
++        _atualizar_mensal_otimista(con, competencia, cid, int(old["revisao_estado"] or 0),
++            "status='FECHADA',chamada=?,impedimento_tipo=NULL,impedimento_observacao=NULL,fechado_em=?,retificacao_detectada_em=NULL",
++            (atual, fechado_em))
+@@
+-    nova=int(ctrl["chamada_atual"] or 1)+1
+-    con.execute("UPDATE fechamento_mensal SET chamada_atual=? ... WHERE competencia=?",(nova,competencia))
++    esperada=int(ctrl["chamada_atual"] or 1); nova=esperada+1
++    cur=con.execute("UPDATE fechamento_mensal SET chamada_atual=?,atualizado_em=datetime('now','localtime') WHERE competencia=? AND chamada_atual=?",(nova,competencia,esperada))
++    if int(cur.rowcount or 0) != 1:
++        con.rollback()
++        raise ConflitoEstadoMensal(f"A chamada de {competencia} foi alterada por outra rotina. Recarregue antes de avançar.")
+@@
+-    con.execute("""UPDATE fechamento_mensal_cliente SET status='PRONTA',chamada=?, ...""", (...))
++    con.execute("""UPDATE fechamento_mensal_cliente SET status='PRONTA',chamada=?,impedimento_tipo=NULL,
++        impedimento_observacao=NULL,revisao_estado=revisao_estado+1,atualizado_em=datetime('now','localtime')
++        WHERE competencia=? AND status='ADIADA' AND chamada<=?""",(nova,competencia,nova))
+
+--- a/app/src/axiom_tools/modules/closing/retification.py
++++ b/app/src/axiom_tools/modules/closing/retification.py
+@@
+-def registrar_versao_fechada(con, competencia, cliente_id):
++def registrar_versao_fechada(con, competencia, cliente_id, *, commit: bool = True):
+@@
+-    con.commit(); return {...}
++    if commit:
++        con.commit()
++    return {...}
+@@
+-    ctrl = con.execute("SELECT status,versao_atual FROM fechamento_mensal_cliente ...").fetchone()
++    ctrl = con.execute("SELECT status,versao_atual,revisao_estado FROM fechamento_mensal_cliente ...").fetchone()
+@@
+-    con.execute("""UPDATE fechamento_mensal_cliente SET status='RETIFICACAO',retificacao_detectada_em=... WHERE ...""", (...))
++    from axiom_tools.modules.closing.service import _atualizar_mensal_otimista
++    _atualizar_mensal_otimista(con, competencia, int(cliente_id), int(ctrl["revisao_estado"] or 0),
++        "status='RETIFICACAO',retificacao_detectada_em=datetime('now','localtime')", ())
