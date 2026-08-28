@@ -1,0 +1,17 @@
+[release]
+product = "Axiom Tools"
+state = "UNRELEASED"
+release_version = ""
+schema_version = ""
+python_target = "3.12"
+platform_target = "windows-x64"
+
+[policy]
+require_clean_git = true
+require_schema_version = true
+require_release_version = true
+
+# Este arquivo é a fonte canônica da identidade de release.
+# Enquanto state = "UNRELEASED", nenhum pacote pode ser chamado de V8 final.
+# release_version e schema_version só devem ser preenchidos quando a árvore
+# operacional estiver reconciliada, testada e pronta para build controlado.
