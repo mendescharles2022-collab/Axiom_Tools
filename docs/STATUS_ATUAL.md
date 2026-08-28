@@ -21,7 +21,7 @@ Resultado atual:
 
 - 50 bloqueadores catalogados (`B01` a `B50`);
 - todos possuem regra de tratamento e critério objetivo de prova;
-- 28 casos reais da competência 08/2026 foram transformados em matriz de regressão;
+- 28 casos reais da competência 08/2026 foram transformados em matriz de regressão e registro machine-readable;
 - nenhum bloqueador foi promovido para `CORRIGIDO_HOMOLOGADO` sem execução no runtime reconciliado;
 - nenhum pacote final V8 está autorizado.
 
@@ -34,6 +34,8 @@ Mapas e regressão:
 - `docs/auditoria/MAPA_COBERTURA_BLOQUEADORES_V8.md`
 - `docs/auditoria/MATRIZ_REGRESSAO_V8_AGOSTO_2026.md`
 - `docs/auditoria/PROTOCOLO_REGRESSAO_28_CASOS_V8.md`
+- `config/regression_cases_v8_202608.json`
+- `scripts/validate_regression_results.py`
 
 ## 3. Bloqueador de governança — repositório ≠ runtime
 
@@ -230,17 +232,35 @@ Cobertura atual: **7 testes aprovados**.
 
 Benchmark SQLite não substitui benchmark HTTP/UX, concorrência, workers ou Windows. As queries reais serão definidas somente depois da reconciliação do schema/runtime.
 
-## 11. Contagem atual do tooling
+## 11. Regressão canônica de 08/2026
+
+Além da matriz humana, a regressão possui agora registro verificável:
+
+- `config/regression_cases_v8_202608.json` — `C01` a `C28` + controle documental P DA SILVA CARMO;
+- `scripts/validate_regression_results.py` — valida cobertura, hash do registry, status e evidências;
+- `tests/test_validate_regression_results.py` — **8 testes aprovados**.
+
+Regras:
+
+- o registry deve conter exatamente os 28 casos obrigatórios;
+- cada resultado usa `PASS`, `FAIL`, `NOT_RUN` ou `BLOCKED`;
+- `PASS` sem evidência é inválido;
+- resultado duplicado, caso desconhecido ou registry divergente é bloqueado;
+- modo final só aprova com **28 PASS com evidência**.
+
+Esse tooling não executa os casos sozinho. Ele garante que a execução real não possa ser chamada de completa se um caso estiver ausente ou sem prova.
+
+## 12. Contagem atual do tooling
 
 No repositório:
 
-- **114 testes definidos**;
-- **111 testes aprovados em execuções controladas**;
+- **122 testes definidos**;
+- **119 testes aprovados em execuções controladas**;
 - **3 testes E2E de reconciliação aguardando execução comprovada**.
 
 Essa contagem é do tooling de auditoria/homologação, não da suíte operacional V7/V8.
 
-## 12. Arquitetura funcional V8 preservada
+## 13. Arquitetura funcional V8 preservada
 
 A divisão aprovada permanece:
 
@@ -251,7 +271,7 @@ A divisão aprovada permanece:
 
 A Conferência deve ser leitura sem efeitos colaterais ao abrir a tela. Mudanças de fechamento são dirigidas por eventos de negócio.
 
-## 13. Máquinas de estado separadas
+## 14. Máquinas de estado separadas
 
 A V8 deve manter separados:
 
@@ -265,7 +285,7 @@ A V8 deve manter separados:
 
 `PROCESSADO`, `100%`, `COM_CONSIGNADO`, `PRONTA` ou qualquer outro estado técnico/intermediário não autorizam impressão, entrega ou fechamento por si sós.
 
-## 14. Regras operacionais centrais já consolidadas
+## 15. Regras operacionais centrais já consolidadas
 
 - sem movimento permanente do cadastro ≠ sem movimento daquela competência;
 - sem movimento mensal não é herdado silenciosamente;
@@ -281,12 +301,6 @@ A V8 deve manter separados:
 - eConsignado usa o universo da competência/chamada e retorno da API é evidência, não conclusão;
 - hash identifica conteúdo físico, não obrigação econômica;
 - limpeza mensal não apaga acervo probatório, versões ou retificações.
-
-## 15. Casos reais de agosto
-
-A matriz de 08/2026 possui 28 casos reais e um controle documental adicional.
-
-Nenhum caso pode ser considerado corrigido apenas porque uma ocorrência deixou de aparecer na interface.
 
 ## 16. Ordem oficial da fase de correção
 
