@@ -1,0 +1,81 @@
+--- a/app/src/axiom_tools/modules/processing/conference.py
++++ b/app/src/axiom_tools/modules/processing/conference.py
+@@ -11,6 +11,7 @@
+ from typing import Any
+ 
+ from axiom_tools.modules.processing.composition import compor_extratos_mensais
++from axiom_tools.modules.processing.fgts_composition import compor_guias_fgts
+ 
+ 
+ def _money(v):
+@@ -317,6 +318,10 @@
+             acoes.append({"codigo":"REVISAR_FGTS","tipo":"CONFERENCIA","prioridade":"CRITICA",
+                           "rotulo":"Revisar divergência do FGTS",
+                           "detalhe":"Os valores do Domínio e do FGTS Digital não coincidem."})
++        elif st_fgts == "BASE_CONFLITANTE":
++            acoes.append({"codigo":"REVISAR_GUIAS_FGTS","tipo":"CONFERENCIA","prioridade":"CRITICA",
++                          "rotulo":"Revisar composição das GFD",
++                          "detalhe":"Há guias FGTS potencialmente sobrepostas; classifique mensal, rescisório, antecipado ou reemissão antes de fechar."})
+ 
+     if exibir_econsignado:
+         st_econ = (checks.get("econsignado") or {}).get("status")
+@@ -364,7 +369,7 @@
+         comunicado = _ultimo_tipo(emp, "COMUNICADO_CREDITO_TRABALHADOR")
+         exd = compor_extratos_mensais(emp.get("documentos") or []) or ((extr or {}).get("dados") or {})
+         dd = (darf or {}).get("dados") or {}
+-        gd = (gfd or {}).get("dados") or {}
++        gd = compor_guias_fgts(emp.get("documentos") or []) or ((gfd or {}).get("dados") or {})
+         cd = (comunicado or {}).get("dados") or {}
+ 
+         inss_dom = _money(exd.get("total_inss"))
+@@ -413,7 +418,13 @@
+             darf_check = _check_darf_folha(exd, dd, afastamento_justifica, afastamento_mensagem)
+             checks = {
+                 "inss": darf_check,
+-                "fgts": _cmp(fgts_dom, fgts_gfd) if exibir_fgts else {"status": "NAO_APLICAVEL", "diferenca": None},
++                "fgts": (
++                    {"status": "BASE_CONFLITANTE", "diferenca": None,
++                     "mensagem": "Há múltiplas GFD com componentes FGTS sobrepostos e valores incompatíveis.",
++                     "conflitos": (gd.get("_composicao_gfd") or {}).get("conflitos") or []}
++                    if exibir_fgts and (gd.get("_composicao_gfd") or {}).get("conflitos")
++                    else (_cmp(fgts_dom, fgts_gfd) if exibir_fgts else {"status": "NAO_APLICAVEL", "diferenca": None})
++                ),
+                 "econsignado": _check_econsignado(mte["valor_previsto"], econ_dom, econ_comunicado, econ_gfd)
+                     if exibir_econsignado else {"status": "NAO_APLICAVEL", "diferenca": None},
+             }
+@@ -461,6 +472,7 @@
+             "escrita_fiscal_ignorada": bool(exd.get("escrita_fiscal_ignorada_motor_darf_folha")),
+             "escrita_fiscal_itens": exd.get("escrita_fiscal_itens") or [],
+             "composicao_extratos": exd.get("_composicao_extratos") or {},
++            "composicao_gfd": gd.get("_composicao_gfd") or {},
+             "fgts_dominio": fgts_dom, "fgts_gfd": fgts_gfd,
+             "econsignado_mte": mte["valor_previsto"], "econsignado_contratos": mte["contratos"],
+             "econsignado_trabalhadores": mte["trabalhadores"],
+--- a/app/src/axiom_tools/modules/closing/retification.py
++++ b/app/src/axiom_tools/modules/closing/retification.py
+@@ -11,6 +11,7 @@
+ import sqlite3
+ 
+ from axiom_tools.modules.processing.composition import compor_extratos_mensais
++from axiom_tools.modules.processing.fgts_composition import compor_guias_fgts
+ from datetime import datetime
+ 
+ MATERIAL_TYPES = {
+@@ -145,10 +146,13 @@
+     if darf:
+         d = _row_data(darf)
+         snap["darf"] = {"total": _money(d.get("valor_total")), "principal": _money(d.get("valor_principal")), "composicao": _composicao_darf(d)}
+-    gfd = _latest(rows, "GUIA_FGTS_DIGITAL")
+-    if gfd:
+-        d = _row_data(gfd)
+-        snap["fgts"] = {"fgts_total": _money(d.get("fgts_total")), "consignado_total": _money(d.get("consignado_total")), "guia_total": _money(d.get("guia_total")), "trabalhadores": d.get("quantidade_trabalhadores")}
++    gfds = [dict(r) for r in rows if str(r["documento_tipo"] or "").upper() == "GUIA_FGTS_DIGITAL"]
++    d = compor_guias_fgts(gfds)
++    if d:
++        snap["fgts"] = {
++            "fgts_total": _money(d.get("fgts_total")), "consignado_total": _money(d.get("consignado_total")),
++            "guia_total": _money(d.get("guia_total")), "composicao_gfd": d.get("_composicao_gfd") or {},
++        }
+ 
+     if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='processamento_esocial_fechamento'").fetchone():
+         e = con.execute("""SELECT recibo,data_envio,tipo_envio,situacao FROM processamento_esocial_fechamento
