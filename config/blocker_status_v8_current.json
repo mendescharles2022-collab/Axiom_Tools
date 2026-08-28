@@ -11,7 +11,7 @@
     {"blocker_id":"B05","state":"BLOQUEADO_POR_RUNTIME","notes":"Tooling de cópia/auditoria/comparação preparado; migração real depende da reconciliação completa do schema/runtime."},
     {"blocker_id":"B06","state":"EM_CORRECAO","notes":"Snapshot operacional Axiom_Tools(20260828-175237).zip recuperado: 674/674 arquivos app íntegros por CRC/tamanho; banco associado íntegro. Reconciliação controlada com o GitHub em andamento na branch audit-v8-runtime-reconciliation."},
     {"blocker_id":"B07","state":"PRONTO_PARA_CORRIGIR"},
-    {"blocker_id":"B08","state":"INSPECAO_PENDENTE"},
+    {"blocker_id":"B08","state":"PRONTO_PARA_CORRIGIR","notes":"Causa confirmada no snapshot: fechamento_cliente_perfil só persiste participa_ciclo e não possui chamada padrão; sincronizar_clientes_ativos cria todo cliente incluído como PRONTA/chamada 1. T L (cliente 750) está PRONTA/chamada 1 sem histórico de adiamento, portanto a preferência operacional de 2ª chamada não foi persistida."},
     {"blocker_id":"B09","state":"PRONTO_PARA_CORRIGIR"},
     {"blocker_id":"B10","state":"PRONTO_PARA_CORRIGIR"},
     {"blocker_id":"B11","state":"PRONTO_PARA_CORRIGIR"},
