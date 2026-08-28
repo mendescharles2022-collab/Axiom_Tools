@@ -1,249 +1,238 @@
 # Rastreador canônico — Execução de correção V8
 
-Data inicial: 28/08/2026  
+Data: 28/08/2026  
 Status: **RUNTIME AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
-Este é o arquivo vivo da fase de correção/homologação. Os documentos `AUDITORIA_CANONICA_V8_20260828_ETAPA*.md` permanecem como histórico da investigação.
+Este é o rastreador vivo da fase de correção/homologação. Os documentos `AUDITORIA_CANONICA_V8_20260828_ETAPA*.md` permanecem como histórico da investigação.
 
-## 1. Estados utilizados
+## 1. Fonte de verdade operacional da auditoria
 
-- `NAO_INICIADO`;
-- `INSPECAO_PENDENTE`;
-- `PRONTO_PARA_CORRIGIR`;
-- `EM_CORRECAO`;
-- `IMPLEMENTADO_NAO_TESTADO`;
-- `TESTE_EM_EXECUCAO`;
-- `CORRIGIDO_TESTADO`;
-- `CORRIGIDO_HOMOLOGADO`;
-- `BLOQUEADO_POR_RUNTIME`.
+Arquivos canônicos:
 
-`Documentado` não é sinônimo de corrigido.
+- `config/blocker_registry_v8.json` — identidade B01–B50;
+- `config/blocker_status_v8_current.json` — estado vivo dos bloqueadores;
+- `config/regression_cases_v8_202608.json` — C01–C28;
+- `docs/STATUS_ATUAL.md` — estado geral;
+- este arquivo — sequência operacional da correção.
 
-## 2. Gate Zero — fonte oficial
+A documentação humana nunca pode contradizer os registries machine-readable.
 
-| Item | Estado | Situação |
-|---|---|---|
-| B06 — `main` ≠ runtime | `BLOQUEADO_POR_RUNTIME` | árvore operacional completa ainda não reconciliada |
-| B42 — proveniência de build | `EM_CORRECAO` | núcleo de tooling implementado/testado; integração runtime/health/logs/instalador pendente |
-| Suíte operacional original | `BLOQUEADO_POR_RUNTIME` | testes do runtime ainda não versionados |
-| Banco operacional/cópia real | `BLOQUEADO_POR_RUNTIME` | tooling pronto; base real de homologação ainda não disponível nesta sessão |
+## 2. CI do tooling — APROVADA
 
-### Regra
+Workflow oficial: `V8 Audit Tooling Tests`  
+Run: `33193366593`  
+Commit: `651771a899a3b35de3260c802e81e67f5ae8f3b3`  
+Python: `3.12.14`
 
-Não implementar a V8 operacional sobre a fundação reduzida da `main` fingindo que ela é o runtime auditado.
+Resultado:
 
-## 3. Tooling de reconciliação — implementado
+```text
+Ran 132 tests in 0.951s
+OK
+```
 
-Arquivos principais:
+**132/132 testes do tooling aprovados**, incluindo os 3 E2E de reconciliação.
+
+Essa aprovação não homologa a V8 operacional.
+
+## 3. Snapshot B01–B50
+
+Distribuição atual:
+
+| Estado | Quantidade |
+|---|---:|
+| `PRONTO_PARA_CORRIGIR` | 35 |
+| `INSPECAO_PENDENTE` | 8 |
+| `EM_CORRECAO` | 3 |
+| `BLOQUEADO_POR_RUNTIME` | 4 |
+| `CORRIGIDO_TESTADO` | 0 |
+| `CORRIGIDO_HOMOLOGADO` | 0 |
+
+### Em correção
+
+- B35 — FK/invariantes;
+- B41 — backup/rollback;
+- B42 — proveniência de build.
+
+### Bloqueados pelo runtime
+
+- B05 — migração V8;
+- B06 — `main` ≠ runtime;
+- B45 — benchmark representativo do runtime;
+- B49 — banco ↔ filesystem sobre schema/acervo reais.
+
+## 4. Gate Zero — B06
+
+B06 permanece o principal bloqueador da fase de correção operacional.
+
+O `main` ainda não contém integralmente a árvore V8 auditada. Não será feita correção de runtime sobre a fundação reduzida fingindo que ela é o produto instalado.
+
+Ferramentas já prontas/testadas:
 
 - `scripts/export_runtime_reconciliation.py`;
 - `scripts/export_runtime_reconciliation.ps1`;
 - `scripts/audit_runtime_reconciliation.py`;
-- `tests/test_export_runtime_reconciliation.py`;
-- `tests/test_audit_runtime_reconciliation.py`;
-- `tests/test_reconciliation_pipeline_e2e.py`.
+- 3 testes E2E de exportação/auditoria/diferença/adulteração — **aprovados no CI**.
 
-Estado:
+Pendente:
 
-- exportador: **9 testes aprovados**;
-- auditor: **9 testes aprovados**;
-- pipeline E2E: **3 testes versionados, execução comprovada ainda pendente**;
-- launcher PowerShell: execução no Windows real pendente;
-- GitHub Actions: configurado, mas nenhum run automático observável até agora.
+- executar o launcher/exportação no Windows real;
+- auditar o pacote exportado;
+- reconciliar a árvore controlada com o `main`;
+- trazer a suíte operacional original.
 
-## 4. B42 — proveniência de build
+## 5. B42 — proveniência de build
 
-Arquivos:
+Estado: `EM_CORRECAO`.
 
-- `config/release_identity.toml`;
+Implementado/testado:
+
+- `config/release_identity.toml` — atualmente `UNRELEASED`;
 - `scripts/generate_build_provenance.py`;
 - `scripts/verify_build_provenance.py`;
-- `docs/auditoria/GUIA_PROVENIENCIA_BUILD_V8.md`;
-- testes correspondentes.
+- Git limpo obrigatório;
+- manifesto SHA-256;
+- bloqueio de conteúdo sensível;
+- verificação de commit/ref/identidade.
 
-Estado da identidade:
+Pendente:
 
-```text
-state = UNRELEASED
-release_version = vazio
-schema_version = vazio
-```
-
-Isso é intencional: nenhum build final pode ser gerado antes da reconciliação/homologabilidade.
-
-Cobertura:
-
-- gerador de proveniência: **12 testes aprovados**;
-- verificador independente: **9 testes aprovados**.
-
-Ainda falta para concluir B42:
-
-- runtime consumir a identidade canônica;
+- runtime consumir a identidade;
 - `/health` expor versão/build/schema;
-- log de inicialização registrar a mesma identidade;
-- instalador/backup/rollback usar o manifesto;
-- pacote final ser gerado/verificado pelo mesmo caminho.
+- logs de inicialização usarem a mesma identidade;
+- instalador/backup/rollback consumirem o mesmo manifesto;
+- pacote final nascer da mesma árvore testada.
 
-## 5. SQLite — B35/B05/B41
+## 6. B35/B05 — SQLite e migração
 
-### Auditor baseline somente leitura
+Tooling aprovado:
 
-`scripts/audit_sqlite_baseline.py`
+- `scripts/audit_sqlite_baseline.py`;
+- `scripts/compare_sqlite_audits.py`;
+- `scripts/clone_sqlite_for_migration.py`;
+- `scripts/run_sqlite_invariants.py`.
 
-Verifica:
+Fluxo quando a base real controlada estiver disponível:
 
-- `PRAGMA integrity_check`;
-- `PRAGMA foreign_key_check`;
-- `user_version`/`application_id`;
-- schema, índices, views e triggers;
-- definições de FK;
-- contagens opcionais;
-- hash canônico do schema.
-
-A conexão usa `mode=ro` + `query_only=ON`.
-
-**7 testes aprovados.**
-
-### Comparador pré/pós-migração
-
-`scripts/compare_sqlite_audits.py`
-
-Distingue:
-
-- objetos adicionados;
-- objetos removidos;
-- objetos alterados;
-- deltas de registros;
-- nova violação de FK;
-- regressão de integridade.
-
-Mudança de schema não é automaticamente chamada de sucesso nem de erro.
-
-**7 testes aprovados.**
-
-### Cópia consistente para ensaio
-
-`scripts/clone_sqlite_for_migration.py`
-
-- origem aberta somente leitura;
-- cópia via API nativa `sqlite3.Connection.backup()`;
-- destino nunca sobrescrito;
-- uso de `.partial` até validação;
-- auditoria de origem e cópia;
-- promoção atômica somente após equivalência básica.
-
-**6 testes aprovados.**
-
-### Estado dos bloqueadores
-
-| ID | Estado | Observação |
-|---|---|---|
-| B35 — FK/invariantes | `EM_CORRECAO` | checks estruturais implementados/testados; invariantes lógicas dependem do schema reconciliado |
-| B05 — migração V8 | `BLOQUEADO_POR_RUNTIME` | tooling de ensaio pronto; migração real não pode ser escrita sem o schema operacional |
-| B41 — backup/rollback | `BLOQUEADO_POR_RUNTIME` | cópia segura preparada; rollback integrado exige pacote/banco/configuração reais |
-
-Fluxo aprovado quando a cópia real estiver disponível:
-
-1. baseline pré-migração;
-2. cópia consistente;
+1. baseline somente leitura;
+2. cópia consistente via `sqlite3.Connection.backup()`;
 3. migração somente na cópia;
 4. baseline pós-migração;
 5. comparação pré/pós;
-6. invariantes lógicas V8;
-7. regressão funcional;
-8. somente depois avaliar atualização real.
+6. invariantes lógicas versionadas;
+7. regressão funcional.
 
-## 6. Contagem atual do tooling
+B35 está `EM_CORRECAO`; B05 continua `BLOQUEADO_POR_RUNTIME`.
 
-| Família | Testes aprovados | Pendentes |
-|---|---:|---:|
-| Reconciliação | 18 | 3 E2E |
-| Proveniência de build | 21 | 0 |
-| SQLite/migração | 20 | 0 |
-| **Total** | **59** | **3** |
+## 7. B41 — backup/rollback
 
-**62 testes definidos; 59 aprovados em execuções controladas.**
+Estado: `EM_CORRECAO`.
 
-Essa suíte ainda não substitui os testes operacionais do runtime V7/V8.
+Implementado/testado:
 
-## 7. Lote A — ciclo e saídas
+- `scripts/create_rollback_bundle.py`;
+- `scripts/verify_rollback_bundle.py`;
+- `scripts/restore_rollback_bundle.py`;
+- bundle com manifesto/hash;
+- SQLite consistente;
+- ensaio de restauração somente em staging novo;
+- validação pós-restauração.
 
-| ID | Tema | Estado |
-|---|---|---|
-| B01 | reprocessamento destrutivo | `PRONTO_PARA_CORRIGIR` |
-| B02 | Conference GET com mutação | `PRONTO_PARA_CORRIGIR` |
-| B03 | gate único de saída | `PRONTO_PARA_CORRIGIR` |
-| B04 | versão/retificação vigente | `INSPECAO_PENDENTE` |
-| B07 | universo operacional duplicado | `PRONTO_PARA_CORRIGIR` |
-| B08 | T L / 2ª chamada | `INSPECAO_PENDENTE` |
-| B09 | fechados na mesa viva | `PRONTO_PARA_CORRIGIR` |
-| B10 | retificação misturada ao ciclo | `PRONTO_PARA_CORRIGIR` |
-| B11 | estado antecipado | `PRONTO_PARA_CORRIGIR` |
-| B37 | máquinas de estado misturadas | `PRONTO_PARA_CORRIGIR` |
-| B39 | seleção manual por IDs | `PRONTO_PARA_CORRIGIR` |
-| B40 | concorrência lógica | `INSPECAO_PENDENTE` |
+Pendente:
 
-## 8. Lote B — documentos/identidade/aplicabilidade
+- plano real de arquivos da instalação;
+- bundle da instalação real;
+- ensaio com cópia real;
+- rollback físico Windows;
+- smoke pós-rollback.
 
-`PRONTO_PARA_CORRIGIR`: B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B29, B30, B31 e B33.
+## 8. B38 — segurança
 
-`INSPECAO_PENDENTE`: B32 — IRRF por competência de pagamento.
+Estado: `INSPECAO_PENDENTE`.
 
-## 9. Lote C — eConsignado
+Preparado:
 
-- B24 — `PRONTO_PARA_CORRIGIR`;
-- B25 — `PRONTO_PARA_CORRIGIR`;
-- B26 — `PRONTO_PARA_CORRIGIR`;
-- B27 — `PRONTO_PARA_CORRIGIR`;
-- B28 — `INSPECAO_PENDENTE`.
+- `scripts/audit_route_security.py`;
+- `config/route_security_policy.example.json`.
 
-## 10. Lote D — cadastro/migração/segurança
+O inventário estático é apenas evidência auxiliar. Segurança dinâmica, CSRF global, autorização de negócio, escopo e transações dependem do runtime reconciliado.
 
-- B34 — `PRONTO_PARA_CORRIGIR`;
-- B35 — `EM_CORRECAO`;
-- B36 — `INSPECAO_PENDENTE`;
-- B38 — `INSPECAO_PENDENTE`;
-- B05/B41 — `BLOQUEADO_POR_RUNTIME`.
+## 9. B45/B48/B49 — escala e acervo
 
-## 11. Lote E — UX/desempenho/acervo
+Preparado:
 
-- B43, B44, B46, B47 e B50 — `PRONTO_PARA_CORRIGIR`;
-- B48 — `INSPECAO_PENDENTE`;
-- B45 e B49 — `BLOQUEADO_POR_RUNTIME`.
+- B45 — `scripts/benchmark_sqlite_queries.py`;
+- B48 — `scripts/plan_retention_cleanup.py`, somente dry-run;
+- B49 — `scripts/audit_db_filesystem_links.py`.
 
-## 12. Regressão real de 08/2026
+B45 e B49 continuam bloqueados pelo runtime. B48 segue em inspeção pendente até conhecer política/acervo reais.
 
-Obrigatórios:
+## 10. Regressão C01–C28
 
-- `MATRIZ_REGRESSAO_V8_AGOSTO_2026.md`;
-- `PROTOCOLO_REGRESSAO_28_CASOS_V8.md`.
+Registro:
 
-Nenhum caso será homologado apenas porque uma pendência desapareceu da tela.
+- `config/regression_cases_v8_202608.json`;
+- `scripts/validate_regression_results.py`.
 
-## 13. Gate final de homologação
+Modo final exige:
 
-Antes de qualquer pacote V8 final:
+- 28/28 casos presentes;
+- 28 `PASS`;
+- evidência para cada `PASS`;
+- registry hash correspondente.
 
-- [ ] runtime reconciliado com GitHub;
-- [ ] identidade de release em `READY` no momento correto;
-- [ ] versão/build/schema verificados;
-- [ ] suíte original executada;
-- [ ] bloqueadores críticos corrigidos;
-- [ ] 28 casos executados;
+O controle adicional P DA SILVA CARMO permanece fixture complementar e não substitui C01–C28.
+
+## 11. Ordem oficial da correção operacional
+
+Assim que B06 for removido:
+
+1. rodar baseline/suíte operacional original;
+2. B01 — reprocessamento candidato/versionado;
+3. B02 — Conference GET somente leitura;
+4. B03/B39 — gate único de saídas e IDs manuais;
+5. B07/B08 — universo/chamadas;
+6. B09/B10/B11/B37/B40 — estados, retificação e concorrência;
+7. B12–B23/B29–B33 — documentos, identidade, composição e aplicabilidade;
+8. B24–B28 — eConsignado;
+9. B34/B36/B38 — cadastro, legado e segurança;
+10. B43/B44/B46/B47/B50 — UX/saídas/deduplicação restantes;
+11. migração + invariantes reais;
+12. regressão C01–C28;
+13. benchmark runtime;
+14. build/pacote;
+15. instalação Windows + rollback.
+
+## 12. Gate final
+
+Nenhum pacote final V8 antes de:
+
+- [ ] runtime reconciliado;
+- [ ] suíte operacional original aprovada;
+- [ ] 50/50 bloqueadores `CORRIGIDO_HOMOLOGADO`;
+- [ ] 28/28 casos `PASS` com evidência;
 - [ ] `integrity_check` aprovado;
 - [ ] `foreign_key_check` aprovado;
 - [ ] invariantes lógicas aprovadas;
 - [ ] benchmark aprovado;
 - [ ] segurança aprovada;
 - [ ] A4 homologado;
-- [ ] pacote gerado da mesma árvore testada;
-- [ ] `BUILD_PROVENANCE.json` verificado;
+- [ ] build proveniente da mesma árvore testada;
 - [ ] migração em cópia aprovada;
 - [ ] instalação Windows aprovada;
 - [ ] rollback código + banco + configuração comprovado.
 
-## 14. Próximo avanço real
+## 13. Próximo avanço real
 
-Sem a árvore/banco operacional, não fabricar schema, migração ou correção fictícios.
+Sem o runtime, não criar implementação fictícia para B01/B02/B03.
 
-Pode-se continuar preparando tooling genérico seguro, mas a próxima mudança de estado dos bloqueadores operacionais depende da exportação do runtime Windows ou do pacote canônico equivalente.
+O próximo trabalho útil no repositório é fortalecer o **gate de release/homologação**, fazendo uma ferramenta única verificar automaticamente:
+
+- status dos 50 bloqueadores;
+- resultado dos 28 casos;
+- identidade `READY`;
+- proveniência do build;
+- evidência de CI;
+- relatórios de banco/benchmark/segurança/rollback.
+
+Até esse gate passar, a V8 permanece **NÃO HOMOLOGADA**.
