@@ -1,0 +1,121 @@
+--- a/app/src/axiom_tools/modules/processing/conference.py
++++ b/app/src/axiom_tools/modules/processing/conference.py
+@@ -323,7 +323,7 @@
+     d = dossie_competencia(con, competencia, busca)
+     from axiom_tools.modules.closing.service import (
+         clientes_conferencia_ids, clientes_fechados_ids, movimentos_competencia, possui_controle,
+-        resumo as resumo_fechamento, sincronizar_resultados_conferencia,
++        resumo as resumo_fechamento,
+     )
+     fechamento_ativo = possui_controle(con, competencia)
+     fechamento_info = resumo_fechamento(con, competencia) if fechamento_ativo else None
+@@ -462,10 +462,6 @@
+         })
+ 
+     fechamentos_automaticos = 0
+-    if fechamento_ativo:
+-        fechamentos_automaticos = sincronizar_resultados_conferencia(con, competencia, linhas)
+-        if fechamentos_automaticos:
+-            fechamento_info = resumo_fechamento(con, competencia)
+ 
+     situacao = str(situacao or "").upper()
+     if situacao:
+@@ -501,4 +497,28 @@
+             "fechamentos_automaticos": fechamentos_automaticos}
+ 
+ 
+-__all__ = ["conferencia_competencia"]
++def sincronizar_conferencia_competencia(con: sqlite3.Connection, competencia: str) -> dict:
++    """Recalcula a conferência e aplica fechamento somente em evento explícito.
++
++    Esta função é comando. ``conferencia_competencia`` permanece consulta pura e
++    não deve persistir mudanças ao abrir/recarregar telas ou relatórios.
++    """
++    resultado = conferencia_competencia(con, competencia, escopo_fechamento="CICLO")
++    if not resultado.get("fechamento_ativo"):
++        return resultado
++
++    from axiom_tools.modules.closing.service import (
++        resumo as resumo_fechamento,
++        sincronizar_resultados_conferencia,
++    )
++
++    fechados = sincronizar_resultados_conferencia(
++        con, competencia, resultado.get("linhas") or []
++    )
++    resultado["fechamentos_automaticos"] = fechados
++    if fechados:
++        resultado["fechamento"] = resumo_fechamento(con, competencia)
++    return resultado
++
++
++__all__ = ["conferencia_competencia", "sincronizar_conferencia_competencia"]
+--- a/app/tests/modules/test_conference_readonly_v8.py
++++ b/app/tests/modules/test_conference_readonly_v8.py
+@@ -0,0 +1,66 @@
++from __future__ import annotations
++
++import hashlib
++import shutil
++import sqlite3
++import tempfile
++import unittest
++from pathlib import Path
++from unittest.mock import patch
++
++from axiom_tools.modules.processing import conference
++
++
++SOURCE_DB = Path('/mnt/data/axiom_tools_recovered_snapshot/Axiom_Tools/data/axiom_tools.db')
++
++
++def _digest_rows(con: sqlite3.Connection, table: str) -> str:
++    rows = con.execute(f'SELECT * FROM {table} ORDER BY rowid').fetchall()
++    payload = repr([tuple(row) for row in rows]).encode('utf-8')
++    return hashlib.sha256(payload).hexdigest()
++
++
++class ConferenceReadonlyV8Tests(unittest.TestCase):
++    def test_conferencia_competencia_does_not_write_closing_tables(self):
++        with tempfile.TemporaryDirectory() as td:
++            db = Path(td) / 'axiom_tools.db'
++            shutil.copy2(SOURCE_DB, db)
++            con = sqlite3.connect(db)
++            con.row_factory = sqlite3.Row
++            tables = [
++                'fechamento_mensal',
++                'fechamento_mensal_cliente',
++                'fechamento_mensal_historico',
++                'fechamento_mensal_versao',
++                'fechamento_mensal_retificacao',
++            ]
++            before = {t: _digest_rows(con, t) for t in tables}
++            changes_before = con.total_changes
++            result = conference.conferencia_competencia(con, '08/2026', busca='T L Empreendimentos')
++            after = {t: _digest_rows(con, t) for t in tables}
++            self.assertEqual(before, after)
++            self.assertEqual(changes_before, con.total_changes)
++            self.assertEqual(result['fechamentos_automaticos'], 0)
++            con.close()
++
++    def test_explicit_sync_calls_closing_command(self):
++        fake = {
++            'competencia': '08/2026',
++            'linhas': [{'cliente_id': 1, 'status_automatico': 'CONFERIDO'}],
++            'fechamento_ativo': True,
++            'fechamentos_automaticos': 0,
++            'fechamento': {'fechadas': 0},
++        }
++        con = sqlite3.connect(':memory:')
++        with patch.object(conference, 'conferencia_competencia', return_value=fake.copy()), \
++             patch('axiom_tools.modules.closing.service.sincronizar_resultados_conferencia', return_value=1) as sync, \
++             patch('axiom_tools.modules.closing.service.resumo', return_value={'fechadas': 1}):
++            result = conference.sincronizar_conferencia_competencia(con, '08/2026')
++        sync.assert_called_once()
++        self.assertEqual(result['fechamentos_automaticos'], 1)
++        self.assertEqual(result['fechamento'], {'fechadas': 1})
++        con.close()
++
++
++if __name__ == '__main__':
++    unittest.main()
