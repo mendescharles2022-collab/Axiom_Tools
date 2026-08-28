@@ -6,18 +6,18 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33195532631",
-        "commit:b18c487f125c300964a5558b5f8cbe271c0418dc",
-        "result:161-tests-OK",
-        "artifact:v8-release-preflight#9695566182",
-        "artifact-sha256:a379a32b433722f87b179d200dde5d454eefdaff68a2e2318f8bb93b295bf4c6"
+        "github-actions:run/33196049264",
+        "commit:eb695be6531c7711ac36b3f45e0d9d31eb809233",
+        "result:165-tests-OK",
+        "artifact:v8-release-preflight#9695772154",
+        "artifact-sha256:380162c6ed4b1d5b01b0f7c7c834f8f1d300699db54b4b050ed967b5e9181d85"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14; preflight publicado como artifact."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14; inclui quatro testes das invariantes confirmadas do Fechamento e preflight publicado como artifact."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
     {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
-    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes específicas dependem do schema real."},
+    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Duas invariantes de Fechamento já foram confirmadas no runtime preservado, mas ainda não executadas contra cópia real do banco."},
     {"gate_id":"BENCHMARK_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Benchmark representativo depende do runtime real."},
     {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Segurança dinâmica depende das rotas reais reconciliadas."},
     {"gate_id":"REPORT_A4","status":"NOT_RUN","evidence":[],"notes":"Preview/impressão final ainda não homologados."},
