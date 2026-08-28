@@ -1,0 +1,10 @@
+{
+  "auth_decorators": [
+    "login_required",
+    "require_role",
+    "require_permission"
+  ],
+  "csrf_exempt_decorators": [
+    "csrf.exempt"
+  ]
+}
