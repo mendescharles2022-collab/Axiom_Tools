@@ -1,0 +1,301 @@
+--- a/app/src/axiom_tools/modules/closing/service.py
++++ b/app/src/axiom_tools/modules/closing/service.py
+@@ -29,6 +29,7 @@
+     "DOCUMENTACAO_PENDENTE": "Documentação pendente",
+     "AJUSTE_FOLHA": "Ajuste de folha",
+     "INFORMACAO_CLIENTE": "Aguardando informação do cliente",
++    "CHAMADA_PADRAO": "Chamada padrão do cliente",
+     "OUTRO": "Outro motivo",
+ }
+ 
+@@ -65,10 +66,24 @@
+     CREATE INDEX IF NOT EXISTS idx_fechamento_hist_comp ON fechamento_mensal_historico(competencia,id DESC);
+     CREATE TABLE IF NOT EXISTS fechamento_cliente_perfil (
+         cliente_id INTEGER PRIMARY KEY, participa_ciclo INTEGER NOT NULL DEFAULT 0,
++        chamada_padrao INTEGER NOT NULL DEFAULT 1,
+         origem TEXT, atualizado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+         FOREIGN KEY(cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+     );
++    CREATE TABLE IF NOT EXISTS fechamento_cliente_perfil_historico (
++        id INTEGER PRIMARY KEY AUTOINCREMENT, cliente_id INTEGER NOT NULL,
++        participa_anterior INTEGER, participa_novo INTEGER,
++        chamada_anterior INTEGER, chamada_nova INTEGER,
++        origem TEXT, detalhe TEXT,
++        criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
++        FOREIGN KEY(cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
++    );
++    CREATE INDEX IF NOT EXISTS idx_fech_perfil_hist_cliente
++      ON fechamento_cliente_perfil_historico(cliente_id,id DESC);
+     """)
++    perfil_cols = {r[1] for r in con.execute("PRAGMA table_info(fechamento_cliente_perfil)").fetchall()}
++    if "chamada_padrao" not in perfil_cols:
++        con.execute("ALTER TABLE fechamento_cliente_perfil ADD COLUMN chamada_padrao INTEGER NOT NULL DEFAULT 1")
+     cols = {r[1] for r in con.execute("PRAGMA table_info(fechamento_mensal_cliente)").fetchall()}
+     if "movimento_competencia" not in cols:
+         con.execute("ALTER TABLE fechamento_mensal_cliente ADD COLUMN movimento_competencia TEXT NOT NULL DEFAULT 'COM_MOVIMENTO'")
+@@ -83,21 +98,97 @@
+         VALUES(?,?,?,?,?,?,?)""", (competencia, cliente_id, chamada, acao, anterior, novo, detalhe))
+ 
+ 
++
++def _disparar_saidas_automaticas(con: sqlite3.Connection, competencia: str, cliente_ids: list[int] | set[int]) -> None:
++    """Dispara saídas após o fechamento; falha de saída nunca desfaz o fechamento."""
++    from axiom_tools.modules.processing.output import gerar_saidas_cliente_competencia
++    for cid in sorted({int(x) for x in cliente_ids if int(x) > 0}):
++        try:
++            resultado=gerar_saidas_cliente_competencia(con,cid,competencia,automaticas=True)
++            _registrar(con,competencia,"SAIDA_AUTOMATICA_POS_FECHAMENTO",cid,detalhe=(
++                f"documentos={resultado.get('documentos',0)}; geradas={resultado.get('geradas',0)}; "
++                f"ignoradas={resultado.get('ignoradas',0)}; erros={resultado.get('erros',0)}"
++            ))
++        except Exception as exc:
++            _registrar(con,competencia,"SAIDA_AUTOMATICA_ERRO",cid,detalhe=str(exc)[:1000])
++    con.commit()
++
++
++def perfil_cliente(con: sqlite3.Connection, cliente_id: int) -> dict | None:
++    garantir_schema(con)
++    row=con.execute("SELECT * FROM fechamento_cliente_perfil WHERE cliente_id=?",(int(cliente_id),)).fetchone()
++    return dict(row) if row else None
++
++
++def salvar_perfil_cliente(con: sqlite3.Connection, cliente_id: int, *, participa_ciclo: bool, chamada_padrao: int = 1, origem: str = "MANUAL") -> dict:
++    """Persiste participação e chamada padrão sem misturar com a decisão mensal."""
++    garantir_schema(con); cliente_id=int(cliente_id); chamada_padrao=int(chamada_padrao or 1)
++    if chamada_padrao < 1 or chamada_padrao > 20:
++        raise ValueError("A chamada padrão deve estar entre 1 e 20.")
++    if not con.execute("SELECT 1 FROM clientes WHERE id=?",(cliente_id,)).fetchone():
++        raise ValueError("Cliente não encontrado.")
++    old=con.execute("SELECT participa_ciclo,chamada_padrao FROM fechamento_cliente_perfil WHERE cliente_id=?",(cliente_id,)).fetchone()
++    anterior_participa=int(old["participa_ciclo"] or 0) if old else None
++    anterior_chamada=int(old["chamada_padrao"] or 1) if old else None
++    novo_participa=1 if participa_ciclo else 0
++    con.execute("""INSERT INTO fechamento_cliente_perfil(cliente_id,participa_ciclo,chamada_padrao,origem)
++        VALUES(?,?,?,?) ON CONFLICT(cliente_id) DO UPDATE SET
++        participa_ciclo=excluded.participa_ciclo,chamada_padrao=excluded.chamada_padrao,origem=excluded.origem,
++        atualizado_em=datetime('now','localtime')""",(cliente_id,novo_participa,chamada_padrao,str(origem or "MANUAL")[:200]))
++    if old is None or anterior_participa!=novo_participa or anterior_chamada!=chamada_padrao:
++        con.execute("""INSERT INTO fechamento_cliente_perfil_historico
++            (cliente_id,participa_anterior,participa_novo,chamada_anterior,chamada_nova,origem,detalhe)
++            VALUES(?,?,?,?,?,?,?)""",(cliente_id,anterior_participa,novo_participa,anterior_chamada,chamada_padrao,
++            str(origem or "MANUAL")[:200],f"Perfil de fechamento atualizado; chamada padrão {chamada_padrao}."))
++    con.commit()
++    return perfil_cliente(con,cliente_id) or {}
++
++
++def aplicar_chamada_padrao_competencia(con: sqlite3.Connection, competencia: str, cliente_ids: list[int] | None = None) -> int:
++    """Aplica chamada padrão apenas em linhas mensais ainda não concluídas/retificadas."""
++    garantir_schema(con); competencia=validar_competencia(competencia)
++    params:[object]=[competencia]
++    filtro=""
++    if cliente_ids is not None:
++        ids=sorted({int(x) for x in cliente_ids if int(x)>0})
++        if not ids: return 0
++        filtro=f" AND f.cliente_id IN ({','.join('?' for _ in ids)})"; params.extend(ids)
++    rows=con.execute(f"""SELECT f.cliente_id,f.status,f.chamada,f.impedimento_tipo,COALESCE(fp.chamada_padrao,1) chamada_padrao
++        FROM fechamento_mensal_cliente f JOIN fechamento_cliente_perfil fp ON fp.cliente_id=f.cliente_id
++        WHERE f.competencia=? AND f.status IN ('PRONTA','ADIADA') AND COALESCE(fp.participa_ciclo,0)=1{filtro}""",params).fetchall()
++    alterados=0
++    for row in rows:
++        cid=int(row["cliente_id"]); chamada=max(1,int(row["chamada_padrao"] or 1))
++        novo_status='PRONTA' if chamada<=1 else 'ADIADA'
++        tipo=None if novo_status=='PRONTA' else 'CHAMADA_PADRAO'
++        obs=None if novo_status=='PRONTA' else f"Aguardando {chamada}ª chamada conforme perfil permanente."
++        if str(row["status"])==novo_status and int(row["chamada"] or 1)==chamada and str(row["impedimento_tipo"] or '')==str(tipo or ''):
++            continue
++        con.execute("""UPDATE fechamento_mensal_cliente SET status=?,chamada=?,impedimento_tipo=?,impedimento_observacao=?,
++            atualizado_em=datetime('now','localtime') WHERE competencia=? AND cliente_id=?""",
++            (novo_status,chamada,tipo,obs,competencia,cid))
++        _registrar(con,competencia,'APLICAR_CHAMADA_PADRAO',cid,chamada,row['status'],novo_status,obs or 'Chamada padrão 1 aplicada.')
++        alterados+=1
++    con.commit(); return alterados
++
+ def sincronizar_clientes_ativos(con: sqlite3.Connection, competencia: str) -> int:
+     garantir_schema(con); competencia = validar_competencia(competencia)
+     tem_perfil = con.execute("SELECT 1 FROM fechamento_cliente_perfil LIMIT 1").fetchone() is not None
+-    rows = con.execute("""SELECT c.id,COALESCE(p.movimento_folha,'NAO_INFORMADO') movimento_folha
++    rows = con.execute("""SELECT c.id,COALESCE(p.movimento_folha,'NAO_INFORMADO') movimento_folha,
++               COALESCE(fp.chamada_padrao,1) chamada_padrao
+         FROM clientes c LEFT JOIN cliente_parametros p ON p.cliente_id=c.id
+         LEFT JOIN fechamento_cliente_perfil fp ON fp.cliente_id=c.id
+         WHERE c.situacao='ATIVO' AND (?=0 OR COALESCE(fp.participa_ciclo,0)=1) ORDER BY c.id""",(1 if tem_perfil else 0,)).fetchall()
+     novos = 0
+     for r in rows:
+-        # A competência herda apenas a classificação operacional do cadastro.
+-        # A partir daqui a marcação é mensal e pode ser alterada sem mudar o cadastro.
+         movimento = 'SEM_MOVIMENTO' if str(r['movimento_folha'] or '').upper() == 'SEM_MOVIMENTO' else 'COM_MOVIMENTO'
++        chamada=max(1,int(r['chamada_padrao'] or 1)); status_inicial='PRONTA' if chamada<=1 else 'ADIADA'
++        tipo=None if status_inicial=='PRONTA' else 'CHAMADA_PADRAO'
++        obs=None if status_inicial=='PRONTA' else f"Aguardando {chamada}ª chamada conforme perfil permanente."
+         cur = con.execute("""INSERT OR IGNORE INTO fechamento_mensal_cliente
+-            (competencia,cliente_id,chamada,status,movimento_competencia) VALUES(?,?,1,'PRONTA',?)""",
+-            (competencia, int(r["id"]), movimento))
++            (competencia,cliente_id,chamada,status,movimento_competencia,impedimento_tipo,impedimento_observacao)
++            VALUES(?,?,?,?,?,?,?)""",
++            (competencia, int(r["id"]), chamada, status_inicial, movimento, tipo, obs))
+         novos += int(cur.rowcount or 0)
+     con.commit(); return novos
+ 
+@@ -188,7 +279,7 @@
+     garantir_schema(con); movimento=str(movimento or "").upper()
+     if movimento not in MOVIMENTOS: raise ValueError("Situação de movimento inválida.")
+     from axiom_tools.modules.closing.retification import registrar_versao_fechada
+-    count=0
++    count=0; fechados_saida=[]
+     for cid in {int(x) for x in cliente_ids if int(x)>0}:
+         old=con.execute("SELECT movimento_competencia,chamada,status FROM fechamento_mensal_cliente WHERE competencia=? AND cliente_id=?",(competencia,cid)).fetchone()
+         if not old or str(old["movimento_competencia"] or "COM_MOVIMENTO") == movimento:
+@@ -212,8 +303,11 @@
+         _registrar(con,competencia,"MOVIMENTO_COMPETENCIA",cid,int(old["chamada"] or 1),old["movimento_competencia"],movimento,detalhe)
+         if novo_status=="FECHADA" and old_status!="FECHADA":
+             _registrar(con,competencia,"FECHAMENTO_AUTOMATICO",cid,int(old["chamada"] or 1),old_status,"FECHADA","Sem movimento confirmado nesta competência.")
++            fechados_saida.append(cid)
+         count+=1
+-    con.commit(); return count
++    con.commit()
++    if fechados_saida: _disparar_saidas_automaticas(con,competencia,fechados_saida)
++    return count
+ 
+ def sincronizar_resultados_conferencia(con: sqlite3.Connection, competencia: str, linhas: list[dict]) -> int:
+@@ -225,7 +319,7 @@
+     ctrl=obter_controle(con,competencia)
+     if not ctrl: return 0
+     from axiom_tools.modules.closing.retification import registrar_versao_fechada
+-    fechados=0
++    fechados=0; fechados_saida=[]
+     for linha in linhas:
+         cid=linha.get("cliente_id")
+         if not cid: continue
+@@ -244,8 +338,10 @@
+         natureza="Sem movimento" if automatico=="SEM_MOVIMENTO" else ("Conferência justificada" if resultado=="JUSTIFICADO" else "Batimento concluído")
+         _registrar(con,competencia,"FECHAMENTO_AUTOMATICO",int(cid),int(atual["chamada"] or 1),"PRONTA","FECHADA",
+                    f"{natureza}; versão {versao['versao']} registrada automaticamente.")
+-        fechados+=1
+-    con.commit(); return fechados
++        fechados_saida.append(int(cid)); fechados+=1
++    con.commit()
++    if fechados_saida: _disparar_saidas_automaticas(con,competencia,fechados_saida)
++    return fechados
+ 
+ def _alterar(con, competencia: str, cliente_ids: list[int], novo: str, chamada: int | None = None,
+@@ -268,7 +364,7 @@
+     garantir_schema(con); ctrl=obter_controle(con,competencia)
+     if not ctrl: raise ValueError("Abra a competência primeiro.")
+     from axiom_tools.modules.closing.retification import registrar_versao_fechada
+-    atual=int(ctrl["chamada_atual"] or 1); count=0
++    atual=int(ctrl["chamada_atual"] or 1); count=0; fechados_saida=[]
+     for cid in {int(x) for x in cliente_ids if int(x)>0}:
+         old=con.execute("SELECT * FROM fechamento_mensal_cliente WHERE competencia=? AND cliente_id=?",(competencia,cid)).fetchone()
+         if not old: continue
+@@ -279,8 +375,10 @@
+             WHERE competencia=? AND cliente_id=?""",(atual,fechado_em,competencia,cid))
+         mov="sem movimento" if old["movimento_competencia"]=="SEM_MOVIMENTO" else "com movimento"
+         _registrar(con,competencia,"FECHAR_VERSAO",cid,atual,old["status"],"FECHADA",f"{versao['natureza'].title()} V{versao['versao']} · {mov}.")
+-        count+=1
+-    con.commit(); return count
++        fechados_saida.append(cid); count+=1
++    con.commit()
++    if fechados_saida: _disparar_saidas_automaticas(con,competencia,fechados_saida)
++    return count
+ 
+ 
+ def adiar_clientes(con, competencia, cliente_ids, impedimento_tipo, observacao=""):
+@@ -340,4 +438,4 @@
+ __all__=["STATUS","MOVIMENTOS","IMPEDIMENTOS","garantir_schema","validar_competencia","listar_competencias",
+          "inicializar_competencia","sincronizar_clientes_ativos","aplicar_classificacao_cadastral","obter_controle","listar_clientes","resumo",
+          "marcar_movimento_competencia","sincronizar_resultados_conferencia","fechar_clientes","adiar_clientes","liberar_clientes","nao_aplicavel_clientes",
+-         "abrir_proxima_chamada","clientes_fechados_ids","clientes_conferencia_ids","movimentos_competencia","possui_controle","historico"]
++         "abrir_proxima_chamada","clientes_fechados_ids","clientes_conferencia_ids","movimentos_competencia","possui_controle","historico","perfil_cliente","salvar_perfil_cliente","aplicar_chamada_padrao_competencia"]
+--- a/app/tests/modules/test_closing_calls_v8.py
++++ b/app/tests/modules/test_closing_calls_v8.py
+@@ -0,0 +1,90 @@
++from __future__ import annotations
++
++import shutil
++import sqlite3
++import tempfile
++import unittest
++from pathlib import Path
++
++from axiom_tools.modules.closing import service as closing
++
++SOURCE_DB = Path('/mnt/data/axiom_tools_recovered_snapshot/Axiom_Tools/data/axiom_tools.db')
++
++
++def make_con() -> sqlite3.Connection:
++    con = sqlite3.connect(':memory:')
++    con.row_factory = sqlite3.Row
++    con.execute("CREATE TABLE clientes(id INTEGER PRIMARY KEY,nome TEXT,nome_apresentacao TEXT,documento TEXT,situacao TEXT DEFAULT 'ATIVO')")
++    con.execute("CREATE TABLE cliente_parametros(cliente_id INTEGER PRIMARY KEY,movimento_folha TEXT)")
++    con.execute("INSERT INTO clientes(id,nome,situacao) VALUES(1,'Cliente 1','ATIVO')")
++    con.execute("INSERT INTO cliente_parametros(cliente_id,movimento_folha) VALUES(1,'COM_MOVIMENTO')")
++    closing.garantir_schema(con)
++    return con
++
++
++class ClosingCallsV8Tests(unittest.TestCase):
++    def test_profile_persists_default_call_and_history(self):
++        con = make_con()
++        result = closing.salvar_perfil_cliente(con, 1, participa_ciclo=True, chamada_padrao=2, origem='TESTE')
++        self.assertEqual(result['chamada_padrao'], 2)
++        hist = con.execute("SELECT * FROM fechamento_cliente_perfil_historico WHERE cliente_id=1 ORDER BY id DESC LIMIT 1").fetchone()
++        self.assertEqual((hist['participa_novo'], hist['chamada_nova'], hist['origem']), (1, 2, 'TESTE'))
++        con.close()
++
++    def test_second_call_client_is_not_ready_in_first_call(self):
++        con = make_con()
++        closing.salvar_perfil_cliente(con, 1, participa_ciclo=True, chamada_padrao=2, origem='TESTE')
++        con.execute("INSERT INTO fechamento_mensal(competencia,chamada_atual,status) VALUES('09/2026',1,'ABERTO')")
++        inserted = closing.sincronizar_clientes_ativos(con, '09/2026')
++        self.assertEqual(inserted, 1)
++        row = con.execute("SELECT status,chamada,impedimento_tipo FROM fechamento_mensal_cliente WHERE competencia='09/2026' AND cliente_id=1").fetchone()
++        self.assertEqual((row['status'], row['chamada'], row['impedimento_tipo']), ('ADIADA', 2, 'CHAMADA_PADRAO'))
++        self.assertNotIn(1, closing.clientes_conferencia_ids(con, '09/2026'))
++        con.close()
++
++    def test_opening_second_call_releases_default_second_call_client(self):
++        con = make_con()
++        closing.salvar_perfil_cliente(con, 1, participa_ciclo=True, chamada_padrao=2, origem='TESTE')
++        con.execute("INSERT INTO fechamento_mensal(competencia,chamada_atual,status) VALUES('09/2026',1,'ABERTO')")
++        closing.sincronizar_clientes_ativos(con, '09/2026')
++        new_call = closing.abrir_proxima_chamada(con, '09/2026')
++        row = con.execute("SELECT status,chamada,impedimento_tipo FROM fechamento_mensal_cliente WHERE competencia='09/2026' AND cliente_id=1").fetchone()
++        self.assertEqual(new_call, 2)
++        self.assertEqual((row['status'], row['chamada'], row['impedimento_tipo']), ('PRONTA', 2, None))
++        con.close()
++
++    def test_apply_default_call_repairs_untouched_current_cycle(self):
++        con = make_con()
++        closing.salvar_perfil_cliente(con, 1, participa_ciclo=True, chamada_padrao=2, origem='TESTE')
++        con.execute("INSERT INTO fechamento_mensal(competencia,chamada_atual,status) VALUES('08/2026',1,'ABERTO')")
++        con.execute("INSERT INTO fechamento_mensal_cliente(competencia,cliente_id,chamada,status,movimento_competencia) VALUES('08/2026',1,1,'PRONTA','COM_MOVIMENTO')")
++        changed = closing.aplicar_chamada_padrao_competencia(con, '08/2026', [1])
++        row = con.execute("SELECT status,chamada,impedimento_tipo FROM fechamento_mensal_cliente WHERE competencia='08/2026' AND cliente_id=1").fetchone()
++        self.assertEqual(changed, 1)
++        self.assertEqual((row['status'], row['chamada'], row['impedimento_tipo']), ('ADIADA', 2, 'CHAMADA_PADRAO'))
++        hist = con.execute("SELECT acao,status_anterior,status_novo FROM fechamento_mensal_historico WHERE cliente_id=1 ORDER BY id DESC LIMIT 1").fetchone()
++        self.assertEqual((hist['acao'], hist['status_anterior'], hist['status_novo']), ('APLICAR_CHAMADA_PADRAO', 'PRONTA', 'ADIADA'))
++        con.close()
++
++    def test_real_tl_snapshot_can_be_repaired_without_guessing_id(self):
++        with tempfile.TemporaryDirectory() as td:
++            db = Path(td) / 'axiom_tools.db'
++            shutil.copy2(SOURCE_DB, db)
++            con = sqlite3.connect(db)
++            con.row_factory = sqlite3.Row
++            closing.garantir_schema(con)
++            cliente = con.execute("""SELECT id,COALESCE(nome_apresentacao,nome) nome FROM clientes
++                WHERE lower(COALESCE(nome_apresentacao,nome))='t l empreendimentos agricolas ltda' LIMIT 1""").fetchone()
++            self.assertIsNotNone(cliente)
++            cid = int(cliente['id'])
++            closing.salvar_perfil_cliente(con, cid, participa_ciclo=True, chamada_padrao=2, origem='AUDITORIA_V8')
++            changed = closing.aplicar_chamada_padrao_competencia(con, '08/2026', [cid])
++            row = con.execute("SELECT status,chamada,impedimento_tipo FROM fechamento_mensal_cliente WHERE competencia='08/2026' AND cliente_id=?", (cid,)).fetchone()
++            self.assertEqual(changed, 1)
++            self.assertEqual((row['status'], row['chamada'], row['impedimento_tipo']), ('ADIADA', 2, 'CHAMADA_PADRAO'))
++            self.assertNotIn(cid, closing.clientes_conferencia_ids(con, '08/2026'))
++            con.close()
++
++
++if __name__ == '__main__':
++    unittest.main()
