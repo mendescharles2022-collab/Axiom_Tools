@@ -75,6 +75,69 @@ class ReconciliationAuditTests(unittest.TestCase):
             self.assertFalse(ok)
             self.assertTrue(any("divergente" in error.lower() for error in errors))
 
+    def test_manifest_rejects_path_traversal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            root = base / "export"
+            root.mkdir()
+            external = base / "outside.py"
+            write(external, "secret=False\n")
+
+            digest = hashlib.sha256(external.read_bytes()).hexdigest().upper()
+            with (root / module.MANIFEST_NAME).open("w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(
+                    f,
+                    fieldnames=["RelativePath", "Length", "SHA256", "LastWriteUtc"],
+                )
+                writer.writeheader()
+                writer.writerow(
+                    {
+                        "RelativePath": "../outside.py",
+                        "Length": external.stat().st_size,
+                        "SHA256": digest,
+                        "LastWriteUtc": "",
+                    }
+                )
+
+            ok, errors = module.verify_manifest(root)
+            self.assertFalse(ok)
+            self.assertTrue(any("caminho inválido" in error.lower() for error in errors))
+
+    def test_manifest_detects_unlisted_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            listed = root / "app" / "src" / "listed.py"
+            extra = root / "app" / "src" / "extra.py"
+            write(listed, "x=1\n")
+            write(extra, "x=2\n")
+            build_manifest(root, [listed])
+
+            ok, errors = module.verify_manifest(root)
+            self.assertFalse(ok)
+            self.assertTrue(any("fora do manifesto" in error.lower() for error in errors))
+
+    def test_manifest_detects_duplicate_relative_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / "app" / "src" / "a.py"
+            write(target, "a=1\n")
+            digest = hashlib.sha256(target.read_bytes()).hexdigest().upper()
+            row = {
+                "RelativePath": "app/src/a.py",
+                "Length": target.stat().st_size,
+                "SHA256": digest,
+                "LastWriteUtc": "",
+            }
+            with (root / module.MANIFEST_NAME).open("w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=row.keys())
+                writer.writeheader()
+                writer.writerow(row)
+                writer.writerow(row)
+
+            ok, errors = module.verify_manifest(root)
+            self.assertFalse(ok)
+            self.assertTrue(any("duplicado" in error.lower() for error in errors))
+
     def test_forbidden_content_is_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
