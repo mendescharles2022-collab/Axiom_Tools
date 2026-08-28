@@ -50,6 +50,7 @@ jobs:
           python runtime_overlay/app/tests/modules/test_logical_dedup_v8.py -v
           python runtime_overlay/app/tests/modules/test_multi_gfd_composition_v8.py -v
           python runtime_overlay/app/tests/modules/test_output_gate_v8.py -v
+          python runtime_overlay/app/tests/modules/test_scale_indexes_v8.py -v
 
       - name: Build current V8 preflight
         run: python scripts/build_current_preflight.py --repo-root . --output-dir audit_artifacts
