@@ -6,7 +6,7 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração e rollback verificável.
+O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável e inventário estático de segurança.
 
 ## Suítes aprovadas
 
@@ -28,31 +28,31 @@ O repositório já possui, porém, uma suíte real para o tooling de auditoria, 
 - `test_clone_sqlite_for_migration.py` — **6 aprovados**;
 - `test_run_sqlite_invariants.py` — **8 aprovados**.
 
-Essas quatro suítes cobrem `integrity_check`, `foreign_key_check`, inventário/hash de schema, contagens, cópia consistente, comparação pré/pós-migração, ausência de mutação da origem e invariantes lógicas somente leitura.
-
 ### Backup / rollback verificável
 
 - `test_rollback_bundle.py` — **8 aprovados**;
 - `test_restore_rollback_bundle.py` — **6 aprovados**.
 
-Cobertura atual:
+### Segurança estática das rotas
 
-- bundle criado apenas a partir de lista explícita de arquivos controlados;
-- preservação integral das origens;
-- cópia SQLite consistente via `sqlite3.Connection.backup()`;
-- manifesto com tamanho e SHA-256;
-- bloqueio de path traversal e destino existente;
-- limpeza de `.partial` em falha;
-- detecção de arquivo/manifesto adulterado e arquivo extra;
-- verificação independente antes de restaurar;
-- restauração somente em diretório novo de ensaio;
-- nova validação de hashes, `integrity_check` e `foreign_key_check` depois da restauração;
-- geração de `RESTORE_REHEARSAL.json` para prova do ensaio.
+- `test_audit_route_security.py` — **8 aprovados**.
+
+O inventário estático cobre:
+
+- identificação de rotas Flask por decorators `route/get/post/put/patch/delete`;
+- métodos mutantes;
+- markers de autenticação configuráveis;
+- detecção de `csrf.exempt` configurável;
+- múltiplos decorators de rota na mesma função;
+- política customizável sem assumir que o runtime usa um único decorator;
+- erro de sintaxe reportado, nunca silenciado.
+
+**Importante:** ausência de achado estático não significa autenticação/CSRF homologados. Proteções globais, wrappers dinâmicos, Flask-WTF e autorização de negócio ainda exigem teste do runtime.
 
 ## Contagem atual
 
-- **84 testes definidos**;
-- **81 testes aprovados em execuções controladas**;
+- **92 testes definidos**;
+- **89 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
@@ -65,7 +65,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 Nenhum desses testes substitui a suíte operacional do runtime V7/V8.
 
-Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança, banco ↔ filesystem, regressão dos 28 casos e rollback real no Windows.
+Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, banco ↔ filesystem, regressão dos 28 casos e rollback real no Windows.
 
 ## Princípio
 
