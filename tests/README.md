@@ -6,95 +6,67 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada, portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-Já existe, porém, cobertura automatizada para a infraestrutura de reconciliação e proveniência de build.
+Já existe, porém, cobertura automatizada para a infraestrutura de reconciliação, proveniência de build e auditoria estrutural SQLite.
 
 ### `test_audit_runtime_reconciliation.py`
 
-Cobertura atual:
+**9 testes aprovados.**
 
-- classifica `SAME`, `CHANGED`, `RUNTIME_ONLY` e `REPO_ONLY`;
-- valida o manifesto SHA-256;
-- detecta adulteração após geração do manifesto;
-- rejeita `../`/saída da raiz;
-- detecta arquivo extra fora do manifesto;
-- detecta caminho duplicado no manifesto;
-- detecta banco/arquivo sensível no export;
-- detecta segredo embutido em arquivo textual;
-- aceita placeholder explicitamente falso de teste.
-
-**9 testes automatizados aprovados.**
+Cobre classificação `SAME/CHANGED/RUNTIME_ONLY/REPO_ONLY`, manifesto SHA-256, adulteração, tentativa de `../`, arquivo extra, caminho duplicado, conteúdo sensível e segredo embutido.
 
 ### `test_export_runtime_reconciliation.py`
 
-Cobertura atual:
+**9 testes aprovados.**
 
-- whitelist de código/testes/configuração controlada;
-- exclusão de banco e documentos;
-- manifesto cobrindo exatamente o payload;
-- bloqueio de segredo hardcoded;
-- label inseguro;
-- conteúdo do ZIP;
-- symlink/reparse point;
-- suporte a `src/` na raiz além de `app/src`;
-- bloqueio de diretório de saída dentro da própria árvore exportada.
-
-**9 testes automatizados aprovados.**
+Cobre whitelist, exclusão de banco/documentos, manifesto, ZIP, segredo hardcoded, label, symlink/reparse point, layouts `app/src`/`src` e saída recursiva.
 
 ### `test_reconciliation_pipeline_e2e.py`
 
-Três cenários ponta a ponta foram versionados:
+**3 testes versionados, aguardando execução comprovada.**
 
-1. `runtime → export ZIP → extração → auditoria` sem divergência;
-2. divergência real entre runtime e repositório retorna código específico de diferença;
-3. adulteração do pacote após o manifesto é rejeitada antes da comparação.
+Cenários:
 
-Esses **3 testes end-to-end estão versionados, mas a execução automática no GitHub Actions ainda não foi comprovada**. O workflow `.github/workflows/reconciliation-tests.yml` existe, porém commits feitos pela integração não produziram run automático no momento da auditoria.
+1. exportação + ZIP + auditoria sem divergência;
+2. divergência runtime × repositório;
+3. adulteração posterior ao manifesto.
 
 ### `test_generate_build_provenance.py`
 
-Cobertura atual:
+**12 testes aprovados.**
 
-- commit Git e branch/ref;
-- árvore limpa obrigatória no caminho oficial;
-- modo interno de diagnóstico para árvore suja;
-- bloqueio de banco/arquivo sensível no payload;
-- bloqueio de segredo hardcoded;
-- hash do payload muda quando conteúdo muda;
-- manifesto não faz hash de si próprio;
-- payload vazio bloqueado;
-- identidade textual inválida bloqueada;
-- release `UNRELEASED` bloqueia build final;
-- identidade `READY` fornece release/schema/python/plataforma ao build;
-- política não pode desligar `require_clean_git`.
-
-**12 testes automatizados aprovados.**
+Cobre Git limpo, commit/ref, identidade canônica `READY/UNRELEASED`, release/schema, payload sensível, segredo hardcoded, hashes e políticas de release.
 
 ### `test_verify_build_provenance.py`
 
-Cobertura atual:
+**9 testes aprovados.**
 
-- build válido passa com payload + fonte Git;
-- payload adulterado é rejeitado;
-- arquivo extra no payload é rejeitado;
-- edição direta do manifesto quebra o hash próprio;
-- caminho duplicado em `files` é rejeitado;
-- commit fonte divergente é rejeitado;
-- identidade canônica alterada depois do build é rejeitada;
-- manifesto fora do payload é rejeitado;
-- chave JSON duplicada é rejeitada.
+Cobre verificação de payload, arquivos extras/alterados, hash do manifesto, commit fonte, identidade canônica, caminhos/JSON duplicados.
 
-**9 testes automatizados aprovados.**
+### `test_audit_sqlite_baseline.py`
+
+**7 testes aprovados.**
+
+Cobre:
+
+- banco estruturalmente íntegro;
+- FK quebrada detectada mesmo quando criada com enforcement desligado;
+- auditoria sem mutação dos bytes do banco;
+- rejeição de arquivo não-SQLite;
+- opção sem `COUNT(*)` por tabela;
+- relatório sem caminho absoluto da base;
+- hash de schema estável em base inalterada.
 
 ## Contagem atual
 
-- 9 testes do auditor de reconciliação — aprovados;
-- 9 testes do exportador — aprovados;
-- 12 testes do gerador de proveniência — aprovados;
-- 9 testes do verificador de build — aprovados;
-- 3 testes end-to-end de reconciliação — versionados, aguardando execução comprovada.
+- auditor de reconciliação: 9 aprovados;
+- exportador do runtime: 9 aprovados;
+- gerador de proveniência: 12 aprovados;
+- verificador do build: 9 aprovados;
+- auditor SQLite baseline: 7 aprovados;
+- pipeline E2E de reconciliação: 3 versionados, execução ainda não comprovada.
 
-**Total definido: 42 testes.**  
-**Total já aprovado nas execuções controladas: 39 testes.**
+**Total definido: 49 testes.**  
+**Total aprovado nas execuções controladas: 46 testes.**
 
 ## Execução
 
@@ -112,6 +84,7 @@ python -m unittest tests/test_export_runtime_reconciliation.py -v
 python -m unittest tests/test_reconciliation_pipeline_e2e.py -v
 python -m unittest tests/test_generate_build_provenance.py -v
 python -m unittest tests/test_verify_build_provenance.py -v
+python -m unittest tests/test_audit_sqlite_baseline.py -v
 ```
 
 ## Cobertura obrigatória após reconciliação do runtime
@@ -129,7 +102,7 @@ Quando a árvore operacional for trazida para o repositório, a suíte deverá i
 - identidade CPF/CNPJ/CAEPF/matrícula;
 - eConsignado contextual e idempotente;
 - retificação/versionamento;
-- migração e invariantes SQLite;
+- migração e invariantes lógicas SQLite;
 - autenticação/CSRF/autorização;
 - banco ↔ filesystem;
 - regressão dos 28 casos de 08/2026.
