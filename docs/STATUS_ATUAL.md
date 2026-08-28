@@ -26,7 +26,11 @@ Resultado atual:
 - nenhum bloqueador foi promovido para `CORRIGIDO_HOMOLOGADO` sem execução no runtime reconciliado;
 - nenhum pacote final V8 está autorizado.
 
-Mapa central:
+Estado vivo da fase de correção:
+
+- `docs/auditoria/RASTREADOR_EXECUCAO_CORRECAO_V8.md`
+
+Mapas e regressão:
 
 - `docs/auditoria/MAPA_COBERTURA_BLOQUEADORES_V8.md`
 - `docs/auditoria/MATRIZ_REGRESSAO_V8_AGOSTO_2026.md`
@@ -54,6 +58,27 @@ Contrato/protocolo:
 - `docs/auditoria/DIVERGENCIA_REPOSITORIO_BASE_CANONICA_20260828.md`
 - `docs/auditoria/PROTOCOLO_RECONCILIACAO_RUNTIME_REPOSITORIO_V8.md`
 - `docs/auditoria/CONTRATO_PROVENIENCIA_BUILD_V8.md`
+
+### Tooling de reconciliação já preparado
+
+Foram versionados:
+
+- `scripts/export_runtime_reconciliation.py`;
+- `scripts/export_runtime_reconciliation.ps1`;
+- `scripts/audit_runtime_reconciliation.py`;
+- testes unitários do exportador e auditor;
+- testes ponta a ponta do pipeline;
+- workflow de CI para a suíte de reconciliação.
+
+Estado de validação dessa infraestrutura:
+
+- 18 testes já aprovados nas revisões executadas;
+- 3 testes end-to-end adicionais estão versionados, aguardando execução comprovada;
+- total atual definido: 21 testes de reconciliação;
+- o workflow GitHub Actions existe, mas nenhum run automático foi observado para os commits feitos pela integração até esta atualização;
+- a execução real do launcher PowerShell continua pendente no Windows.
+
+Isso reduz o risco da reconciliação, mas **não muda B06 para resolvido** enquanto o runtime real não for exportado, auditado e incorporado de forma controlada.
 
 ## 4. Arquitetura funcional V8 preservada
 
@@ -160,4 +185,4 @@ Neste momento:
 - rollback final **não comprovado**;
 - árvore runtime **ainda não reconciliada integralmente com o GitHub**.
 
-A documentação de auditoria no `main` é a referência canônica das regras e critérios até que a árvore operacional completa seja reconciliada e testada.
+A documentação de auditoria no `main` e o rastreador canônico são a referência das regras e do andamento até que a árvore operacional completa seja reconciliada e testada.
