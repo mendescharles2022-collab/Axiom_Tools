@@ -5,37 +5,30 @@ Status: **RUNTIME AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico do tooling
 
-GitHub Actions run `33195532631`  
-Commit `b18c487f125c300964a5558b5f8cbe271c0418dc`  
+GitHub Actions run `33196049264`  
+Commit `eb695be6531c7711ac36b3f45e0d9d31eb809233`  
 Python 3.12.14
 
 ```text
-Ran 161 tests in 0.999s
+Ran 165 tests in 1.115s
 OK
 ```
 
-Preflight da mesma run:
+Preflight:
 
-- `Final OK = False`;
 - B homologados `0/50`;
 - C PASS `0/28`;
 - evidências externas `1/10`;
 - release READY `False`;
 - build OK `False`.
 
-Artifact: `v8-release-preflight`, ID `9695566182`, 2.190 bytes, SHA-256 `a379a32b433722f87b179d200dde5d454eefdaff68a2e2318f8bb93b295bf4c6`.
+Artifact `v8-release-preflight`:
 
-## 2. Fontes de verdade
+- ID `9695772154`;
+- 2.288 bytes;
+- SHA-256 `380162c6ed4b1d5b01b0f7c7c834f8f1d300699db54b4b050ed967b5e9181d85`.
 
-- `config/blocker_registry_v8.json`;
-- `config/blocker_status_v8_current.json`;
-- `config/regression_cases_v8_202608.json`;
-- `config/release_identity.toml`;
-- `config/release_gate_evidence_v8_current.json`;
-- `docs/STATUS_ATUAL.md`;
-- este rastreador.
-
-## 3. Snapshot B01–B50
+## 2. Snapshot B01–B50
 
 | Estado | Quantidade |
 |---|---:|
@@ -49,78 +42,88 @@ Artifact: `v8-release-preflight`, ID `9695566182`, 2.190 bytes, SHA-256 `a379a32
 Em correção: B35, B41, B42.  
 Bloqueados pelo runtime: B05, B06, B45, B49.
 
-## 4. B06 — próximo gate operacional
+## 3. B06 — próximo gate operacional
 
 Não implementar B01/B02/B03 sobre a fundação reduzida da `main`.
 
-Já pronto/testado:
+Pronto/testado:
 
-- `scripts/export_runtime_reconciliation.py`;
-- `scripts/export_runtime_reconciliation.ps1`;
-- `scripts/audit_runtime_reconciliation.py`;
-- E2E de export/auditoria/diferença/adulteração.
+- exportador runtime;
+- launcher PowerShell;
+- auditor de reconciliação;
+- E2E;
+- preflight automático/artifact.
 
 Pendente:
 
-1. exportar a instalação Windows real ou recuperar pacote canônico equivalente;
-2. auditar o export;
-3. reconciliar código controlado com o `main`;
-4. trazer/rodar a suíte operacional original;
-5. estabelecer baseline antes de alterar runtime.
+1. exportar instalação Windows real ou recuperar pacote canônico equivalente;
+2. auditar export;
+3. reconciliar árvore controlada;
+4. trazer suíte operacional original;
+5. estabelecer baseline.
+
+## 4. B35 — avanço com invariantes confirmadas
+
+Estado `EM_CORRECAO`.
+
+`config/sqlite_invariants_closing_confirmed_v8.json` registra apenas regras comprovadas pelo runtime preservado:
+
+1. `CLOSING_FECHADA_WITHOUT_VERSION` — FECHADA sem versão é inválida;
+2. `CLOSING_CURRENT_VERSION_MUST_EXIST` — `versao_atual` deve apontar para versão existente.
+
+`tests/test_closing_confirmed_invariants.py` possui quatro regressões específicas, aprovadas no CI canônico.
+
+Não foi adicionada invariante sobre retificação `DETECTADA` única porque os trechos recuperados não provam se o índice parcial da linha 59 é `UNIQUE`.
+
+Pendente: executar essas invariantes contra cópia real do banco e acrescentar somente novas regras comprovadas pelo schema/runtime.
 
 ## 5. B42 — proveniência
 
 Estado `EM_CORRECAO`.
 
-Pronto: release identity, geração/verificação de manifesto, Git limpo, SHA-256 e bloqueio de conteúdo sensível.
+Pronto: identidade canônica, geração/verificação de build, Git limpo, SHA-256 e bloqueio de conteúdo sensível.
 
-Pendente: integração com runtime, `/health`, logs, instalador e pacote final.
+Pendente: runtime, `/health`, logs, instalador e pacote final consumirem a mesma identidade.
 
-## 6. B35/B05 — banco
+## 6. B41 — rollback
 
-Pronto: baseline somente leitura, clone consistente, comparação pré/pós e invariantes parametrizáveis.
-
-B35 `EM_CORRECAO`; B05 `BLOQUEADO_POR_RUNTIME`.
-
-## 7. B41 — rollback
+Estado `EM_CORRECAO`.
 
 Pronto: bundle, verificador e restauração em staging.
 
 Pendente: arquivos reais, cópia real, rollback físico Windows e smoke posterior.
 
-## 8. B38/B45/B48/B49
+## 7. Achado runtime — Processamento ainda carrega Auditoria
 
-- B38: auditor estático de rotas pronto; dinâmica depende do runtime;
-- B45: benchmark SQLite pronto; runtime representativo pendente;
-- B48: retenção estritamente dry-run;
-- B49: auditor banco ↔ filesystem pronto; schema/acervo real pendentes.
+Registro:
 
-## 9. C01–C28
+`docs/auditoria/ACHADO_RUNTIME_RESIDUO_AUDITORIA_NO_PROCESSAMENTO_V8.md`.
 
-Registro canônico e validador prontos. Esqueleto `NOT_RUN` é gerado automaticamente pelo preflight.
+Template operacional preservado mostra `PROCESSAMENTO DE ARQUIVOS` no eyebrow e `<h1>` começando em `Aud...`.
 
-Modo final exige 28/28 PASS com evidência.
+Reforça B37/B43/B46; não cria novo bloqueador.
 
-## 10. B01–B50
+## 8. B08/T L
 
-Registry/status/validador prontos. Modo final exige 50/50 `CORRIGIDO_HOMOLOGADO`, cada um com evidências de código, teste, runtime e homologação.
+Falha operacional permanece confirmada: T L deveria estar na 2ª chamada e apareceu `PRONTA` chamada 1.
 
-## 11. Gate final
+O runtime preservado mostra atualização de `chamada_atual` e depois `SET status='PRONTA', chamada=?`, mas a cláusula `WHERE` continua truncada.
+
+Portanto a causa exata **não foi atribuída** a essa rotina. B08 segue `INSPECAO_PENDENTE` até recuperar o código completo ou reproduzir a transição no runtime reconciliado.
+
+## 9. Gate final
 
 Ferramentas:
 
 - `scripts/validate_release_gate.py`;
 - `scripts/build_current_preflight.py`;
-- `scripts/build_evidence_index.py`;
-- `docs/auditoria/GUIA_GATE_FINAL_HOMOLOGACAO_V8.md`.
+- `scripts/build_evidence_index.py`.
 
-O CI gera automaticamente três arquivos de preflight e publica artifact verificável.
+Modo final exige 50/50 B homologados, 28/28 C PASS, release READY, build verificável e dez gates externos PASS.
 
-O gate final exige 50/50 B homologados, 28/28 C PASS, release READY, build verificado e dez gates externos PASS.
+## 10. Ordem após B06
 
-## 12. Ordem após B06
-
-1. baseline/suíte operacional original;
+1. baseline/suíte original;
 2. B01;
 3. B02;
 4. B03/B39;
@@ -136,8 +139,8 @@ O gate final exige 50/50 B homologados, 28/28 C PASS, release READY, build verif
 14. build/pacote;
 15. instalação Windows + rollback.
 
-## 13. Situação final desta atualização
+## 11. Situação atual
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-O tooling está maduro e comprovado em CI. O próximo salto de valor depende de remover B06 e trabalhar sobre a árvore operacional real.
+O próximo salto de valor continua sendo remover B06 e trabalhar sobre a árvore operacional real.
