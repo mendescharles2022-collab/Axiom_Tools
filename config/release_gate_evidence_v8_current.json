@@ -6,11 +6,13 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33195076112",
-        "commit:89cf629d458e0f96dfffc344d9b873acfbaf7615",
-        "result:144-tests-OK"
+        "github-actions:run/33195532631",
+        "commit:b18c487f125c300964a5558b5f8cbe271c0418dc",
+        "result:161-tests-OK",
+        "artifact:v8-release-preflight#9695566182",
+        "artifact-sha256:a379a32b433722f87b179d200dde5d454eefdaff68a2e2318f8bb93b295bf4c6"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14; preflight publicado como artifact."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
