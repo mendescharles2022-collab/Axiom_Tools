@@ -2,71 +2,51 @@
 
 Testes automatizados do Axiom Tools ficam nesta pasta.
 
-## Cobertura atual no repositório
+## Estado atual
 
-A árvore operacional completa V7/V8 ainda não foi reconciliada, portanto esta pasta ainda não representa a suíte do runtime instalado.
+A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-Já existe, porém, cobertura automatizada para a infraestrutura de reconciliação, proveniência de build e auditoria estrutural SQLite.
+O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência e preparação segura de migração.
 
-### `test_audit_runtime_reconciliation.py`
+## Suítes aprovadas
 
-**9 testes aprovados.**
+### Reconciliação runtime ↔ repositório
 
-Cobre classificação `SAME/CHANGED/RUNTIME_ONLY/REPO_ONLY`, manifesto SHA-256, adulteração, tentativa de `../`, arquivo extra, caminho duplicado, conteúdo sensível e segredo embutido.
+- `test_audit_runtime_reconciliation.py` — **9 aprovados**;
+- `test_export_runtime_reconciliation.py` — **9 aprovados**;
+- `test_reconciliation_pipeline_e2e.py` — **3 versionados, execução ainda não comprovada**.
 
-### `test_export_runtime_reconciliation.py`
+### Proveniência de build
 
-**9 testes aprovados.**
+- `test_generate_build_provenance.py` — **12 aprovados**;
+- `test_verify_build_provenance.py` — **9 aprovados**.
 
-Cobre whitelist, exclusão de banco/documentos, manifesto, ZIP, segredo hardcoded, label, symlink/reparse point, layouts `app/src`/`src` e saída recursiva.
+### SQLite / migração controlada
 
-### `test_reconciliation_pipeline_e2e.py`
+- `test_audit_sqlite_baseline.py` — **7 aprovados**;
+- `test_compare_sqlite_audits.py` — **7 aprovados**;
+- `test_clone_sqlite_for_migration.py` — **6 aprovados**.
 
-**3 testes versionados, aguardando execução comprovada.**
+Essas três últimas suítes cobrem:
 
-Cenários:
-
-1. exportação + ZIP + auditoria sem divergência;
-2. divergência runtime × repositório;
-3. adulteração posterior ao manifesto.
-
-### `test_generate_build_provenance.py`
-
-**12 testes aprovados.**
-
-Cobre Git limpo, commit/ref, identidade canônica `READY/UNRELEASED`, release/schema, payload sensível, segredo hardcoded, hashes e políticas de release.
-
-### `test_verify_build_provenance.py`
-
-**9 testes aprovados.**
-
-Cobre verificação de payload, arquivos extras/alterados, hash do manifesto, commit fonte, identidade canônica, caminhos/JSON duplicados.
-
-### `test_audit_sqlite_baseline.py`
-
-**7 testes aprovados.**
-
-Cobre:
-
-- banco estruturalmente íntegro;
-- FK quebrada detectada mesmo quando criada com enforcement desligado;
-- auditoria sem mutação dos bytes do banco;
-- rejeição de arquivo não-SQLite;
-- opção sem `COUNT(*)` por tabela;
-- relatório sem caminho absoluto da base;
-- hash de schema estável em base inalterada.
+- `integrity_check`;
+- `foreign_key_check`;
+- inventário/hash do schema;
+- contagens de registros;
+- ausência de mutação da origem;
+- cópia consistente via `sqlite3.Connection.backup()`;
+- proteção contra sobrescrita do destino;
+- limpeza de `.partial` em falha;
+- comparação pré/pós-migração;
+- nova violação de FK como regressão;
+- falha nova de integridade como regressão;
+- remoção de objeto e queda de registros como avisos que exigem justificativa, não como conclusão automática.
 
 ## Contagem atual
 
-- auditor de reconciliação: 9 aprovados;
-- exportador do runtime: 9 aprovados;
-- gerador de proveniência: 12 aprovados;
-- verificador do build: 9 aprovados;
-- auditor SQLite baseline: 7 aprovados;
-- pipeline E2E de reconciliação: 3 versionados, execução ainda não comprovada.
-
-**Total definido: 49 testes.**  
-**Total aprovado nas execuções controladas: 46 testes.**
+- **62 testes definidos**;
+- **59 testes aprovados em execuções controladas**;
+- **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
 
@@ -76,23 +56,13 @@ Suíte completa do tooling V8:
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-Testes isolados:
+## Limite da suíte atual
 
-```bash
-python -m unittest tests/test_audit_runtime_reconciliation.py -v
-python -m unittest tests/test_export_runtime_reconciliation.py -v
-python -m unittest tests/test_reconciliation_pipeline_e2e.py -v
-python -m unittest tests/test_generate_build_provenance.py -v
-python -m unittest tests/test_verify_build_provenance.py -v
-python -m unittest tests/test_audit_sqlite_baseline.py -v
-```
+Nenhum desses testes substitui a suíte operacional do runtime V7/V8.
 
-## Cobertura obrigatória após reconciliação do runtime
-
-Quando a árvore operacional for trazida para o repositório, a suíte deverá incorporar os testes existentes do runtime e ampliar cobertura para:
+Após a reconciliação, continuam obrigatórios testes de:
 
 - reprocessamento candidato/versionado;
-- promoção/rejeição de candidato;
 - Conference GET somente leitura;
 - gate único de Impressão/Entregas;
 - universo por competência/chamada;
@@ -100,13 +70,13 @@ Quando a árvore operacional for trazida para o repositório, a suíte deverá i
 - aplicabilidade DARF/FGTS/DAE;
 - multi-Extrato e multi-GFD;
 - identidade CPF/CNPJ/CAEPF/matrícula;
-- eConsignado contextual e idempotente;
+- eConsignado contextual/idempotente;
 - retificação/versionamento;
-- migração e invariantes lógicas SQLite;
+- invariantes lógicas do banco;
 - autenticação/CSRF/autorização;
 - banco ↔ filesystem;
-- regressão dos 28 casos de 08/2026.
+- regressão dos 28 casos reais de 08/2026.
 
 ## Princípio
 
-Nenhum bloqueador V8 muda para `CORRIGIDO_HOMOLOGADO` apenas porque o código foi alterado. A transição exige teste objetivo e evidência no runtime/build correto.
+Nenhum bloqueador V8 muda para `CORRIGIDO_HOMOLOGADO` apenas porque código ou tooling foram adicionados. A transição exige execução objetiva sobre a árvore/runtime/build correto.
