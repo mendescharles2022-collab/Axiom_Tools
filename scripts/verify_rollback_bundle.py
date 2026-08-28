@@ -8,6 +8,7 @@ import sys
 from pathlib import Path, PurePosixPath
 
 MANIFEST_NAME = "ROLLBACK_MANIFEST.json"
+IDENTITY_KEYS = {"app_version", "schema_version", "commit_sha"}
 
 
 class VerificationError(RuntimeError):
@@ -53,6 +54,17 @@ def _canonical_manifest_hash(manifest: dict) -> str:
     return hashlib.sha256(encoded).hexdigest().upper()
 
 
+def _validate_identity_block(value: object, field: str, *, allow_none: bool = False) -> dict | None:
+    if value is None and allow_none:
+        return None
+    if not isinstance(value, dict) or set(value) != IDENTITY_KEYS:
+        raise VerificationError(f"{field} inválida no manifesto.")
+    normalized = {key: str(value.get(key) or "").strip() for key in IDENTITY_KEYS}
+    if not all(normalized.values()):
+        raise VerificationError(f"{field} incompleta no manifesto.")
+    return normalized
+
+
 def verify_bundle(bundle: Path) -> dict:
     bundle = bundle.resolve()
     if not bundle.is_dir():
@@ -67,6 +79,20 @@ def verify_bundle(bundle: Path) -> dict:
         raise VerificationError("Formato de manifesto não suportado.")
     if manifest.get("manifest_sha256") != _canonical_manifest_hash(manifest):
         raise VerificationError("Hash próprio do manifesto divergente.")
+
+    previous = _validate_identity_block(manifest.get("previous_identity"), "previous_identity")
+    target = _validate_identity_block(
+        manifest.get("target_identity"),
+        "target_identity",
+        allow_none=True,
+    )
+    legacy_previous = {
+        "app_version": str(manifest.get("app_version") or "").strip(),
+        "schema_version": str(manifest.get("schema_version") or "").strip(),
+        "commit_sha": str(manifest.get("commit_sha") or "").strip(),
+    }
+    if previous != legacy_previous:
+        raise VerificationError("Identidade anterior diverge dos campos canônicos do bundle.")
 
     expected = {MANIFEST_NAME}
     files = manifest.get("files")
@@ -130,6 +156,8 @@ def verify_bundle(bundle: Path) -> dict:
         "app_version": manifest.get("app_version"),
         "schema_version": manifest.get("schema_version"),
         "commit_sha": manifest.get("commit_sha"),
+        "previous_identity": previous,
+        "target_identity": target,
         "file_count": len(files),
         "database_sha256": database.get("sha256"),
         "manifest_sha256": manifest.get("manifest_sha256"),
