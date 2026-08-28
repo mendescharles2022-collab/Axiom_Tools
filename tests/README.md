@@ -6,7 +6,7 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência e preparação segura de migração.
+O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração e rollback verificável.
 
 ## Suítes aprovadas
 
@@ -49,10 +49,28 @@ Essas quatro suítes cobrem:
 - bloqueio de `PRAGMA` dentro das invariantes;
 - execução em conexão SQLite somente leitura.
 
+### Backup / rollback verificável
+
+- `test_rollback_bundle.py` — **8 aprovados**.
+
+Cobre:
+
+- bundle criado apenas a partir de lista explícita de arquivos controlados;
+- preservação integral dos arquivos e banco de origem;
+- cópia SQLite consistente via API nativa `backup()`;
+- `integrity_check` e `foreign_key_check` no banco copiado;
+- bloqueio de path traversal;
+- proteção contra destino já existente;
+- limpeza de diretório `.partial` quando a criação falha;
+- detecção de arquivo adulterado;
+- detecção de arquivo extra fora do manifesto;
+- detecção de adulteração do próprio manifesto;
+- verificação independente antes de qualquer restauração.
+
 ## Contagem atual
 
-- **70 testes definidos**;
-- **67 testes aprovados em execuções controladas**;
+- **78 testes definidos**;
+- **75 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
@@ -82,7 +100,8 @@ Após a reconciliação, continuam obrigatórios testes de:
 - invariantes lógicas V8 específicas do schema operacional;
 - autenticação/CSRF/autorização;
 - banco ↔ filesystem;
-- regressão dos 28 casos reais de 08/2026.
+- regressão dos 28 casos reais de 08/2026;
+- rollback real código + banco + configuração no Windows.
 
 ## Princípio
 
