@@ -25,9 +25,10 @@ O repositório já possui, porém, uma suíte real para o tooling de auditoria, 
 
 - `test_audit_sqlite_baseline.py` — **7 aprovados**;
 - `test_compare_sqlite_audits.py` — **7 aprovados**;
-- `test_clone_sqlite_for_migration.py` — **6 aprovados**.
+- `test_clone_sqlite_for_migration.py` — **6 aprovados**;
+- `test_run_sqlite_invariants.py` — **8 aprovados**.
 
-Essas três últimas suítes cobrem:
+Essas quatro suítes cobrem:
 
 - `integrity_check`;
 - `foreign_key_check`;
@@ -40,12 +41,18 @@ Essas três últimas suítes cobrem:
 - comparação pré/pós-migração;
 - nova violação de FK como regressão;
 - falha nova de integridade como regressão;
-- remoção de objeto e queda de registros como avisos que exigem justificativa, não como conclusão automática.
+- remoção de objeto e queda de registros como avisos que exigem justificativa, não como conclusão automática;
+- execução de invariantes lógicas por especificação versionada;
+- regra `zero linhas = invariante atendida`;
+- severidade `error` e `warning` separadas;
+- bloqueio de SQL mutante inclusive quando disfarçado em CTE;
+- bloqueio de `PRAGMA` dentro das invariantes;
+- execução em conexão SQLite somente leitura.
 
 ## Contagem atual
 
-- **62 testes definidos**;
-- **59 testes aprovados em execuções controladas**;
+- **70 testes definidos**;
+- **67 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
@@ -72,7 +79,7 @@ Após a reconciliação, continuam obrigatórios testes de:
 - identidade CPF/CNPJ/CAEPF/matrícula;
 - eConsignado contextual/idempotente;
 - retificação/versionamento;
-- invariantes lógicas do banco;
+- invariantes lógicas V8 específicas do schema operacional;
 - autenticação/CSRF/autorização;
 - banco ↔ filesystem;
 - regressão dos 28 casos reais de 08/2026.
