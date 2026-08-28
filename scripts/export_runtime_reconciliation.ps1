@@ -24,6 +24,25 @@ function Assert-UnderRoot {
     }
 }
 
+function Assert-NoReparsePoints {
+    param([string]$Source)
+
+    $item = Get-Item -LiteralPath $Source -Force
+    if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw "Exportação bloqueada: origem é junction/symlink/reparse point: $Source"
+    }
+
+    if ($item.PSIsContainer) {
+        $reparse = Get-ChildItem -LiteralPath $Source -Recurse -Force |
+            Where-Object { ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 } |
+            Select-Object -First 1
+
+        if ($reparse) {
+            throw "Exportação bloqueada: reparse point encontrado dentro da origem: $($reparse.FullName)"
+        }
+    }
+}
+
 function Copy-IfExists {
     param(
         [string]$Source,
@@ -36,6 +55,7 @@ function Copy-IfExists {
     }
 
     Assert-UnderRoot -Path $Source -Base $Base
+    Assert-NoReparsePoints -Source $Source
 
     $parent = Split-Path -Parent $Destination
     if ($parent -and -not (Test-Path -LiteralPath $parent)) {
@@ -107,6 +127,53 @@ function Assert-NoForbiddenContent {
     }
 }
 
+function Assert-NoEmbeddedSecrets {
+    param([string]$Stage)
+
+    $textExtensions = @(
+        '.py', '.ps1', '.js', '.ts', '.html', '.css', '.json', '.toml',
+        '.yaml', '.yml', '.ini', '.cfg', '.conf', '.txt', '.md', '.bat', '.cmd'
+    )
+
+    $suspicious = New-Object System.Collections.Generic.List[string]
+    $assignmentPattern = '(?im)\b(api[_-]?key|client[_-]?secret|secret|token|password|senha)\b\s*[:=]\s*["'']([^"'']{8,})["'']'
+    $privateKeyPattern = '-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----'
+
+    Get-ChildItem -LiteralPath $Stage -File -Recurse -Force |
+        Where-Object { $textExtensions -contains $_.Extension.ToLowerInvariant() } |
+        ForEach-Object {
+            try {
+                $content = Get-Content -LiteralPath $_.FullName -Raw -ErrorAction Stop
+            }
+            catch {
+                return
+            }
+
+            if ($content -match $privateKeyPattern) {
+                $suspicious.Add($_.FullName.Substring($Stage.Length).TrimStart('\'))
+                return
+            }
+
+            $matches = [regex]::Matches($content, $assignmentPattern)
+            foreach ($match in $matches) {
+                $value = $match.Groups[2].Value.Trim()
+                $normalized = $value.ToLowerInvariant()
+
+                if ($normalized -match '(example|dummy|placeholder|changeme|change-me|test|none|null|your_|seu_|env\[|getenv|os\.environ|\$\{|%[^%]+%)') {
+                    continue
+                }
+
+                $suspicious.Add($_.FullName.Substring($Stage.Length).TrimStart('\'))
+                break
+            }
+        }
+
+    if ($suspicious.Count -gt 0) {
+        $unique = $suspicious | Sort-Object -Unique
+        throw "Exportação bloqueada: possível segredo hardcoded encontrado. Revise os arquivos:`n$($unique -join "`n")"
+    }
+}
+
 $resolvedRoot = (Resolve-Path -LiteralPath $Root).Path
 
 if (-not $OutputDir) {
@@ -160,6 +227,8 @@ foreach ($entryRoot in $entrypointRoots) {
         continue
     }
 
+    Assert-NoReparsePoints -Source $entryRoot
+
     Get-ChildItem -LiteralPath $entryRoot -File -Filter '*.py' -Force | ForEach-Object {
         $relativeBase = if ($entryRoot -eq $resolvedRoot) { '' } else { 'app' }
         $destinationDir = if ($relativeBase) { Join-Path $stage $relativeBase } else { $stage }
@@ -173,6 +242,7 @@ foreach ($entryRoot in $entrypointRoots) {
 
 Remove-ForbiddenContent -Stage $stage
 Assert-NoForbiddenContent -Stage $stage
+Assert-NoEmbeddedSecrets -Stage $stage
 
 $manifestPath = Join-Path $stage 'RECONCILIATION_MANIFEST.csv'
 $inventoryPath = Join-Path $stage 'RECONCILIATION_INFO.txt'
@@ -209,6 +279,8 @@ $info = @(
     '- sem .env/tokens/credenciais',
     '- sem logs/backups/temp/cache',
     '- sem .venv/__pycache__',
+    '- sem junction/symlink/reparse point',
+    '- bloqueio se houver possível segredo hardcoded',
     '',
     'Este exportador não altera nem remove arquivos da raiz operacional.'
 )
@@ -218,7 +290,7 @@ if (Test-Path -LiteralPath $zipPath) {
     Remove-Item -LiteralPath $zipPath -Force
 }
 
-Compress-Archive -LiteralPath (Join-Path $stage '*') -DestinationPath $zipPath -CompressionLevel Optimal
+Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zipPath -CompressionLevel Optimal
 
 $zipHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash
 
