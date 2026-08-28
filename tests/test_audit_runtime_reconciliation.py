@@ -90,14 +90,12 @@ class ReconciliationAuditTests(unittest.TestCase):
                     fieldnames=["RelativePath", "Length", "SHA256", "LastWriteUtc"],
                 )
                 writer.writeheader()
-                writer.writerow(
-                    {
-                        "RelativePath": "../outside.py",
-                        "Length": external.stat().st_size,
-                        "SHA256": digest,
-                        "LastWriteUtc": "",
-                    }
-                )
+                writer.writerow({
+                    "RelativePath": "../outside.py",
+                    "Length": external.stat().st_size,
+                    "SHA256": digest,
+                    "LastWriteUtc": "",
+                })
 
             ok, errors = module.verify_manifest(root)
             self.assertFalse(ok)
@@ -146,6 +144,27 @@ class ReconciliationAuditTests(unittest.TestCase):
             violations = module.find_forbidden(root)
             self.assertTrue(any("database/" in item for item in violations))
             self.assertTrue(any("prod.sqlite3" in item for item in violations))
+
+    def test_sensitive_filename_is_detected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root / "app" / "src" / "credentials.json", '{"user":"x"}')
+            violations = module.find_forbidden(root)
+            self.assertTrue(any("credentials.json" in item for item in violations))
+
+    def test_embedded_secret_in_json_is_detected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root / "app" / "src" / "config.json", '{"api_key": "sk_live_ABC123456789"}')
+            suspicious = module.find_embedded_secrets(root)
+            self.assertEqual(suspicious, ["app/src/config.json"])
+
+    def test_fake_secret_placeholder_is_allowed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root / "app" / "src" / "config.json", '{"api_key": "FAKE_TEST_TOKEN_123"}')
+            suspicious = module.find_embedded_secrets(root)
+            self.assertEqual(suspicious, [])
 
 
 if __name__ == "__main__":
