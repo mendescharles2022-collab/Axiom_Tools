@@ -1,0 +1,19 @@
+--- a/app/src/axiom_tools/modules/closing/retification.py
++++ b/app/src/axiom_tools/modules/closing/retification.py
+@@
+-    base = con.execute("""SELECT * FROM fechamento_mensal_versao WHERE competencia=? AND cliente_id=?
+-        ORDER BY versao DESC LIMIT 1""", (competencia, int(cliente_id))).fetchone()
++    versao_atual = int(ctrl["versao_atual"] or 0)
++    base = con.execute("""SELECT * FROM fechamento_mensal_versao
++        WHERE competencia=? AND cliente_id=? AND versao=? LIMIT 1""",
++        (competencia, int(cliente_id), versao_atual)).fetchone() if versao_atual > 0 else None
+@@
+-    if atual_hash == base["snapshot_hash"]:
+-        return {"avaliado": True, "mudou": False, "bloquear_saida": True, "versao_base": int(base["versao"])}
++    if atual_hash == base["snapshot_hash"]:
++        return {"avaliado": True, "mudou": False, "bloquear_saida": False, "versao_base": int(base["versao"])}
+@@
+-    if not delta:
+-        return {"avaliado": True, "mudou": False, "bloquear_saida": True, "versao_base": int(base["versao"])}
++    if not delta:
++        return {"avaliado": True, "mudou": False, "bloquear_saida": False, "versao_base": int(base["versao"])}
