@@ -3,9 +3,9 @@
 Data inicial: 28/08/2026  
 Status: **FASE DE CORREÇÃO PREPARADA / RUNTIME AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
-Este arquivo passa a ser o rastreador vivo da fase de correção e homologação da V8.
+Este arquivo é o rastreador vivo da fase de correção e homologação da V8.
 
-Os documentos `AUDITORIA_CANONICA_V8_20260828_ETAPA*.md` permanecem como histórico de investigação. A partir deste ponto, o andamento principal deve ser atualizado aqui para evitar dezenas de arquivos de etapa sem necessidade.
+Os documentos `AUDITORIA_CANONICA_V8_20260828_ETAPA*.md` permanecem como histórico de investigação. O andamento principal passa a ser atualizado aqui para evitar novos documentos de etapa sem necessidade.
 
 ## 1. Legenda de estado
 
@@ -62,40 +62,70 @@ Conclusão operacional:
 
 A fonte de reconciliação continua sendo a cópia operacional controlada do runtime/servidor ou pacote canônico equivalente, seguida de filtragem de dados sensíveis e versionamento da árvore de código.
 
-### Ferramentas de desbloqueio preparadas — 28/08/2026
+### Ferramentas de desbloqueio preparadas — estado atual
 
-Foram adicionadas ao `main` ferramentas específicas para transformar a reconciliação em processo reproduzível:
+Foram adicionadas ao `main` ferramentas específicas para transformar a reconciliação em processo reproduzível.
 
-1. `scripts/export_runtime_reconciliation.ps1`
-   - exportação Windows por whitelist;
-   - não altera a raiz operacional;
-   - bloqueia banco, documentos, certificados, credenciais, logs, backups, caches e temporários;
-   - bloqueia reparse points nas origens copiadas;
-   - faz varredura básica de possível segredo hardcoded;
-   - gera manifesto SHA-256 e ZIP de reconciliação;
-   - revisão estática concluída;
-   - **execução real ainda pendente no Windows**, pois o ambiente desta auditoria não possui PowerShell.
+#### Exportação segura
 
-2. `scripts/audit_runtime_reconciliation.py`
-   - valida `RECONCILIATION_MANIFEST.csv`;
-   - detecta conteúdo proibido;
-   - compara runtime exportado contra `src/`, `tests/`, `scripts/` e metadata do repositório;
-   - classifica `SAME`, `CHANGED`, `RUNTIME_ONLY` e `REPO_ONLY`;
-   - gera relatório CSV/JSON;
-   - implementado e testado localmente.
+`scripts/export_runtime_reconciliation.py`
 
-3. `tests/test_audit_runtime_reconciliation.py`
-   - 3 testes automatizados executados e aprovados em 28/08/2026;
-   - cobre classificação de diferenças;
-   - valida manifesto e adulteração posterior;
-   - detecta conteúdo SQLite proibido.
+- whitelist explícita de código, testes, scripts, migrations, templates, static e metadata controlada;
+- suporta layouts `app/src` e `src`;
+- não copia banco, documentos, certificados, credenciais, logs, backups, caches ou temporários;
+- bloqueia symlink/junction/reparse point nas origens copiadas;
+- bloqueia saída posicionada dentro da própria árvore exportada;
+- detecta nomes sensíveis e possíveis segredos hardcoded;
+- gera `RECONCILIATION_MANIFEST.csv`, informação da exportação e ZIP com SHA-256;
+- **9 testes automatizados aprovados** na revisão executada.
 
-4. `docs/auditoria/GUIA_EXPORTACAO_RUNTIME_RECONCILIACAO_V8.md`
-   - comando Windows;
-   - conteúdo permitido/proibido;
-   - critérios de validação e saída de B06.
+`scripts/export_runtime_reconciliation.ps1`
 
-Consequência: **B06 continua bloqueado pelo runtime, mas o mecanismo controlado para removê-lo está preparado e parcialmente testado.**
+- launcher Windows fino para o exportador Python;
+- execução real ainda precisa ser comprovada no Windows operacional.
+
+#### Auditoria independente do pacote
+
+`scripts/audit_runtime_reconciliation.py`
+
+- valida manifesto, tamanho e SHA-256;
+- bloqueia tentativa de `../`/saída da raiz;
+- detecta arquivo extra fora do manifesto e caminho duplicado;
+- revalida arquivos sensíveis e possíveis segredos sem confiar apenas no exportador;
+- compara `src`, `tests`, `scripts`, migrations, alembic, templates, static e metadata;
+- classifica `SAME`, `CHANGED`, `RUNTIME_ONLY` e `REPO_ONLY`;
+- gera relatório CSV/JSON;
+- **9 testes automatizados aprovados** na revisão executada.
+
+#### Pipeline ponta a ponta
+
+`tests/test_reconciliation_pipeline_e2e.py`
+
+Foram versionados 3 cenários:
+
+1. runtime simulado → export ZIP → extração → auditoria sem divergência;
+2. divergência runtime × repositório produz código de retorno específico;
+3. adulteração posterior ao manifesto é rejeitada antes da comparação.
+
+Esses 3 testes estão **versionados, mas ainda aguardam execução comprovada** sobre a árvore atual do `main`.
+
+#### CI
+
+`.github/workflows/reconciliation-tests.yml` foi criado com Python 3.12 e descoberta da suíte `test_*reconciliation*.py`.
+
+Até esta atualização, commits feitos pela integração não produziram workflow run automático observável. Portanto:
+
+- CI está **CONFIGURADA**;
+- CI ainda **NÃO ESTÁ COMPROVADA COMO EXECUTADA**;
+- não será contabilizada como evidência de homologação.
+
+#### Contagem atual
+
+- **18 testes aprovados** nas revisões executadas da infraestrutura;
+- **3 testes end-to-end adicionais versionados**, aguardando execução comprovada;
+- **21 testes de reconciliação definidos** no repositório.
+
+Consequência: **B06 continua bloqueado pelo runtime, mas o mecanismo controlado para removê-lo está substancialmente preparado e testado.**
 
 ## 3. Lote A — integridade do ciclo e saídas
 
@@ -217,15 +247,14 @@ Antes de qualquer pacote final:
 
 Atualizações de governança e tooling aplicadas ao repositório em 28/08/2026:
 
-- `docs/STATUS_ATUAL.md` atualizado para refletir a auditoria completa;
-- `README.md` alinhado ao estado `main ≠ runtime`;
+- `docs/STATUS_ATUAL.md` atualizado para refletir a auditoria e o tooling de reconciliação;
+- `README.md` aponta para este rastreador vivo;
 - mapa de cobertura B01–B50 preservado;
-- este rastreador mantido como fonte viva da fase de correção;
 - histórico Git investigado e descartado como fonte suficiente para recuperar a árvore operacional completa;
-- exportador seguro do runtime criado e endurecido;
-- guia de exportação criado;
-- auditor Python de reconciliação criado e testado;
-- suíte automatizada da ferramenta criada, com 3 testes aprovados;
-- `tests/README.md` atualizado com cobertura real e cobertura futura obrigatória.
+- exportador seguro do runtime criado, endurecido e coberto por testes;
+- auditor independente de reconciliação criado, endurecido e coberto por testes;
+- 3 cenários end-to-end versionados;
+- workflow de CI criado, porém ainda sem execução automática comprovada;
+- `tests/README.md` sincronizado com 21 testes definidos.
 
-Próximo avanço real: executar a exportação no Windows/runtime operacional, auditar o pacote gerado e iniciar a reconciliação controlada da árvore oficial.
+Próximo avanço técnico: preparar a proveniência de build (B42) e manter pronta a execução do Gate Zero para o momento em que a exportação do runtime Windows estiver disponível.
