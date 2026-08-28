@@ -1,0 +1,81 @@
+--- a/app/src/axiom_tools/modules/closing/service.py
++++ b/app/src/axiom_tools/modules/closing/service.py
+@@
+ def clientes_fechados_ids(con, competencia: str) -> set[int]:
+     garantir_schema(con)
+-    return {int(r[0]) for r in con.execute("""SELECT f.cliente_id FROM fechamento_mensal_cliente f LEFT JOIN fechamento_cliente_perfil fp ON fp.cliente_id=f.cliente_id WHERE f.competencia=? AND f.status='FECHADA' AND (NOT EXISTS (SELECT 1 FROM fechamento_cliente_perfil) OR COALESCE(fp.participa_ciclo,0)=1)""",(competencia,)).fetchall()}
++    from axiom_tools.modules.closing.universe import clientes_fechados_ids as _ids
++    return _ids(con, competencia)
+@@
+ def clientes_conferencia_ids(con, competencia: str) -> set[int]:
+     garantir_schema(con)
+-    return {int(r[0]) for r in con.execute("""SELECT f.cliente_id FROM fechamento_mensal_cliente f LEFT JOIN fechamento_cliente_perfil fp ON fp.cliente_id=f.cliente_id WHERE f.competencia=? AND ((f.status='PRONTA' AND f.chamada=(SELECT chamada_atual FROM fechamento_mensal WHERE competencia=f.competencia)) OR f.status IN ('FECHADA','RETIFICACAO')) AND (f.movimento_competencia='COM_MOVIMENTO' OR f.status IN ('FECHADA','RETIFICACAO')) AND (NOT EXISTS (SELECT 1 FROM fechamento_cliente_perfil) OR COALESCE(fp.participa_ciclo,0)=1)""",(competencia,)).fetchall()}
++    from axiom_tools.modules.closing.universe import clientes_conferencia_ids as _ids
++    return _ids(con, competencia)
+--- a/app/src/axiom_tools/modules/processing/operations.py
++++ b/app/src/axiom_tools/modules/processing/operations.py
+@@
+         if str(escopo_fechamento or '').upper() == 'FECHADAS':
+-            from axiom_tools.modules.closing.service import possui_controle
++            from axiom_tools.modules.closing.service import possui_controle, clientes_fechados_ids
+             if possui_controle(con, competencia):
+-                where.append("h.cliente_id_anterior IN (SELECT cliente_id FROM fechamento_mensal_cliente WHERE competencia=? AND status IN ('FECHADA','RETIFICACAO'))")
+-                params.append(competencia)
++                ids_fechados = sorted(clientes_fechados_ids(con, competencia))
++                if ids_fechados:
++                    where.append(f"h.cliente_id_anterior IN ({','.join('?' for _ in ids_fechados)})")
++                    params.extend(ids_fechados)
++                else:
++                    where.append("1=0")
+@@
+         if str(escopo_fechamento or '').upper() == 'FECHADAS':
+-            from axiom_tools.modules.closing.service import possui_controle
++            from axiom_tools.modules.closing.service import possui_controle, clientes_fechados_ids
+             if possui_controle(con, competencia):
+-                where.append("p.cliente_id IN (SELECT cliente_id FROM fechamento_mensal_cliente WHERE competencia=? AND status IN ('FECHADA','RETIFICACAO'))")
+-                params.append(competencia)
++                ids_fechados = sorted(clientes_fechados_ids(con, competencia))
++                if ids_fechados:
++                    where.append(f"p.cliente_id IN ({','.join('?' for _ in ids_fechados)})")
++                    params.extend(ids_fechados)
++                else:
++                    where.append("1=0")
+--- a/app/src/axiom_tools/web/views/documents_views.py
++++ b/app/src/axiom_tools/web/views/documents_views.py
+@@
+-        from axiom_tools.modules.closing.service import possui_controle
++        from axiom_tools.modules.closing.service import possui_controle, clientes_fechados_ids
+         filtrar_fechadas = bool(competencia and escopo_fechamento=='FECHADAS' and possui_controle(conexao, competencia))
+-        repositorio_eventos=[dict(r) for r in conexao.execute("""SELECT e.*,p.nome_original,p.competencia,
++        ids_fechados = sorted(clientes_fechados_ids(conexao, competencia)) if filtrar_fechadas else []
++        filtro_eventos = ""
++        params_eventos: list[object] = [competencia, competencia]
++        if filtrar_fechadas:
++            if ids_fechados:
++                filtro_eventos = f" AND p.cliente_id IN ({','.join('?' for _ in ids_fechados)})"
++                params_eventos.extend(ids_fechados)
++            else:
++                filtro_eventos = " AND 1=0"
++        repositorio_eventos=[dict(r) for r in conexao.execute(f"""SELECT e.*,p.nome_original,p.competencia,
+             COALESCE(c.nome_apresentacao,c.nome,p.documento_cliente) cliente_nome
+             FROM processamento_repositorio_evento e
+             LEFT JOIN processamento_arquivo p ON p.id=e.processamento_id
+             LEFT JOIN clientes c ON c.id=p.cliente_id
+-            WHERE (?='' OR p.competencia=?)
+-              AND (?=0 OR p.cliente_id IN (SELECT cliente_id FROM fechamento_mensal_cliente WHERE competencia=? AND status IN ('FECHADA','RETIFICACAO')))
+-            ORDER BY e.id DESC LIMIT 25""",(competencia,competencia,int(filtrar_fechadas),competencia)).fetchall()]
++            WHERE (?='' OR p.competencia=?) {filtro_eventos}
++            ORDER BY e.id DESC LIMIT 25""",params_eventos).fetchall()]
+         try:
+-            saida_eventos=[dict(r) for r in conexao.execute("""SELECT e.*,p.nome_original,p.competencia,
++            saida_eventos=[dict(r) for r in conexao.execute(f"""SELECT e.*,p.nome_original,p.competencia,
+                 COALESCE(c.nome_apresentacao,c.nome,p.documento_cliente) cliente_nome,sp.nome perfil_nome
+                 FROM processamento_saida_evento e
+                 JOIN processamento_arquivo p ON p.id=e.processamento_id
+                 LEFT JOIN clientes c ON c.id=p.cliente_id
+                 JOIN processamento_saida_perfil sp ON sp.id=e.perfil_id
+-                WHERE (?='' OR p.competencia=?)
+-                  AND (?=0 OR p.cliente_id IN (SELECT cliente_id FROM fechamento_mensal_cliente WHERE competencia=? AND status IN ('FECHADA','RETIFICACAO')))
+-                ORDER BY e.id DESC LIMIT 25""",(competencia,competencia,int(filtrar_fechadas),competencia)).fetchall()]
++                WHERE (?='' OR p.competencia=?) {filtro_eventos}
++                ORDER BY e.id DESC LIMIT 25""",params_eventos).fetchall()]
