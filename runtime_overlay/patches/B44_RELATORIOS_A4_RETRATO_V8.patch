@@ -1,0 +1,79 @@
+--- a/src/axiom_tools/web/templates/documents/processing_report_view.html
++++ b/src/axiom_tools/web/templates/documents/processing_report_view.html
+@@
+-{% block conteudo %}<div class="ax-proc ax-report-view">
++{% block conteudo %}<div class="ax-proc ax-report-view ax-report-view--{{ tipo }}">
+@@
+-<section class="ax-proc-panel"><div class="ax-report-table"><table>
++<section class="ax-proc-panel ax-report-sheet"><div class="ax-report-table ax-report-table--{{ tipo }}"><table>
+
+--- a/src/axiom_tools/web/static/css/processing-hub.css
++++ b/src/axiom_tools/web/static/css/processing-hub.css
+@@
+ @media print{
+   @page{size:A4 portrait;margin:8mm 7mm}
+@@
+-  .ax-report-table table{width:100%!important;max-width:100%!important;table-layout:fixed!important;font-size:7.2pt!important}
++  .ax-report-table table{width:99.2%!important;max-width:99.2%!important;table-layout:fixed!important;font-size:7.2pt!important;margin:0 auto!important}
+   .ax-report-table thead{display:table-header-group}
+   .ax-report-table tr{break-inside:avoid;page-break-inside:avoid}
+-  .ax-report-table th,.ax-report-table td{padding:2.2px 3px!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.18!important}
++  .ax-report-table th,.ax-report-table td{box-sizing:border-box!important;padding:2px 2.2px!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.16!important}
+   .ax-report-table th{font-size:6.9pt!important}
++  .ax-report-sheet{padding:0!important}
++  .ax-report-table thead{display:table-header-group!important}
++  .ax-report-table tbody{display:table-row-group!important}
++  .ax-report-table tr{break-inside:avoid!important;page-break-inside:avoid!important}
++  .ax-report-table th,.ax-report-table td{hyphens:auto!important;max-width:0!important}
++  .ax-report-view--darf .ax-report-table table,
++  .ax-report-view--conferencia .ax-report-table table,
++  .ax-report-view--conferidos .ax-report-table table,
++  .ax-report-view--divergencias .ax-report-table table,
++  .ax-report-view--auditoria .ax-report-table table{font-size:5.95pt!important}
++  .ax-report-view--darf .ax-report-table th,
++  .ax-report-view--conferencia .ax-report-table th,
++  .ax-report-view--conferidos .ax-report-table th,
++  .ax-report-view--divergencias .ax-report-table th,
++  .ax-report-view--auditoria .ax-report-table th{font-size:5.8pt!important}
++
++  /* Perfis de colunas para A4 retrato: largura proporcional, sem min-width. */
++  .ax-report-table--pendencias th:nth-child(1),.ax-report-table--pendencias td:nth-child(1){width:18%}
++  .ax-report-table--pendencias th:nth-child(2),.ax-report-table--pendencias td:nth-child(2){width:27%}
++  .ax-report-table--pendencias th:nth-child(3),.ax-report-table--pendencias td:nth-child(3){width:14%}
++  .ax-report-table--pendencias th:nth-child(4),.ax-report-table--pendencias td:nth-child(4){width:14%}
++  .ax-report-table--pendencias th:nth-child(5),.ax-report-table--pendencias td:nth-child(5){width:9%}
++  .ax-report-table--pendencias th:nth-child(6),.ax-report-table--pendencias td:nth-child(6){width:18%}
++
++  .ax-report-table--darf th:nth-child(1),.ax-report-table--darf td:nth-child(1){width:16%}
++  .ax-report-table--darf th:nth-child(2),.ax-report-table--darf td:nth-child(2){width:11%}
++  .ax-report-table--darf th:nth-child(3),.ax-report-table--darf td:nth-child(3),
++  .ax-report-table--darf th:nth-child(4),.ax-report-table--darf td:nth-child(4){width:9%}
++  .ax-report-table--darf th:nth-child(5),.ax-report-table--darf td:nth-child(5){width:7%}
++  .ax-report-table--darf th:nth-child(6),.ax-report-table--darf td:nth-child(6),
++  .ax-report-table--darf th:nth-child(7),.ax-report-table--darf td:nth-child(7),
++  .ax-report-table--darf th:nth-child(8),.ax-report-table--darf td:nth-child(8),
++  .ax-report-table--darf th:nth-child(9),.ax-report-table--darf td:nth-child(9){width:8%}
++  .ax-report-table--darf th:nth-child(10),.ax-report-table--darf td:nth-child(10){width:7%}
++  .ax-report-table--darf th:nth-child(11),.ax-report-table--darf td:nth-child(11){width:8%}
++
++  .ax-report-table--conferencia th:nth-child(1),.ax-report-table--conferencia td:nth-child(1),
++  .ax-report-table--conferidos th:nth-child(1),.ax-report-table--conferidos td:nth-child(1),
++  .ax-report-table--divergencias th:nth-child(1),.ax-report-table--divergencias td:nth-child(1){width:18%}
++  .ax-report-table--conferencia th:nth-child(2),.ax-report-table--conferencia td:nth-child(2),
++  .ax-report-table--conferidos th:nth-child(2),.ax-report-table--conferidos td:nth-child(2),
++  .ax-report-table--divergencias th:nth-child(2),.ax-report-table--divergencias td:nth-child(2){width:12%}
++  .ax-report-table--conferencia th:nth-child(3),.ax-report-table--conferencia td:nth-child(3),
++  .ax-report-table--conferidos th:nth-child(3),.ax-report-table--conferidos td:nth-child(3),
++  .ax-report-table--divergencias th:nth-child(3),.ax-report-table--divergencias td:nth-child(3){width:11%}
++  .ax-report-table--conferencia th:nth-child(n+4),.ax-report-table--conferencia td:nth-child(n+4),
++  .ax-report-table--conferidos th:nth-child(n+4),.ax-report-table--conferidos td:nth-child(n+4),
++  .ax-report-table--divergencias th:nth-child(n+4),.ax-report-table--divergencias td:nth-child(n+4){width:9.83%}
++
++  .ax-report-table--auditoria th:nth-child(1),.ax-report-table--auditoria td:nth-child(1){width:10%}
++  .ax-report-table--auditoria th:nth-child(2),.ax-report-table--auditoria td:nth-child(2){width:12%}
++  .ax-report-table--auditoria th:nth-child(3),.ax-report-table--auditoria td:nth-child(3){width:17%}
++  .ax-report-table--auditoria th:nth-child(4),.ax-report-table--auditoria td:nth-child(4){width:17%}
++  .ax-report-table--auditoria th:nth-child(5),.ax-report-table--auditoria td:nth-child(5){width:10%}
++  .ax-report-table--auditoria th:nth-child(6),.ax-report-table--auditoria td:nth-child(6){width:12%}
++  .ax-report-table--auditoria th:nth-child(7),.ax-report-table--auditoria td:nth-child(7){width:22%}
+ }
