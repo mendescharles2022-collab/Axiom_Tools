@@ -1,0 +1,45 @@
+--- a/app/src/axiom_tools/modules/closing/service.py
++++ b/app/src/axiom_tools/modules/closing/service.py
+@@
+ STATUS = {
+-    "PRONTA": "Em conferência",
++    "PRONTA": "Aguardando processamento",
+     "FECHADA": "Fechada",
+     "RETIFICACAO": "Retificação detectada",
+     "ADIADA": "Próxima chamada",
+     "NAO_APLICAVEL": "Não se aplica",
+ }
+
+--- a/app/src/axiom_tools/modules/closing/universe.py
++++ b/app/src/axiom_tools/modules/closing/universe.py
+@@
+ def clientes_conferencia_ids(con: sqlite3.Connection, competencia: str) -> set[int]:
+-    """Mesa ativa: chamada atual com movimento + retificações; nunca FECHADA."""
+-    return clientes_chamada_atual_ids(con, competencia) | clientes_retificacao_ids(con, competencia)
++    """Mesa viva da chamada atual. Retificações possuem fluxo próprio."""
++    return clientes_chamada_atual_ids(con, competencia)
+
+--- a/app/src/axiom_tools/modules/processing/conference.py
++++ b/app/src/axiom_tools/modules/processing/conference.py
+@@
+-    if escopo_fechamento not in {"CICLO","FECHADAS","TODAS"}: escopo_fechamento = "CICLO"
++    if escopo_fechamento not in {"CICLO","RETIFICACOES","FECHADAS","TODAS"}: escopo_fechamento = "CICLO"
+@@
+-        ids_escopo = clientes_fechados_ids(con, competencia) if escopo_fechamento == "FECHADAS" else clientes_conferencia_ids(con, competencia)
++        if escopo_fechamento == "FECHADAS":
++            ids_escopo = clientes_fechados_ids(con, competencia)
++        elif escopo_fechamento == "RETIFICACOES":
++            from axiom_tools.modules.closing.universe import clientes_retificacao_ids
++            ids_escopo = clientes_retificacao_ids(con, competencia)
++        else:
++            ids_escopo = clientes_conferencia_ids(con, competencia)
+         empresas_base = [e for e in empresas_base if e.get("cliente_id") in ids_escopo]
+
+--- a/app/src/axiom_tools/web/templates/conference/index.html
++++ b/app/src/axiom_tools/web/templates/conference/index.html
+@@
+-<div><label>Situação</label><select class="form-select form-select-sm" name="situacao"><option value="">Todas</option>{% for k,r in [('CONFERIDAS','Conferidas'),('DIVERGENTES','Divergentes'),('INCOMPLETAS','Incompletas'),('SEM_MOVIMENTO','Sem movimento'),('CONSIGNADO','Com consignado'),('AFASTAMENTOS','Com afastamentos')] %}<option value="{{ k }}" {{ 'selected' if situacao==k else '' }}>{{ r }}</option>{% endfor %}</select></div><div><label>Escopo do ciclo</label><select class="form-select form-select-sm" name="escopo_fechamento"><option value="CICLO" {{ 'selected' if escopo_fechamento=='CICLO' else '' }}>Ciclo atual</option><option value="FECHADAS" {{ 'selected' if escopo_fechamento=='FECHADAS' else '' }}>Somente fechadas</option><option value="TODAS" {{ 'selected' if escopo_fechamento=='TODAS' else '' }}>Todas as empresas</option></select></div>
++<div><label>Situação</label><select class="form-select form-select-sm" name="situacao"><option value="">Todas</option>{% for k,r in [('CONFERIDAS','Conferidas'),('DIVERGENTES','Divergentes'),('INCOMPLETAS','Incompletas'),('SEM_MOVIMENTO','Sem movimento'),('CONSIGNADO','Com consignado'),('AFASTAMENTOS','Com afastamentos')] %}<option value="{{ k }}" {{ 'selected' if situacao==k else '' }}>{{ r }}</option>{% endfor %}</select></div><div><label>Escopo do ciclo</label><select class="form-select form-select-sm" name="escopo_fechamento"><option value="CICLO" {{ 'selected' if escopo_fechamento=='CICLO' else '' }}>Ciclo atual</option><option value="RETIFICACOES" {{ 'selected' if escopo_fechamento=='RETIFICACOES' else '' }}>Retificações</option><option value="FECHADAS" {{ 'selected' if escopo_fechamento=='FECHADAS' else '' }}>Somente fechadas</option><option value="TODAS" {{ 'selected' if escopo_fechamento=='TODAS' else '' }}>Todas as empresas</option></select></div>
+@@
+-{% if conferencia.fechamento_ativo %}<section class="ax-closing-scope-note"><i class="bi bi-calendar2-check"></i><span>Ciclo mensal ativo · {{ conferencia.fechamento.controle.chamada_atual }}ª chamada · {% if conferencia.escopo_fechamento=='CICLO' %}mostrando empresas liberadas para conferência nesta chamada{% elif conferencia.escopo_fechamento=='FECHADAS' %}mostrando somente empresas já fechadas automaticamente{% else %}mostrando todas as empresas{% endif %}. O fechamento ocorre quando os batimentos aplicáveis ficam concluídos.</span><a href="{{ url_for('closing.index',competencia=competencia) }}">Abrir ciclo</a></section>{% endif %}
++{% if conferencia.fechamento_ativo %}<section class="ax-closing-scope-note"><i class="bi bi-calendar2-check"></i><span>Ciclo mensal ativo · {{ conferencia.fechamento.controle.chamada_atual }}ª chamada · {% if conferencia.escopo_fechamento=='CICLO' %}mostrando empresas liberadas para conferência nesta chamada{% elif conferencia.escopo_fechamento=='RETIFICACOES' %}mostrando somente retificações em fluxo próprio{% elif conferencia.escopo_fechamento=='FECHADAS' %}mostrando somente empresas já fechadas automaticamente{% else %}mostrando todas as empresas{% endif %}. O fechamento ocorre quando os batimentos aplicáveis ficam concluídos.</span><a href="{{ url_for('closing.index',competencia=competencia) }}">Abrir ciclo</a></section>{% endif %}
