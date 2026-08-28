@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "audit": "V8",
+  "gates": [
+    {"gate_id":"CI_TOOLING","status":"NOT_RUN","evidence":[],"notes":"Preencher com run oficial do CI."},
+    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Suíte operacional original no runtime reconciliado."},
+    {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"PRAGMA integrity_check e relatório correspondente."},
+    {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"PRAGMA foreign_key_check sem violações novas."},
+    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes lógicas V8 específicas do schema real."},
+    {"gate_id":"BENCHMARK_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Benchmark representativo de queries/HTTP/workers."},
+    {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Autenticação, CSRF, autorização, escopo e transações."},
+    {"gate_id":"REPORT_A4","status":"NOT_RUN","evidence":[],"notes":"Preview/impressão A4 homologados."},
+    {"gate_id":"WINDOWS_INSTALLATION","status":"NOT_RUN","evidence":[],"notes":"Instalação e smoke na máquina Windows de homologação."},
+    {"gate_id":"ROLLBACK_WINDOWS","status":"NOT_RUN","evidence":[],"notes":"Rollback código + banco + configuração e smoke posterior."}
+  ]
+}
