@@ -152,17 +152,95 @@ O rollback sobre a instalação real continua proibido até:
 - teste físico Windows;
 - smoke pós-rollback.
 
-## 7. Contagem atual do tooling
+## 7. Segurança das rotas — B38
+
+B38 permanece **INSPECAO_PENDENTE** para o runtime, mas já possui tooling estático preparado.
+
+Versionado:
+
+- `scripts/audit_route_security.py`;
+- `config/route_security_policy.example.json`;
+- `docs/auditoria/GUIA_AUDITORIA_SEGURANCA_ROTAS_V8.md`.
+
+A ferramenta inventaria rotas, métodos mutantes, decorators, markers de autenticação configuráveis e possíveis exceções de CSRF.
+
+Cobertura atual: **8 testes aprovados**.
+
+Ausência de achado estático não equivale a segurança homologada. Proteção global, Flask-WTF, autorização de negócio, escopo e transação ainda exigem runtime.
+
+## 8. Banco ↔ filesystem — B49
+
+B49 possui tooling de auditoria **PREPARADO**, mas ainda depende do schema e acervo reais.
+
+Versionado:
+
+- `scripts/audit_db_filesystem_links.py`.
+
+O auditor:
+
+- abre SQLite somente leitura;
+- usa roots físicos explícitos;
+- usa consultas configuráveis depois da reconciliação;
+- verifica caminho confinado, existência, arquivo versus diretório, symlink, tamanho e SHA-256 opcional;
+- bloqueia query mutante;
+- não embute tabela/campo V8 fictício.
+
+Cobertura atual: **8 testes aprovados**.
+
+## 9. Retenção / limpeza — B48
+
+B48 possui planejador **DRY_RUN_ONLY** preparado.
+
+Versionado:
+
+- `scripts/plan_retention_cleanup.py`.
+
+O planejador:
+
+- nunca apaga ou move arquivos;
+- usa roots e regras explícitas;
+- classifica antigos como `CANDIDATE` e recentes como `KEEP_RECENT`;
+- filtra por extensão quando configurado;
+- rejeita glob inseguro;
+- marca symlink para revisão;
+- preserva integralmente o acervo durante análise.
+
+Cobertura atual: **7 testes aprovados**.
+
+Nenhuma política destrutiva real foi criada sem validar o acervo operacional.
+
+## 10. Escala / desempenho — B45
+
+B45 possui benchmark SQLite somente leitura preparado.
+
+Versionado:
+
+- `scripts/benchmark_sqlite_queries.py`.
+
+O benchmark registra:
+
+- warmup e repetições;
+- média, p50, p95 e p99;
+- contagem de linhas;
+- `EXPLAIN QUERY PLAN`;
+- threshold opcional de p95;
+- bloqueio de query mutante.
+
+Cobertura atual: **7 testes aprovados**.
+
+Benchmark SQLite não substitui benchmark HTTP/UX, concorrência, workers ou Windows. As queries reais serão definidas somente depois da reconciliação do schema/runtime.
+
+## 11. Contagem atual do tooling
 
 No repositório:
 
-- **84 testes definidos**;
-- **81 testes aprovados em execuções controladas**;
+- **114 testes definidos**;
+- **111 testes aprovados em execuções controladas**;
 - **3 testes E2E de reconciliação aguardando execução comprovada**.
 
 Essa contagem é do tooling de auditoria/homologação, não da suíte operacional V7/V8.
 
-## 8. Arquitetura funcional V8 preservada
+## 12. Arquitetura funcional V8 preservada
 
 A divisão aprovada permanece:
 
@@ -173,7 +251,7 @@ A divisão aprovada permanece:
 
 A Conferência deve ser leitura sem efeitos colaterais ao abrir a tela. Mudanças de fechamento são dirigidas por eventos de negócio.
 
-## 9. Máquinas de estado separadas
+## 13. Máquinas de estado separadas
 
 A V8 deve manter separados:
 
@@ -187,7 +265,7 @@ A V8 deve manter separados:
 
 `PROCESSADO`, `100%`, `COM_CONSIGNADO`, `PRONTA` ou qualquer outro estado técnico/intermediário não autorizam impressão, entrega ou fechamento por si sós.
 
-## 10. Regras operacionais centrais já consolidadas
+## 14. Regras operacionais centrais já consolidadas
 
 - sem movimento permanente do cadastro ≠ sem movimento daquela competência;
 - sem movimento mensal não é herdado silenciosamente;
@@ -204,13 +282,13 @@ A V8 deve manter separados:
 - hash identifica conteúdo físico, não obrigação econômica;
 - limpeza mensal não apaga acervo probatório, versões ou retificações.
 
-## 11. Casos reais de agosto
+## 15. Casos reais de agosto
 
 A matriz de 08/2026 possui 28 casos reais e um controle documental adicional.
 
 Nenhum caso pode ser considerado corrigido apenas porque uma ocorrência deixou de aparecer na interface.
 
-## 12. Ordem oficial da fase de correção
+## 16. Ordem oficial da fase de correção
 
 Após reconciliação do runtime:
 
@@ -228,7 +306,7 @@ Após reconciliação do runtime:
 12. pacote da mesma árvore testada;
 13. instalação Windows com backup, migração, smoke e rollback comprovado.
 
-## 13. Critério para mudar status
+## 17. Critério para mudar status
 
 Um item só pode passar para `CORRIGIDO_HOMOLOGADO` quando houver:
 
@@ -240,7 +318,7 @@ Um item só pode passar para `CORRIGIDO_HOMOLOGADO` quando houver:
 
 `Documentado`, `contratado`, `implementado`, `testado` e `homologado` são estados diferentes.
 
-## 14. Estado de entrega
+## 18. Estado de entrega
 
 Neste momento:
 
