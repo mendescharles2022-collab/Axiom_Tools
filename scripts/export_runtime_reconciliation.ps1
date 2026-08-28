@@ -220,16 +220,20 @@ foreach ($candidate in $candidates) {
     }
 }
 
-# Entrypoints Python conhecidos são copiados apenas da raiz/app, sem varrer dados arbitrários.
+# Entrypoints Python conhecidos são copiados apenas da raiz/app, sem varrer recursivamente a raiz.
 $entrypointRoots = @($resolvedRoot, (Join-Path $resolvedRoot 'app'))
 foreach ($entryRoot in $entrypointRoots) {
     if (-not (Test-Path -LiteralPath $entryRoot)) {
         continue
     }
 
-    Assert-NoReparsePoints -Source $entryRoot
-
     Get-ChildItem -LiteralPath $entryRoot -File -Filter '*.py' -Force | ForEach-Object {
+        if (($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Exportação bloqueada: arquivo de entrada é reparse point: $($_.FullName)"
+        }
+
+        Assert-UnderRoot -Path $_.FullName -Base $resolvedRoot
+
         $relativeBase = if ($entryRoot -eq $resolvedRoot) { '' } else { 'app' }
         $destinationDir = if ($relativeBase) { Join-Path $stage $relativeBase } else { $stage }
         if (-not (Test-Path -LiteralPath $destinationDir)) {
@@ -279,7 +283,7 @@ $info = @(
     '- sem .env/tokens/credenciais',
     '- sem logs/backups/temp/cache',
     '- sem .venv/__pycache__',
-    '- sem junction/symlink/reparse point',
+    '- sem junction/symlink/reparse point nas origens copiadas',
     '- bloqueio se houver possível segredo hardcoded',
     '',
     'Este exportador não altera nem remove arquivos da raiz operacional.'
