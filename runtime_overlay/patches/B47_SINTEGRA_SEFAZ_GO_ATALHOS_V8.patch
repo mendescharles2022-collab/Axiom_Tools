@@ -1,0 +1,53 @@
+--- a/src/axiom_tools/web/views/clients_views.py
++++ b/src/axiom_tools/web/views/clients_views.py
+@@
+-        sintegra_go="https://appasp.sefaz.go.gov.br/Sintegra/Consulta/default.html",
++        sintegra_go="https://appasp.sefaz.go.gov.br/Sintegra/Consulta/default.asp",
+
+--- a/src/axiom_tools/web/templates/clients/detail.html
++++ b/src/axiom_tools/web/templates/clients/detail.html
+@@
+       <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+@@
+       </div>
++
++      <section class="ax-external-registry-shortcuts mt-3" aria-label="Atalhos cadastrais externos">
++        <div class="ax-external-registry-shortcuts__intro">
++          <span class="ax-section-icon"><i class="bi bi-building-check"></i></span>
++          <div>
++            <strong>Sintegra Goiás / SEFAZ GO</strong>
++            <small>Consulta pública estadual. Compare o retorno antes de registrar qualquer alteração.</small>
++          </div>
++        </div>
++        <div class="ax-external-registry-shortcuts__identity">
++          <span>Documento do cliente</span>
++          <strong>{% if cliente.tipo_pessoa.value == 'PF' %}{{ format_cpf(cliente.documento) }}{% else %}{{ format_cnpj(cliente.documento) }}{% endif %}</strong>
++          {% set ns = namespace(tem_ie_go=false) %}
++          {% for inscricao in inscricoes %}
++            {% if inscricao.tipo and inscricao.tipo.value == 'IE' and inscricao.uf == 'GO' and inscricao.ativa %}
++              {% set ns.tem_ie_go = true %}
++              <small>IE GO: {{ format_inscricao(inscricao.tipo.value, inscricao.numero, inscricao.uf) }}</small>
++            {% endif %}
++          {% endfor %}
++          {% if not ns.tem_ie_go %}<small>IE GO não cadastrada — a consulta também aceita CNPJ/CPF.</small>{% endif %}
++        </div>
++        <div class="ax-external-registry-shortcuts__actions">
++          <a class="btn btn-sm btn-outline-primary" href="{{ sintegra_go }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Consultar SEFAZ GO (Sintegra Goiás)</a>
++          <a class="btn btn-sm btn-outline-secondary" href="{{ sintegra_nacional }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-globe2"></i> Sintegra Nacional</a>
++          <a class="btn btn-sm btn-link" href="#inscricoes"><i class="bi bi-check2-square"></i> Registrar conferência da inscrição</a>
++        </div>
++        <p class="ax-external-registry-shortcuts__note mb-0"><i class="bi bi-shield-check"></i> Nenhum dado externo altera o cadastro automaticamente. Situação cadastral oficial e situação interna do cliente permanecem informações distintas.</p>
++      </section>
+ 
+       {% if dados_rfb %}
+
+--- a/src/axiom_tools/web/static/css/clients-ui-refinement.css
++++ b/src/axiom_tools/web/static/css/clients-ui-refinement.css
+@@
++/* V8 — atalhos cadastrais externos / Sintegra */
++.ax-external-registry-shortcuts{display:grid;grid-template-columns:minmax(220px,1.15fr) minmax(210px,.85fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--bs-border-color);border-radius:12px;background:var(--bs-tertiary-bg)}
++.ax-external-registry-shortcuts__intro{display:flex;align-items:flex-start;gap:9px;min-width:0}.ax-external-registry-shortcuts__intro>div{display:flex;flex-direction:column;min-width:0}.ax-external-registry-shortcuts__intro strong{font-size:.83rem}.ax-external-registry-shortcuts__intro small{font-size:.7rem;color:var(--bs-secondary-color);line-height:1.35}
++.ax-external-registry-shortcuts__identity{display:flex;flex-direction:column;min-width:0}.ax-external-registry-shortcuts__identity>span{font-size:.64rem;text-transform:uppercase;font-weight:700;color:var(--bs-secondary-color)}.ax-external-registry-shortcuts__identity>strong{font-size:.82rem}.ax-external-registry-shortcuts__identity>small{font-size:.68rem;color:var(--bs-secondary-color)}
++.ax-external-registry-shortcuts__actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.ax-external-registry-shortcuts__note{grid-column:1/-1;padding-top:8px;border-top:1px dashed var(--bs-border-color);font-size:.69rem;color:var(--bs-secondary-color);display:flex;gap:6px;align-items:flex-start}
++@media(max-width:1000px){.ax-external-registry-shortcuts{grid-template-columns:1fr 1fr}.ax-external-registry-shortcuts__actions{grid-column:1/-1;justify-content:flex-start}}
++@media(max-width:680px){.ax-external-registry-shortcuts{grid-template-columns:1fr}.ax-external-registry-shortcuts__actions{grid-column:auto}.ax-external-registry-shortcuts__note{grid-column:auto}}
