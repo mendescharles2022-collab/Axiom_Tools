@@ -3,23 +3,15 @@ name: V8 Audit Tooling Tests
 on:
   push:
     paths:
-      - "scripts/export_runtime_reconciliation.py"
-      - "scripts/audit_runtime_reconciliation.py"
-      - "scripts/generate_build_provenance.py"
-      - "scripts/verify_build_provenance.py"
+      - "scripts/*.py"
       - "config/release_identity.toml"
-      - "tests/test_*reconciliation*.py"
-      - "tests/test_*provenance*.py"
+      - "tests/test_*.py"
       - ".github/workflows/reconciliation-tests.yml"
   pull_request:
     paths:
-      - "scripts/export_runtime_reconciliation.py"
-      - "scripts/audit_runtime_reconciliation.py"
-      - "scripts/generate_build_provenance.py"
-      - "scripts/verify_build_provenance.py"
+      - "scripts/*.py"
       - "config/release_identity.toml"
-      - "tests/test_*reconciliation*.py"
-      - "tests/test_*provenance*.py"
+      - "tests/test_*.py"
       - ".github/workflows/reconciliation-tests.yml"
   workflow_dispatch:
 
