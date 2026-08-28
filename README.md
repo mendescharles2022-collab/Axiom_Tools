@@ -12,6 +12,7 @@ Aplicação operacional local para Departamento Pessoal, organização documenta
 Consulte primeiro:
 
 - [`docs/STATUS_ATUAL.md`](docs/STATUS_ATUAL.md)
+- [`docs/auditoria/RASTREADOR_EXECUCAO_CORRECAO_V8.md`](docs/auditoria/RASTREADOR_EXECUCAO_CORRECAO_V8.md) — **estado vivo da correção/homologação**
 - [`docs/auditoria/MAPA_COBERTURA_BLOQUEADORES_V8.md`](docs/auditoria/MAPA_COBERTURA_BLOQUEADORES_V8.md)
 - [`docs/auditoria/MATRIZ_REGRESSAO_V8_AGOSTO_2026.md`](docs/auditoria/MATRIZ_REGRESSAO_V8_AGOSTO_2026.md)
 
@@ -29,6 +30,26 @@ Portanto:
 - o pacote final deverá ser gerado da mesma árvore que passar pelos testes e pela migração.
 
 Protocolo: [`docs/auditoria/PROTOCOLO_RECONCILIACAO_RUNTIME_REPOSITORIO_V8.md`](docs/auditoria/PROTOCOLO_RECONCILIACAO_RUNTIME_REPOSITORIO_V8.md).
+
+## Infraestrutura de reconciliação já versionada
+
+A `main` já contém tooling específico para retirar o bloqueio `main ≠ runtime` de forma controlada:
+
+- `scripts/export_runtime_reconciliation.py` — exportador seguro por whitelist;
+- `scripts/export_runtime_reconciliation.ps1` — launcher Windows;
+- `scripts/audit_runtime_reconciliation.py` — valida manifesto e compara runtime × repositório;
+- `tests/test_export_runtime_reconciliation.py`;
+- `tests/test_audit_runtime_reconciliation.py`;
+- `tests/test_reconciliation_pipeline_e2e.py`;
+- `.github/workflows/reconciliation-tests.yml`.
+
+Estado dos testes da infraestrutura:
+
+- **18 testes já aprovados** nas revisões executadas;
+- **3 testes end-to-end adicionais versionados**, aguardando execução comprovada;
+- workflow do GitHub Actions presente, mas ainda sem run automático observado para commits feitos pela integração.
+
+Detalhes: [`tests/README.md`](tests/README.md).
 
 ## Princípios permanentes
 
