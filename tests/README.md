@@ -6,7 +6,7 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática e consistência banco ↔ filesystem.
+O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática, consistência banco ↔ filesystem e planejamento de retenção.
 
 ## Suítes aprovadas
 
@@ -41,24 +41,24 @@ O repositório já possui, porém, uma suíte real para o tooling de auditoria, 
 
 - `test_audit_db_filesystem_links.py` — **8 aprovados**.
 
-Cobre:
+### Retenção / limpeza dry-run
 
-- consulta SQLite somente leitura;
-- roots físicos fornecidos explicitamente;
-- caminhos relativos confinados à raiz;
-- arquivo obrigatório ausente;
-- path traversal;
-- symlink/reparse point;
-- divergência de tamanho;
-- divergência de SHA-256;
-- hash válido aprovado;
-- query mutante bloqueada sem alterar o banco;
-- schema de consulta configurável, sem tabelas/campos V8 fictícios embutidos.
+- `test_plan_retention_cleanup.py` — **7 aprovados**.
+
+O planejador de retenção:
+
+- não possui rotina de exclusão ou movimentação;
+- trabalha apenas com roots explícitos e política versionada;
+- classifica arquivos antigos como `CANDIDATE` e recentes como `KEEP_RECENT`;
+- suporta filtro por extensão;
+- rejeita glob inseguro e raiz desconhecida;
+- marca symlink para revisão;
+- preserva integralmente os arquivos analisados.
 
 ## Contagem atual
 
-- **100 testes definidos**;
-- **97 testes aprovados em execuções controladas**;
+- **107 testes definidos**;
+- **104 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
@@ -71,7 +71,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 Nenhum desses testes substitui a suíte operacional do runtime V7/V8.
 
-Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, consistência banco ↔ filesystem sobre o acervo real, regressão dos 28 casos e rollback real no Windows.
+Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, consistência banco ↔ filesystem sobre o acervo real, política real de retenção, regressão dos 28 casos e rollback real no Windows.
 
 ## Princípio
 
