@@ -1,0 +1,24 @@
+--- a/app/src/axiom_tools/web/views/conference_views.py
++++ b/app/src/axiom_tools/web/views/conference_views.py
+@@
+ from axiom_tools.modules.processing.operations import conferencia_competencia, salvar_conferencia_manual
++from axiom_tools.modules.processing.conference import sincronizar_conferencia_competencia
+@@
+         salvar_conferencia_manual(conexao, competencia, cliente_id, status, observacao)
+-        # A decisão manual também pode concluir o batimento; o fechamento é consequência da conferência.
+-        conferencia_competencia(conexao, competencia, "", "", "CICLO")
++        # Evento explícito: uma decisão manual pode alterar o agregado do cliente.
++        sincronizar_conferencia_competencia(conexao, competencia)
+
+--- a/app/src/axiom_tools/modules/processing/worker.py
++++ b/app/src/axiom_tools/modules/processing/worker.py
+@@
+         con.commit()
++        # Evento explícito: processamento concluído pode alterar a conferência/fechamento.
++        if prow and prow["cliente_id"] and prow["competencia"] and estado in {"PROCESSADO", "REVISAO"}:
++            try:
++                from axiom_tools.modules.processing.conference import sincronizar_conferencia_competencia
++                sincronizar_conferencia_competencia(con, str(prow["competencia"]))
++            except Exception:
++                # A fila já foi persistida; falha de recálculo não apaga o sucesso técnico do item.
++                pass
