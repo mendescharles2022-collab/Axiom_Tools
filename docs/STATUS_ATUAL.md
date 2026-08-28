@@ -1,71 +1,163 @@
 # Axiom Tools — Status Atual
 
-Data: 26/08/2026  
-Status: **Operacional em servidor / V5.6.14V7 estável / V8 em reformulação**
+Data: 28/08/2026  
+Status: **V5.6.14V7 estável em servidor / V8 em auditoria e correção / V8 NÃO HOMOLOGADA**
 
-## Instalação estável confirmada
+## 1. Instalação estável confirmada
+
+A referência operacional estável continua sendo:
 
 **V5.6.14V7 — Ciclo Mensal com Fechamento Automático**
 
-A instalação V7 foi aplicada com sucesso no servidor em 26/08/2026, preservando banco, serviços, histórico e retificações.
+A V7 foi instalada no servidor em 26/08/2026 preservando banco, serviços, histórico e retificações.
 
-### Capacidades operacionais existentes
+A existência posterior de builds experimentais/auditados da família V8 não substitui automaticamente essa referência de estabilidade.
 
-- cadastro de clientes PF/PJ e parâmetros operacionais;
-- processamento em fila com worker;
-- leitura nativa de PDFs e OCR como fallback;
-- classificação documental e extração analítica;
-- motores especialistas Domínio, eSocial, e-CAC/DARF e FGTS Digital;
-- competência, valores, identidade e dados operacionais;
-- repositório documental;
-- Central de Conferência;
-- eConsignado MTE/Dataprev;
-- afastamentos e ocorrências;
-- Central de Entregas;
-- Centro de Impressão;
-- relatórios e auditoria;
-- Fechamento Mensal;
-- histórico e retificação inteligente versionada;
-- máscaras e grafias técnicas em padrão brasileiro.
+## 2. Situação atual da V8
 
-## Situação da V8
+A V8 passou por auditoria funcional, arquitetural, documental e de governança em 28/08/2026.
 
-A V8 **não está concluída** e não deve ser considerada versão de instalação.
+Resultado atual:
 
-A reformulação aprovada em 26/08/2026 redefine responsabilidades entre três áreas:
+- 50 bloqueadores catalogados (`B01` a `B50`);
+- todos possuem regra de tratamento e critério objetivo de prova;
+- 28 casos reais da competência 08/2026 foram transformados em matriz de regressão;
+- existem protocolos específicos para segurança, migração/rollback, benchmark, regressão dos casos e reconciliação runtime ↔ repositório;
+- nenhum bloqueador foi promovido para `CORRIGIDO_HOMOLOGADO` sem execução no runtime reconciliado;
+- nenhum pacote final V8 está autorizado.
 
-1. **Fechamento Mensal** — somente abrir competência e exibir a evolução/status dos clientes.
-2. **Processamento de Arquivos** — operar dentro da competência aberta, sem misturar apurações históricas na visão operacional.
-3. **Central de Conferência** — resolver exceções, justificar ausências, marcar sem movimento na competência, anexar documentos e reprocessar sem sair da tela.
+Mapa central:
 
-O fechamento do cliente passa a ser resultado automático do batimento/conferência concluída.
+- `docs/auditoria/MAPA_COBERTURA_BLOQUEADORES_V8.md`
+- `docs/auditoria/MATRIZ_REGRESSAO_V8_AGOSTO_2026.md`
+- `docs/auditoria/PROTOCOLO_REGRESSAO_28_CASOS_V8.md`
 
-## Regras já aprovadas e preservadas
+## 3. Bloqueador de governança — repositório ≠ runtime
 
-- sem movimento permanente do cadastro é diferente de sem movimento de uma competência específica;
-- sem movimento mensal não deve ser herdado silenciosamente no mês seguinte;
-- retificação de competência fechada é detectada por mudança material e preserva versões anteriores;
-- dados repetidos não criam retificação;
-- saída automática fica bloqueada enquanto houver retificação candidata pendente;
-- DARF deve ser conferido pela composição aplicável: previdenciário, IRRF, PIS folha, SENAR/Funrural e outros débitos reconhecidos;
-- FGTS só é esperado quando aplicável ao perfil/evidências do cliente;
-- eConsignado só aparece quando houver evidência positiva;
-- clientes eletrônicos recebem DARF e FGTS separados por padrão; unificação é opt-in;
-- contracheques de entrega eletrônica podem ser agrupados por empresa;
-- impressão prioriza retirada/office-boy, mantendo seleção manual de outros clientes.
+O `main` ainda não espelha integralmente a árvore operacional auditada.
 
-## Atenção — sincronização do repositório
+Inventário atual do repositório confirma que:
 
-A documentação da `main` foi atualizada para refletir o sistema real. A árvore histórica de código do GitHub ainda é anterior às atualizações operacionais instaladas entre 17 e 26/08/2026. Antes de usar a `main` como fonte byte a byte para nova implementação, deve-se concluir a ressincronização integral do código com uma cópia atual do servidor.
+- `src/axiom_tools` contém apenas a fundação reduzida (`core`, `modules`, `utils` e módulos mínimos);
+- não estão versionadas na árvore atual as implementações operacionais completas de fechamento, processamento, conferência, entregas e demais módulos V8 auditados no runtime;
+- `tests/` ainda não contém a suíte operacional empacotada do runtime auditado;
+- `pyproject.toml` ainda não representa corretamente a identidade/versionamento operacional da família V8.
 
-## Próximo trabalho
+Consequência:
 
-Concluir a V8 com:
+**documentação no GitHub não é prova de correção do runtime.**
 
-- Fechamento Mensal simplificado;
-- Processamento totalmente orientado pela competência aberta;
-- Conferência como mesa operacional de resolução;
-- isolamento visual/funcional entre competências;
-- anexar/reprocessar diretamente na Conferência;
-- fechamento automático por regras aplicáveis;
-- testes de regressão sobre os fluxos já homologados da V7.
+Antes da implementação/homologação final é obrigatório reconciliar a árvore operacional com o repositório oficial, sem versionar banco real, documentos de clientes, certificados, credenciais, logs, caches ou outros dados sensíveis.
+
+Contrato/protocolo:
+
+- `docs/auditoria/DIVERGENCIA_REPOSITORIO_BASE_CANONICA_20260828.md`
+- `docs/auditoria/PROTOCOLO_RECONCILIACAO_RUNTIME_REPOSITORIO_V8.md`
+- `docs/auditoria/CONTRATO_PROVENIENCIA_BUILD_V8.md`
+
+## 4. Arquitetura funcional V8 preservada
+
+A divisão aprovada permanece:
+
+1. **Fechamento Mensal** — abre competência e acompanha o ciclo; não processa arquivos.
+2. **Processamento de Arquivos** — trabalha somente no universo da competência/chamada aberta e produz evidências técnicas.
+3. **Central de Conferência** — resolve divergências, ausências, justificativas, sem movimento mensal, anexos e reprocessamento.
+4. **Fechado** — consequência do estado canônico das obrigações aplicáveis, nunca simples tradução de `PROCESSADO`.
+
+A Conferência deve ser leitura sem efeitos colaterais ao abrir a tela. Mudanças de fechamento são dirigidas por eventos de negócio.
+
+## 5. Máquinas de estado separadas
+
+A V8 deve manter separados:
+
+- estado da sessão técnica;
+- estado do documento/processamento;
+- estado da obrigação/fonte;
+- estado do ciclo mensal do cliente;
+- estado da consulta externa;
+- estado de retificação;
+- autorização de saída.
+
+`PROCESSADO`, `100%`, `COM_CONSIGNADO`, `PRONTA` ou qualquer outro estado técnico/intermediário não autorizam impressão, entrega ou fechamento por si sós.
+
+## 6. Regras operacionais centrais já consolidadas
+
+- sem movimento permanente do cadastro ≠ sem movimento daquela competência;
+- sem movimento mensal não é herdado silenciosamente no mês seguinte;
+- decisões manuais são por fonte/obrigação, não globais por cliente;
+- uma justificativa de DARF não libera FGTS/eConsignado;
+- cliente de 2ª chamada fica fora do universo da 1ª chamada;
+- cliente fechado não pertence à mesa viva de Conferência;
+- nova evidência material em cliente fechado gera retificação candidata e preserva a versão anterior;
+- saída final exige gate único de backend e versão de fechamento autorizadora;
+- FGTS zero pode ser `NAO_APLICAVEL` conforme o contexto;
+- MEI usa DAE como referência normal e não cria expectativa artificial de GFD autônoma;
+- afastamento integral/faltas integrais com bases zeradas não devem gerar guias artificiais;
+- eConsignado consulta apenas o universo da competência/chamada e o retorno da API é evidência, não conclusão;
+- hash identifica conteúdo físico; não define sozinho identidade econômica da obrigação;
+- limpeza mensal não apaga acervo probatório, versões, retificações ou documentos de fechamento.
+
+## 7. Casos reais de agosto
+
+A matriz de 08/2026 possui 28 casos reais e um controle adicional documental.
+
+Ela cobre, entre outros:
+
+- reprocessamento e promoção de candidato;
+- retificação;
+- chamadas mensais;
+- produtor rural PF/CAEPF;
+- múltiplos Extratos/matrículas;
+- MEI/DAE;
+- FGTS zero;
+- deduções previdenciárias;
+- afastamentos e faltas integrais;
+- responsabilidade do Fiscal;
+- procuração revogada/expirada;
+- eConsignado e rescisão;
+- múltiplas evidências de FGTS;
+- descoberta → leitura → identidade → competência → vínculo → Conferência.
+
+Nenhum desses casos pode ser considerado corrigido apenas porque uma ocorrência deixou de aparecer na tela.
+
+## 8. Ordem oficial da fase de correção
+
+Após reconciliação do runtime com o repositório:
+
+1. estabelecer baseline reproduzível e rodar suíte original;
+2. corrigir B01 — reprocessamento candidato/versionado;
+3. corrigir B02 — Conference GET somente leitura;
+4. corrigir B03 — gate único de saída;
+5. corrigir B07/B08 — universo operacional e chamadas;
+6. corrigir B12–B20 — identidade, composição, aplicabilidade e documentos;
+7. corrigir B24–B28 — eConsignado;
+8. concluir schema/migração aditiva e invariantes;
+9. executar regressão completa dos 28 casos;
+10. executar benchmark de escala;
+11. validar segurança das rotas V8;
+12. gerar pacote somente da mesma árvore testada;
+13. instalar no Windows com backup, migração em cópia, smoke e rollback comprovado.
+
+## 9. Critério para mudar status de um bloqueador
+
+Um item só pode passar para `CORRIGIDO_HOMOLOGADO` quando houver:
+
+1. código corrigido na árvore oficial;
+2. teste/regressão executado;
+3. evidência do resultado;
+4. atualização do mapa/matriz de bloqueadores;
+5. ausência de regressão nos casos relacionados.
+
+`Documentado`, `contratado`, `implementado` e `homologado` são estados diferentes.
+
+## 10. Estado de entrega
+
+Neste momento:
+
+- V8 **não homologada**;
+- pacote final **não autorizado**;
+- migração real **não autorizada**;
+- rollback final **não comprovado**;
+- árvore runtime **ainda não reconciliada integralmente com o GitHub**.
+
+A documentação de auditoria no `main` é a referência canônica das regras e critérios até que a árvore operacional completa seja reconciliada e testada.
