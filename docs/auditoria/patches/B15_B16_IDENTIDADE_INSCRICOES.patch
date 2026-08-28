@@ -63,8 +63,8 @@
  
  def _periodo_datas(valor):
      if not valor:return None,None
---- a/app/src/axi_tools/modules/processing/ecac_rules.py
-+++ b/app/src/axi_tools/modules/processing/ecac_rules.py
+--- a/app/src/axiom_tools/modules/processing/ecac_rules.py
++++ b/app/src/axiom_tools/modules/processing/ecac_rules.py
 @@ -12,6 +12,8 @@
  import sqlite3
  from datetime import datetime
