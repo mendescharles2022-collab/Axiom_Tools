@@ -37,12 +37,12 @@ jobs:
         run: python -m unittest discover -s tests -p "test_*.py" -v
 
       - name: Build current V8 preflight
-        run: python scripts/build_current_preflight.py --repo-root . --output-dir .audit_artifacts
+        run: python scripts/build_current_preflight.py --repo-root . --output-dir audit_artifacts
 
       - name: Upload current V8 preflight
         uses: actions/upload-artifact@v4
         with:
           name: v8-release-preflight
-          path: .audit_artifacts/
+          path: audit_artifacts/
           if-no-files-found: error
           retention-days: 30
