@@ -4,9 +4,10 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 import sys
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Iterable
 
 FORBIDDEN_DIRS = {
@@ -22,6 +23,9 @@ FORBIDDEN_EXTENSIONS = {
 }
 IGNORED_DIRS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 MANIFEST_NAME = "RECONCILIATION_MANIFEST.csv"
+INFO_NAME = "RECONCILIATION_INFO.txt"
+RESERVED_EXPORT_FILES = {MANIFEST_NAME, INFO_NAME}
+SHA256_RE = re.compile(r"^[0-9A-Fa-f]{64}$")
 
 
 @dataclass(frozen=True)
@@ -52,6 +56,8 @@ def collect_files(root: Path) -> dict[str, Path]:
         return {}
     result: dict[str, Path] = {}
     for path in root.rglob("*"):
+        if path.is_symlink():
+            continue
         if not path.is_file() or should_ignore(path.relative_to(root)):
             continue
         rel = path.relative_to(root).as_posix()
@@ -64,6 +70,9 @@ def find_forbidden(root: Path) -> list[str]:
     for path in root.rglob("*"):
         rel = path.relative_to(root)
         lowered_parts = {p.lower() for p in rel.parts}
+        if path.is_symlink():
+            violations.append(rel.as_posix() + " [symlink]")
+            continue
         if path.is_dir() and path.name.lower() in FORBIDDEN_DIRS:
             violations.append(rel.as_posix() + "/")
             continue
@@ -78,38 +87,97 @@ def find_forbidden(root: Path) -> list[str]:
     return sorted(set(violations))
 
 
+def safe_manifest_target(runtime_root: Path, raw_relative: str) -> tuple[str, Path] | None:
+    rel = raw_relative.replace("\\", "/").strip()
+    if not rel:
+        return None
+
+    pure = PurePosixPath(rel)
+    if pure.is_absolute() or ".." in pure.parts or not pure.parts:
+        return None
+    if pure.parts[0].endswith(":") or "\x00" in rel:
+        return None
+
+    normalized = pure.as_posix()
+    target = (runtime_root / Path(*pure.parts)).resolve()
+    root_resolved = runtime_root.resolve()
+
+    try:
+        target.relative_to(root_resolved)
+    except ValueError:
+        return None
+
+    return normalized, target
+
+
 def verify_manifest(runtime_root: Path) -> tuple[bool, list[str]]:
     manifest = runtime_root / MANIFEST_NAME
     if not manifest.exists():
         return False, [f"Manifesto ausente: {MANIFEST_NAME}"]
 
     errors: list[str] = []
+    expected_files: set[str] = set()
+    seen_files: set[str] = set()
+
     with manifest.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
         required = {"RelativePath", "Length", "SHA256"}
         if not reader.fieldnames or not required.issubset(reader.fieldnames):
             return False, ["Manifesto sem colunas obrigatórias RelativePath/Length/SHA256"]
 
-        for row in reader:
-            rel = (row.get("RelativePath") or "").replace("\\", "/").lstrip("/")
-            if not rel:
-                errors.append("Linha de manifesto sem RelativePath")
+        for line_no, row in enumerate(reader, start=2):
+            raw_rel = row.get("RelativePath") or ""
+            safe = safe_manifest_target(runtime_root, raw_rel)
+            if safe is None:
+                errors.append(f"Caminho inválido no manifesto (linha {line_no}): {raw_rel!r}")
                 continue
-            path = runtime_root / Path(rel)
-            if not path.exists() or not path.is_file():
-                errors.append(f"Arquivo do manifesto ausente: {rel}")
+
+            rel, path = safe
+            if rel in RESERVED_EXPORT_FILES:
+                errors.append(f"Arquivo reservado não deve constar no manifesto: {rel}")
                 continue
+            if rel in seen_files:
+                errors.append(f"RelativePath duplicado no manifesto: {rel}")
+                continue
+            seen_files.add(rel)
+            expected_files.add(rel)
+
+            if not path.exists() or not path.is_file() or path.is_symlink():
+                errors.append(f"Arquivo do manifesto ausente/inválido: {rel}")
+                continue
+
             try:
                 expected_len = int(row.get("Length") or "0")
             except ValueError:
                 errors.append(f"Length inválido no manifesto: {rel}")
                 continue
+            if expected_len < 0:
+                errors.append(f"Length negativo no manifesto: {rel}")
+                continue
             if path.stat().st_size != expected_len:
                 errors.append(f"Tamanho divergente: {rel}")
-            expected_hash = (row.get("SHA256") or "").upper()
+
+            expected_hash = (row.get("SHA256") or "").strip().upper()
+            if not SHA256_RE.fullmatch(expected_hash):
+                errors.append(f"SHA256 inválido no manifesto: {rel}")
+                continue
             actual_hash = sha256(path)
             if expected_hash != actual_hash:
                 errors.append(f"SHA256 divergente: {rel}")
+
+    actual_files = {
+        path.relative_to(runtime_root).as_posix()
+        for path in runtime_root.rglob("*")
+        if path.is_file()
+        and not path.is_symlink()
+        and path.relative_to(runtime_root).as_posix() not in RESERVED_EXPORT_FILES
+        and not should_ignore(path.relative_to(runtime_root))
+    }
+
+    for rel in sorted(actual_files - expected_files):
+        errors.append(f"Arquivo extra fora do manifesto: {rel}")
+    for rel in sorted(expected_files - actual_files):
+        errors.append(f"Arquivo listado no manifesto não encontrado: {rel}")
 
     return not errors, errors
 
@@ -147,14 +215,12 @@ def write_reports(rows: list[DiffRow], output_dir: Path, metadata: dict) -> None
     csv_path = output_dir / "RECONCILIATION_DIFF.csv"
     json_path = output_dir / "RECONCILIATION_DIFF.json"
 
+    fieldnames = [
+        "area", "relative_path", "status", "runtime_sha256",
+        "repo_sha256", "runtime_size", "repo_size",
+    ]
     with csv_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=list(asdict(rows[0]).keys()) if rows else [
-                "area", "relative_path", "status", "runtime_sha256",
-                "repo_sha256", "runtime_size", "repo_size",
-            ],
-        )
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
             writer.writerow(asdict(row))
@@ -209,32 +275,43 @@ def main() -> int:
         return 2
 
     manifest_ok, manifest_errors = verify_manifest(runtime_root)
+    if not manifest_ok:
+        print("ERRO: manifesto de reconciliação inválido:", file=sys.stderr)
+        for error in manifest_errors:
+            print(f" - {error}", file=sys.stderr)
+        return 2
 
-    areas: list[tuple[str, Path, Path]] = []
     runtime_src = resolve_runtime_area(runtime_root, ("app/src", "src"))
-    runtime_tests = resolve_runtime_area(runtime_root, ("app/tests", "tests"))
-    runtime_scripts = resolve_runtime_area(runtime_root, ("app/scripts", "scripts"))
+    if runtime_src is None:
+        print("ERRO: export não contém app/src nem src; reconciliação de código não é possível.", file=sys.stderr)
+        return 2
 
-    if runtime_src:
-        areas.append(("src", runtime_src, repo_root / "src"))
+    areas: list[tuple[str, Path, Path]] = [
+        ("src", runtime_src, repo_root / "src"),
+    ]
+
+    runtime_tests = resolve_runtime_area(runtime_root, ("app/tests", "tests"))
     if runtime_tests:
         areas.append(("tests", runtime_tests, repo_root / "tests"))
-    if runtime_scripts:
-        areas.append(("scripts", runtime_scripts, repo_root / "scripts"))
+
+    app_scripts = runtime_root / "app" / "scripts"
+    root_scripts = runtime_root / "scripts"
+    if app_scripts.is_dir():
+        areas.append(("scripts_app", app_scripts, repo_root / "scripts"))
+    if root_scripts.is_dir():
+        areas.append(("scripts_root", root_scripts, repo_root / "scripts"))
 
     rows: list[DiffRow] = []
     for area, runtime_dir, repo_dir in areas:
         rows.extend(compare_area(area, runtime_dir, repo_dir))
 
     metadata_pairs = [
-        ("pyproject.toml", runtime_root / "pyproject.toml", repo_root / "pyproject.toml"),
         ("app/pyproject.toml", runtime_root / "app/pyproject.toml", repo_root / "pyproject.toml"),
+        ("pyproject.toml", runtime_root / "pyproject.toml", repo_root / "pyproject.toml"),
     ]
-    seen_meta = False
     for label, runtime_file, repo_file in metadata_pairs:
-        if not runtime_file.exists() or seen_meta:
+        if not runtime_file.exists():
             continue
-        seen_meta = True
         if repo_file.exists():
             r_hash = sha256(runtime_file)
             g_hash = sha256(repo_file)
@@ -257,8 +334,8 @@ def main() -> int:
     metadata = {
         "runtime_root": str(runtime_root),
         "repo_root": str(repo_root),
-        "manifest_ok": manifest_ok,
-        "manifest_errors": manifest_errors,
+        "manifest_ok": True,
+        "manifest_errors": [],
         "areas_compared": [area for area, _, _ in areas],
     }
     write_reports(rows, args.output_dir.resolve(), metadata)
@@ -269,10 +346,8 @@ def main() -> int:
     }
 
     print("RECONCILIATION_AUDIT_OK")
-    print(f"Manifesto: {'OK' if manifest_ok else 'COM ERROS'}")
-    for error in manifest_errors:
-        print(f"  - {error}")
-    print("Áreas:", ", ".join(metadata["areas_compared"]) or "nenhuma")
+    print("Manifesto: OK")
+    print("Áreas:", ", ".join(metadata["areas_compared"]))
     for status, count in summary.items():
         print(f"{status}: {count}")
     print(f"Relatório: {args.output_dir.resolve()}")
