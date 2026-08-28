@@ -41,7 +41,7 @@ def clientes_chamada_atual_ids(con: sqlite3.Connection, competencia: str) -> set
 
 
 def clientes_retificacao_ids(con: sqlite3.Connection, competencia: str) -> set[int]:
-    """Clientes em retificação ativa, que continuam sendo trabalho da Conferência."""
+    """Clientes em retificação ativa; possuem fluxo próprio de conferência."""
     return _ids(
         con,
         f"""SELECT f.cliente_id
@@ -55,8 +55,8 @@ def clientes_retificacao_ids(con: sqlite3.Connection, competencia: str) -> set[i
 
 
 def clientes_conferencia_ids(con: sqlite3.Connection, competencia: str) -> set[int]:
-    """Mesa ativa: chamada atual com movimento + retificações; nunca FECHADA."""
-    return clientes_chamada_atual_ids(con, competencia) | clientes_retificacao_ids(con, competencia)
+    """Mesa viva da chamada atual. Retificações possuem fluxo próprio."""
+    return clientes_chamada_atual_ids(con, competencia)
 
 
 def clientes_fechados_ids(con: sqlite3.Connection, competencia: str) -> set[int]:
