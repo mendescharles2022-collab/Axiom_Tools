@@ -45,6 +45,23 @@ A reconciliação deve trazer apenas código, templates, assets, testes, scripts
 - backups com dados reais;
 - temporários.
 
+### Investigação adicional do histórico Git — 28/08/2026
+
+Foi auditado o histórico disponível do repositório buscando possibilidade de recuperar a árvore operacional de um commit antigo.
+
+Resultado:
+
+- o repositório possui menos de três páginas de 100 commits na API; a terceira página retorna vazia;
+- as páginas existentes são dominadas por documentação/auditoria e não revelaram commit contendo a árvore operacional completa V7/V8;
+- o inventário atual de `src/` continua reduzido;
+- o inventário atual de `tests/` continua sem a suíte operacional do runtime.
+
+Conclusão operacional:
+
+**B06 não será resolvido por simples checkout de commit histórico conhecido.**
+
+A fonte de reconciliação continua sendo a cópia operacional controlada do runtime/servidor ou pacote canônico equivalente, seguida de filtragem de dados sensíveis e versionamento da árvore de código.
+
 ## 3. Lote A — integridade do ciclo e saídas
 
 | ID | Tema | Estado atual | Prova necessária |
@@ -168,6 +185,7 @@ Atualizações de governança já aplicadas ao repositório em 28/08/2026:
 - `docs/STATUS_ATUAL.md` atualizado para refletir a auditoria completa;
 - `README.md` alinhado ao estado `main ≠ runtime`;
 - mapa de cobertura B01–B50 preservado;
-- este rastreador criado como fonte viva da fase de correção.
+- este rastreador criado como fonte viva da fase de correção;
+- histórico Git investigado e descartado como fonte suficiente para recuperar a árvore operacional completa.
 
 Próximo avanço real: reconciliação da árvore operacional ou recuperação de evidência de runtime suficiente para começar a implementação sobre a fonte oficial.
