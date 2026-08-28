@@ -5,31 +5,29 @@ Status: **V5.6.14V7 estável / V8 em auditoria e correção / V8 NÃO HOMOLOGADA
 
 ## 1. Marco atual
 
-A auditoria V8 possui 50 bloqueadores canônicos, 28 casos reais de 08/2026, registries machine-readable e tooling automatizado de reconciliação/homologação.
+Execução canônica do tooling:
 
-A execução canônica do tooling é:
-
-- GitHub Actions run `33195532631`;
-- commit `b18c487f125c300964a5558b5f8cbe271c0418dc`;
+- GitHub Actions run `33196049264`;
+- commit `eb695be6531c7711ac36b3f45e0d9d31eb809233`;
 - Python 3.12.14;
-- **161 testes executados / 161 aprovados**.
+- **165 testes executados / 165 aprovados**.
 
-A run também publicou o artifact `v8-release-preflight` (ID `9695566182`) com SHA-256 `a379a32b433722f87b179d200dde5d454eefdaff68a2e2318f8bb93b295bf4c6`.
+Artifact `v8-release-preflight`:
 
-## 2. Preflight atual
+- ID `9695772154`;
+- 2.288 bytes;
+- SHA-256 `380162c6ed4b1d5b01b0f7c7c834f8f1d300699db54b4b050ed967b5e9181d85`.
 
-Resultado automático:
+Preflight continua corretamente bloqueado:
 
 - `Final OK = False`;
-- bloqueadores homologados: `0/50`;
-- casos PASS: `0/28`;
-- evidências externas PASS: `1/10`;
-- release `READY = False`;
-- build final `OK = False`.
+- B homologados `0/50`;
+- C PASS `0/28`;
+- evidências externas `1/10`;
+- release READY `False`;
+- build OK `False`.
 
-Esse bloqueio é esperado e correto.
-
-## 3. Estado B01–B50
+## 2. Estado B01–B50
 
 - 35 `PRONTO_PARA_CORRIGIR`;
 - 8 `INSPECAO_PENDENTE`;
@@ -37,56 +35,77 @@ Esse bloqueio é esperado e correto.
 - 4 `BLOQUEADO_POR_RUNTIME` — B05, B06, B45, B49;
 - 0 `CORRIGIDO_HOMOLOGADO`.
 
-## 4. Gate Zero — B06
+## 3. B35 — avanço com invariantes reais
 
-O `main` ainda não contém integralmente a árvore operacional V8 auditada no servidor/ZIP canônico.
+Além do executor genérico somente leitura, já existe:
 
-Já estão prontos/testados:
+- `config/sqlite_invariants_closing_confirmed_v8.json`;
+- `tests/test_closing_confirmed_invariants.py`.
+
+Regras comprovadas pelo runtime preservado:
+
+1. `FECHADA` deve possuir ao menos uma versão em `fechamento_mensal_versao`;
+2. `versao_atual`, quando preenchida, deve apontar para versão existente do mesmo cliente/competência.
+
+As quatro regressões específicas dessas regras passaram na run canônica.
+
+B35 continua `EM_CORRECAO` porque essas invariantes ainda não foram executadas contra uma cópia real do banco operacional.
+
+## 4. B06 — principal gate operacional
+
+O `main` ainda não contém integralmente a árvore V8 auditada no servidor/ZIP canônico.
+
+Ferramentas prontas/testadas:
 
 - exportador controlado do runtime;
 - launcher PowerShell;
 - auditor runtime ↔ GitHub;
-- 3 E2E de reconciliação;
-- manifesto/hash e bloqueio de dados sensíveis.
+- E2E de reconciliação;
+- preflight automático no CI.
 
-Pendente: executar a exportação na instalação Windows real ou recuperar pacote canônico equivalente e reconciliar a árvore operacional.
+Pendente: exportar/reconciliar a árvore Windows real ou recuperar pacote canônico equivalente.
 
-## 5. Gate final de homologação
+## 5. Achado novo de interface no runtime
+
+O template real de Processamento preservado em logs mostra:
+
+- eyebrow `PROCESSAMENTO DE ARQUIVOS`;
+- `<h1>` ainda iniciado por `Aud...`.
+
+O achado foi registrado em:
+
+`docs/auditoria/ACHADO_RUNTIME_RESIDUO_AUDITORIA_NO_PROCESSAMENTO_V8.md`.
+
+Ele reforça B37/B43/B46 e confirma resíduo semântico da arquitetura antiga na interface, sem criar novo bloqueador.
+
+## 6. Gate final
 
 Implementado:
 
 - `scripts/validate_release_gate.py`;
 - `scripts/build_current_preflight.py`;
 - `scripts/build_evidence_index.py`;
-- `config/release_gate_evidence_v8_current.json`;
-- artifact automático de preflight no CI.
+- registries B01–B50 e C01–C28;
+- evidência viva do CI;
+- artifact automático de preflight.
 
-O modo final exige simultaneamente:
+Modo final exige 50/50 B homologados, 28/28 C PASS, release READY, build verificado e todas as evidências externas PASS.
 
-1. B01–B50 homologados com evidência;
-2. C01–C28 PASS com evidência;
-3. release `READY`;
-4. build/proveniência verificados;
-5. CI, baseline runtime, banco, invariantes, benchmark, segurança, A4, instalação e rollback em PASS.
-
-## 6. Tooling já preparado
-
-Além da reconciliação e gate:
+## 7. Demais tooling preparado
 
 - proveniência de build;
-- baseline/clone/comparação/invariantes SQLite;
-- bundle/verificação/ensaio de rollback;
-- inventário estático de segurança;
-- consistência banco ↔ filesystem;
+- SQLite baseline/clone/comparação/invariantes;
+- backup/rollback em staging;
+- segurança estática;
+- banco ↔ filesystem;
 - retenção dry-run;
 - benchmark SQLite;
-- regressão C01–C28;
-- governança B01–B50;
-- índice SHA-256 de evidências.
+- regressão dos 28 casos;
+- governança dos 50 bloqueadores.
 
-## 7. Ordem da correção operacional após B06
+## 8. Ordem da correção após B06
 
-1. baseline/suíte original;
+1. baseline/suíte operacional original;
 2. B01 — reprocessamento candidato;
 3. B02 — Conference somente leitura;
 4. B03/B39 — gate de saídas;
@@ -102,12 +121,10 @@ Além da reconciliação e gate:
 14. build/pacote;
 15. instalação Windows + rollback.
 
-## 8. Estado de entrega
+## 9. Estado de entrega
 
 - V8 **não homologada**;
 - pacote final **não autorizado**;
 - migração real **não autorizada**;
 - rollback físico **não comprovado**;
 - runtime **ainda não reconciliado integralmente com o GitHub**.
-
-A referência viva é o `main`, `docs/auditoria/RASTREADOR_EXECUCAO_CORRECAO_V8.md` e os registries de `config/`.
