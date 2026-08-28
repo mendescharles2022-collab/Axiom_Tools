@@ -27,8 +27,12 @@ class CurrentReleaseGateEvidenceTests(unittest.TestCase):
     def test_current_ci_evidence_is_traceable(self):
         report = gate.validate_evidence_manifest(self.document)
         evidence = report["gates"]["CI_TOOLING"]["evidence"]
-        self.assertIn("github-actions:run/33194834851", evidence)
-        self.assertIn("result:142-tests-OK", evidence)
+        self.assertIn("github-actions:run/33195076112", evidence)
+        self.assertIn("result:144-tests-OK", evidence)
+        self.assertIn(
+            "commit:89cf629d458e0f96dfffc344d9b873acfbaf7615",
+            evidence,
+        )
         for gate_id in gate.REQUIRED_EVIDENCE_GATES:
             if gate_id == "CI_TOOLING":
                 continue
