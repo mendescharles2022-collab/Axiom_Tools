@@ -12,7 +12,7 @@ Os documentos `AUDITORIA_CANONICA_V8_20260828_ETAPA*.md` permanecem como histór
 - `NAO_INICIADO` — ainda não confrontado na árvore oficial reconciliada;
 - `INSPECAO_PENDENTE` — regra conhecida, mas causa/implementação precisa ser confirmada no runtime;
 - `PRONTO_PARA_CORRIGIR` — causa e regra suficientes para implementação assim que a árvore oficial estiver disponível;
-- `EM_CORRECAO` — alteração de código em curso na árvore oficial;
+- `EM_CORRECAO` — alteração de código/integração em curso;
 - `IMPLEMENTADO_NAO_TESTADO` — código alterado, regressão ainda não executada;
 - `TESTE_EM_EXECUCAO` — suíte/protocolo sendo executado;
 - `CORRIGIDO_TESTADO` — correção passou no teste específico, mas pacote/migração integrada ainda não homologados;
@@ -26,7 +26,7 @@ Os documentos `AUDITORIA_CANONICA_V8_20260828_ETAPA*.md` permanecem como histór
 | Item | Estado | Critério de saída |
 |---|---|---|
 | B06 — `main` ≠ runtime | `BLOQUEADO_POR_RUNTIME` | árvore operacional completa reconciliada no repositório oficial |
-| B42 — proveniência de build | `PRONTO_PARA_CORRIGIR` | fonte única de versão + commit + schema + manifesto do build |
+| B42 — proveniência de build | `EM_CORRECAO` | identidade canônica integrada ao runtime/health/logs/instalador + manifesto do mesmo build |
 | Suíte operacional original | `BLOQUEADO_POR_RUNTIME` | testes do runtime auditado versionados e executáveis |
 | Banco de homologação/cópia | `BLOQUEADO_POR_RUNTIME` | cópia segura disponível para migração/invariantes |
 
@@ -64,9 +64,7 @@ A fonte de reconciliação continua sendo a cópia operacional controlada do run
 
 ### Ferramentas de desbloqueio preparadas — estado atual
 
-Foram adicionadas ao `main` ferramentas específicas para transformar a reconciliação em processo reproduzível.
-
-#### Exportação segura
+#### Exportação segura do runtime
 
 `scripts/export_runtime_reconciliation.py`
 
@@ -77,14 +75,14 @@ Foram adicionadas ao `main` ferramentas específicas para transformar a reconcil
 - bloqueia saída posicionada dentro da própria árvore exportada;
 - detecta nomes sensíveis e possíveis segredos hardcoded;
 - gera `RECONCILIATION_MANIFEST.csv`, informação da exportação e ZIP com SHA-256;
-- **9 testes automatizados aprovados** na revisão executada.
+- **9 testes automatizados aprovados**.
 
 `scripts/export_runtime_reconciliation.ps1`
 
 - launcher Windows fino para o exportador Python;
 - execução real ainda precisa ser comprovada no Windows operacional.
 
-#### Auditoria independente do pacote
+#### Auditoria independente do pacote exportado
 
 `scripts/audit_runtime_reconciliation.py`
 
@@ -95,9 +93,9 @@ Foram adicionadas ao `main` ferramentas específicas para transformar a reconcil
 - compara `src`, `tests`, `scripts`, migrations, alembic, templates, static e metadata;
 - classifica `SAME`, `CHANGED`, `RUNTIME_ONLY` e `REPO_ONLY`;
 - gera relatório CSV/JSON;
-- **9 testes automatizados aprovados** na revisão executada.
+- **9 testes automatizados aprovados**.
 
-#### Pipeline ponta a ponta
+#### Pipeline de reconciliação ponta a ponta
 
 `tests/test_reconciliation_pipeline_e2e.py`
 
@@ -109,9 +107,47 @@ Foram versionados 3 cenários:
 
 Esses 3 testes estão **versionados, mas ainda aguardam execução comprovada** sobre a árvore atual do `main`.
 
-#### CI
+### B42 — proveniência de build
 
-`.github/workflows/reconciliation-tests.yml` foi criado com Python 3.12 e descoberta da suíte `test_*reconciliation*.py`.
+A correção deixou de ser apenas contrato e entrou em implementação de tooling.
+
+`config/release_identity.toml`
+
+- passa a ser a fonte canônica da identidade de release;
+- está deliberadamente com `state = "UNRELEASED"`;
+- `release_version` e `schema_version` permanecem vazios até a reconciliação/homologabilidade da árvore;
+- enquanto não estiver `READY`, o caminho oficial de build é bloqueado.
+
+`scripts/generate_build_provenance.py`
+
+- usa a identidade canônica, não release/schema digitados no comando oficial;
+- exige Git limpo;
+- grava commit, ref, release, schema, Python e plataforma;
+- gera manifesto SHA-256 do payload;
+- registra hash do próprio arquivo canônico de release;
+- bloqueia banco, arquivos sensíveis, symlink e possível segredo hardcoded;
+- **12 testes automatizados aprovados**.
+
+`scripts/verify_build_provenance.py`
+
+- verifica o hash do próprio `BUILD_PROVENANCE.json`;
+- verifica todos os arquivos/bytes do payload;
+- rejeita arquivo extra, ausente ou alterado;
+- rejeita caminhos inseguros/duplicados e chave JSON duplicada;
+- quando recebe o repositório fonte, confirma commit e identidade canônica;
+- **9 testes automatizados aprovados**.
+
+B42 permanece `EM_CORRECAO` porque ainda faltam, após a reconciliação:
+
+- runtime consumir a identidade canônica;
+- `/health` expor versão/build/schema de forma controlada;
+- log de inicialização registrar o mesmo build;
+- instalador/backup/rollback consumir o manifesto;
+- pacote final ser gerado e verificado por esse caminho.
+
+### CI
+
+`.github/workflows/reconciliation-tests.yml` foi ampliado para a suíte de tooling V8 com Python 3.12.
 
 Até esta atualização, commits feitos pela integração não produziram workflow run automático observável. Portanto:
 
@@ -119,13 +155,18 @@ Até esta atualização, commits feitos pela integração não produziram workfl
 - CI ainda **NÃO ESTÁ COMPROVADA COMO EXECUTADA**;
 - não será contabilizada como evidência de homologação.
 
-#### Contagem atual
+### Contagem atual do tooling
 
-- **18 testes aprovados** nas revisões executadas da infraestrutura;
-- **3 testes end-to-end adicionais versionados**, aguardando execução comprovada;
-- **21 testes de reconciliação definidos** no repositório.
+- 9 testes do auditor de reconciliação — aprovados;
+- 9 testes do exportador — aprovados;
+- 12 testes do gerador de proveniência — aprovados;
+- 9 testes do verificador de build — aprovados;
+- 3 testes end-to-end de reconciliação — versionados, aguardando execução comprovada.
 
-Consequência: **B06 continua bloqueado pelo runtime, mas o mecanismo controlado para removê-lo está substancialmente preparado e testado.**
+**Total definido: 42 testes.**  
+**Total já aprovado em execução controlada: 39 testes.**
+
+Consequência: **B06 continua bloqueado pelo runtime; B42 está em correção com núcleo de tooling implementado e testado.**
 
 ## 3. Lote A — integridade do ciclo e saídas
 
@@ -228,7 +269,8 @@ Nenhuma correção visual isolada homologa um caso.
 Antes de qualquer pacote final:
 
 - [ ] runtime reconciliado com GitHub;
-- [ ] versão/build/schema rastreáveis;
+- [ ] identidade canônica de release em `READY` somente no momento correto;
+- [ ] versão/build/schema rastreáveis e verificados;
 - [ ] suíte original executada;
 - [ ] bloqueadores críticos corrigidos;
 - [ ] 28 casos executados;
@@ -239,6 +281,7 @@ Antes de qualquer pacote final:
 - [ ] segurança das mutações aprovada;
 - [ ] relatório A4 homologado em preview real;
 - [ ] pacote gerado da mesma árvore testada;
+- [ ] `BUILD_PROVENANCE.json` verificado contra payload e fonte;
 - [ ] backup e migração em cópia aprovados;
 - [ ] instalação Windows aprovada;
 - [ ] rollback código + banco + configuração executado com sucesso.
@@ -247,14 +290,14 @@ Antes de qualquer pacote final:
 
 Atualizações de governança e tooling aplicadas ao repositório em 28/08/2026:
 
-- `docs/STATUS_ATUAL.md` atualizado para refletir a auditoria e o tooling de reconciliação;
-- `README.md` aponta para este rastreador vivo;
+- `docs/STATUS_ATUAL.md` e `README.md` alinhados ao rastreador vivo;
 - mapa de cobertura B01–B50 preservado;
 - histórico Git investigado e descartado como fonte suficiente para recuperar a árvore operacional completa;
-- exportador seguro do runtime criado, endurecido e coberto por testes;
-- auditor independente de reconciliação criado, endurecido e coberto por testes;
-- 3 cenários end-to-end versionados;
-- workflow de CI criado, porém ainda sem execução automática comprovada;
-- `tests/README.md` sincronizado com 21 testes definidos.
+- exportador e auditor da reconciliação implementados/testados;
+- identidade canônica de release criada como `UNRELEASED`;
+- gerador e verificador de proveniência implementados/testados;
+- 42 testes de tooling definidos, 39 já aprovados em execução controlada;
+- 3 cenários end-to-end aguardam execução comprovada;
+- workflow de CI ampliado, porém ainda sem run automático comprovado.
 
-Próximo avanço técnico: preparar a proveniência de build (B42) e manter pronta a execução do Gate Zero para o momento em que a exportação do runtime Windows estiver disponível.
+Próximo avanço técnico: documentar o uso do fluxo de proveniência e continuar preparando o Gate Zero sem alterar artificialmente a versão `0.1.0` da fundação reduzida antes da reconciliação do runtime.
