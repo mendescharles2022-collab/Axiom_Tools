@@ -13,6 +13,7 @@ from pathlib import Path
 PRODUCT = "Axiom Tools"
 DEFAULT_PLATFORM = "windows-x64"
 BUILD_PROVENANCE_NAME = "BUILD_PROVENANCE.json"
+DEFAULT_IDENTITY_REL = Path("config/release_identity.toml")
 
 FORBIDDEN_DIRS = {
     ".git", ".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
@@ -29,6 +30,21 @@ SENSITIVE_FILENAMES = {
     ".env", "credentials.json", "credential.json", "secrets.json", "secret.json",
     "token.json", "tokens.json", "service-account.json", "service_account.json",
 }
+TEXT_EXTENSIONS = {
+    ".py", ".ps1", ".js", ".ts", ".html", ".css", ".json", ".toml",
+    ".yaml", ".yml", ".ini", ".cfg", ".conf", ".txt", ".md", ".bat", ".cmd",
+}
+ASSIGNMENT_RE = re.compile(
+    r'''(?im)["']?(api[_-]?key|client[_-]?secret|secret|token|password|senha)["']?'''
+    r'''\s*[:=]\s*["']([^"']{8,})["']'''
+)
+PRIVATE_KEY_RE = re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----")
+PLACEHOLDER_RE = re.compile(
+    r"(example|dummy|placeholder|changeme|change-me|test|fake|mock|sample|fixture|"
+    r"none|null|your_|seu_|not[-_ ]?a[-_ ]?real|env\[|getenv|os\.environ|"
+    r"\$\{|%[^%]+%)",
+    re.IGNORECASE,
+)
 IDENTITY_RE = re.compile(r"^[A-Za-z0-9._+\-]+$")
 SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
 
@@ -106,6 +122,70 @@ def pyproject_version(repo_root: Path) -> str | None:
     return str(value) if value is not None else None
 
 
+def validate_identity(value: str, field: str) -> str:
+    value = value.strip()
+    if not value or not IDENTITY_RE.fullmatch(value):
+        raise ProvenanceError(
+            f"{field} inválido; use apenas letras, números, ponto, hífen, sublinhado ou +."
+        )
+    return value
+
+
+def load_release_identity(identity_file: Path) -> dict[str, object]:
+    identity_file = identity_file.resolve()
+    if not identity_file.is_file():
+        raise ProvenanceError(f"Arquivo canônico de release não encontrado: {identity_file}")
+
+    try:
+        data = tomllib.loads(identity_file.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+        raise ProvenanceError(f"Identidade de release inválida: {exc}") from exc
+
+    release = data.get("release", {})
+    policy = data.get("policy", {})
+    product = str(release.get("product") or "").strip()
+    state = str(release.get("state") or "").strip().upper()
+
+    if product != PRODUCT:
+        raise ProvenanceError(f"Produto divergente na identidade de release: {product!r}")
+    if state != "READY":
+        raise ProvenanceError(
+            f"Release não está liberada para build final: state={state or 'AUSENTE'}. "
+            "Enquanto estiver UNRELEASED, o build final deve permanecer bloqueado."
+        )
+
+    release_version = validate_identity(
+        str(release.get("release_version") or ""), "release_version"
+    )
+    schema_version = validate_identity(
+        str(release.get("schema_version") or ""), "schema_version"
+    )
+    python_target = validate_identity(
+        str(release.get("python_target") or ""), "python_target"
+    )
+    platform_target = validate_identity(
+        str(release.get("platform_target") or DEFAULT_PLATFORM), "platform_target"
+    )
+
+    if policy.get("require_clean_git", True) is not True:
+        raise ProvenanceError("Política de release inválida: require_clean_git deve permanecer true.")
+    if policy.get("require_schema_version", True) is not True:
+        raise ProvenanceError("Política de release inválida: require_schema_version deve permanecer true.")
+    if policy.get("require_release_version", True) is not True:
+        raise ProvenanceError("Política de release inválida: require_release_version deve permanecer true.")
+
+    return {
+        "product": product,
+        "state": state,
+        "release_version": release_version,
+        "schema_version": schema_version,
+        "python_target": python_target,
+        "platform_target": platform_target,
+        "identity_file": str(identity_file),
+        "identity_sha256": sha256_file(identity_file),
+    }
+
+
 def forbidden_path(path: Path) -> bool:
     name = path.name.lower()
     if path.is_dir() and name in FORBIDDEN_DIRS:
@@ -115,6 +195,25 @@ def forbidden_path(path: Path) -> bool:
             return True
         if name in SENSITIVE_FILENAMES or name.startswith(".env."):
             return True
+    return False
+
+
+def embedded_secret(path: Path) -> bool:
+    if path.suffix.lower() not in TEXT_EXTENSIONS:
+        return False
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return False
+
+    if PRIVATE_KEY_RE.search(content):
+        return True
+
+    for match in ASSIGNMENT_RE.finditer(content):
+        value = match.group(2).strip()
+        if PLACEHOLDER_RE.search(value):
+            continue
+        return True
     return False
 
 
@@ -135,6 +234,9 @@ def payload_manifest(payload_root: Path, output_path: Path) -> list[dict[str, ob
             violations.append(rel + ("/" if path.is_dir() else ""))
             continue
         if not path.is_file():
+            continue
+        if embedded_secret(path):
+            violations.append(f"{rel} [possible-secret]")
             continue
 
         entries.append(
@@ -157,15 +259,6 @@ def payload_manifest(payload_root: Path, output_path: Path) -> list[dict[str, ob
     return entries
 
 
-def validate_identity(value: str, field: str) -> str:
-    value = value.strip()
-    if not value or not IDENTITY_RE.fullmatch(value):
-        raise ProvenanceError(
-            f"{field} inválido; use apenas letras, números, ponto, hífen, sublinhado ou +."
-        )
-    return value
-
-
 def build_provenance(
     *,
     repo_root: Path,
@@ -177,6 +270,8 @@ def build_provenance(
     platform_target: str = DEFAULT_PLATFORM,
     allow_dirty: bool = False,
     build_id: str | None = None,
+    release_identity_sha256: str | None = None,
+    release_identity_source: str | None = None,
 ) -> dict[str, object]:
     repo_root = repo_root.resolve()
     payload_root = payload_root.resolve()
@@ -214,6 +309,8 @@ def build_provenance(
         "working_tree_clean": git["working_tree_clean"],
         "dirty_entries": git["dirty_entries"],
         "source_pyproject_version": pyproject_version(repo_root),
+        "release_identity_source": release_identity_source,
+        "release_identity_sha256": release_identity_sha256,
         "payload_file_count": len(files),
         "payload_manifest_sha256": files_hash,
         "files": files,
@@ -224,6 +321,38 @@ def build_provenance(
     # Hash do conteúdo do manifesto sem o próprio hash, evitando autorreferência.
     provenance["hash_manifesto"] = canonical_hash(provenance)
     return provenance
+
+
+def build_provenance_from_identity(
+    *,
+    repo_root: Path,
+    payload_root: Path,
+    output_path: Path,
+    identity_file: Path | None = None,
+    build_id: str | None = None,
+) -> dict[str, object]:
+    repo_root = repo_root.resolve()
+    identity_file = (identity_file or (repo_root / DEFAULT_IDENTITY_REL)).resolve()
+    identity = load_release_identity(identity_file)
+
+    try:
+        identity_source = identity_file.relative_to(repo_root).as_posix()
+    except ValueError:
+        identity_source = str(identity_file)
+
+    return build_provenance(
+        repo_root=repo_root,
+        payload_root=payload_root,
+        output_path=output_path,
+        release_version=str(identity["release_version"]),
+        schema_version=str(identity["schema_version"]),
+        python_target=str(identity["python_target"]),
+        platform_target=str(identity["platform_target"]),
+        allow_dirty=False,
+        build_id=build_id,
+        release_identity_sha256=str(identity["identity_sha256"]),
+        release_identity_source=identity_source,
+    )
 
 
 def write_provenance(output_path: Path, provenance: dict[str, object]) -> None:
@@ -241,26 +370,18 @@ def main() -> int:
     )
     parser.add_argument("--repo-root", required=True, type=Path)
     parser.add_argument("--payload-root", required=True, type=Path)
-    parser.add_argument("--release-version", required=True)
-    parser.add_argument("--schema-version", required=True)
+    parser.add_argument("--identity-file", type=Path, default=None)
     parser.add_argument("--output", type=Path, default=None)
-    parser.add_argument("--python-target", default=None)
-    parser.add_argument("--platform-target", default=DEFAULT_PLATFORM)
     parser.add_argument("--build-id", default=None)
-    parser.add_argument("--allow-dirty", action="store_true")
     args = parser.parse_args()
 
     output = args.output or (args.payload_root / BUILD_PROVENANCE_NAME)
     try:
-        provenance = build_provenance(
+        provenance = build_provenance_from_identity(
             repo_root=args.repo_root,
             payload_root=args.payload_root,
             output_path=output,
-            release_version=args.release_version,
-            schema_version=args.schema_version,
-            python_target=args.python_target,
-            platform_target=args.platform_target,
-            allow_dirty=args.allow_dirty,
+            identity_file=args.identity_file,
             build_id=args.build_id,
         )
         write_provenance(output, provenance)
