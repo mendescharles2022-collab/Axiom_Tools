@@ -1,0 +1,60 @@
+--- a/app/src/axiom_tools/modules/clients/service.py
++++ b/app/src/axiom_tools/modules/clients/service.py
+@@
++def _normalizar_classificacao_inativacao(
++    value: ClassificacaoInativacao | str | None,
++) -> ClassificacaoInativacao | None:
++    if value in (None, ""):
++        return None
++    if isinstance(value, ClassificacaoInativacao):
++        return value
++    raw = str(value).strip().upper()
++    try:
++        return ClassificacaoInativacao(raw)
++    except ValueError as exc:
++        raise ValueError("Classificação de inativação inválida.") from exc
++
+@@
+     def inativar_cliente(
+         self,
+         cliente_id: int,
+         motivo: str | None = None,
+-        classificacao: ClassificacaoInativacao | None = None,
++        classificacao: ClassificacaoInativacao | str | None = None,
+         usuario: str | None = None,
+     ) -> Cliente:
+@@
+         cliente = self._repository.buscar_por_id(cliente_id)
+         if not cliente:
+             raise ValueError("Cliente não encontrado.")
++
++        classificacao = _normalizar_classificacao_inativacao(classificacao)
+@@
+         cliente.classificacao_inativacao = classificacao
+
+--- a/app/src/axiom_tools/modules/clients/repository.py
++++ b/app/src/axiom_tools/modules/clients/repository.py
+@@
++def _classificacao_inativacao_value(value) -> str | None:
++    if value in (None, ""):
++        return None
++    if isinstance(value, ClassificacaoInativacao):
++        return value.value
++    raw = str(value).strip().upper()
++    try:
++        return ClassificacaoInativacao(raw).value
++    except ValueError as exc:
++        raise ValueError(f"Classificação de inativação inválida: {value}") from exc
++
+@@
+-                cliente.classificacao_inativacao.value if cliente.classificacao_inativacao else None,
++                _classificacao_inativacao_value(cliente.classificacao_inativacao),
+@@
+-                cliente.classificacao_inativacao.value if cliente.classificacao_inativacao else None,
++                _classificacao_inativacao_value(cliente.classificacao_inativacao),
+
+--- a/app/tests/modules/clients/test_service.py
++++ b/app/tests/modules/clients/test_service.py
+@@
+-        cliente = self.service.inativar_cliente(cliente.id, "Teste", "teste")
++        cliente = self.service.inativar_cliente(cliente.id, "Teste", usuario="teste")
