@@ -6,7 +6,7 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática, consistência banco ↔ filesystem, retenção dry-run e benchmark SQLite.
+O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática, consistência banco ↔ filesystem, retenção dry-run, benchmark SQLite e controle machine-readable da regressão de agosto.
 
 ## Suítes aprovadas
 
@@ -49,21 +49,25 @@ O repositório já possui, porém, uma suíte real para o tooling de auditoria, 
 
 - `test_benchmark_sqlite_queries.py` — **7 aprovados**.
 
-O benchmark:
+### Regressão dos 28 casos reais
 
-- usa conexão SQLite somente leitura;
-- bloqueia query mutante;
-- executa warmup e repetições configuráveis;
-- registra média, p50, p95 e p99;
-- registra número de linhas retornadas;
-- grava `EXPLAIN QUERY PLAN`;
-- aceita threshold opcional de p95;
-- não trata benchmark de query como substituto de HTTP/UX, workers, concorrência ou teste Windows.
+- `test_validate_regression_results.py` — **8 aprovados**.
+
+A regressão machine-readable usa:
+
+- `config/regression_cases_v8_202608.json` como registro canônico dos casos `C01` a `C28`;
+- `scripts/validate_regression_results.py` para validar cobertura e evidência;
+- hash SHA-256 do registry para impedir validar resultados contra uma matriz diferente;
+- `PASS`, `FAIL`, `NOT_RUN` e `BLOCKED` como estados explícitos;
+- regra obrigatória: `PASS` sem evidência é inválido;
+- modo final: somente 28 `PASS` com evidência autorizam `final_ok=true`.
+
+O controle adicional `P DA SILVA CARMO` permanece registrado no registry como fixture/controle, sem substituir os 28 casos obrigatórios.
 
 ## Contagem atual
 
-- **114 testes definidos**;
-- **111 testes aprovados em execuções controladas**;
+- **122 testes definidos**;
+- **119 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
@@ -76,7 +80,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 Nenhum desses testes substitui a suíte operacional do runtime V7/V8.
 
-Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, consistência banco ↔ filesystem sobre o acervo real, política real de retenção, benchmark com queries/runtime reais, regressão dos 28 casos e rollback real no Windows.
+Após a reconciliação, continuam obrigatórios testes reais de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, consistência banco ↔ filesystem sobre o acervo real, política real de retenção, benchmark com queries/runtime reais, execução dos 28 casos e rollback real no Windows.
 
 ## Princípio
 
