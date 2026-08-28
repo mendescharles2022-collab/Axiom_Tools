@@ -6,7 +6,7 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável e inventário estático de segurança.
+O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática e consistência banco ↔ filesystem.
 
 ## Suítes aprovadas
 
@@ -37,22 +37,28 @@ O repositório já possui, porém, uma suíte real para o tooling de auditoria, 
 
 - `test_audit_route_security.py` — **8 aprovados**.
 
-O inventário estático cobre:
+### Banco ↔ filesystem
 
-- identificação de rotas Flask por decorators `route/get/post/put/patch/delete`;
-- métodos mutantes;
-- markers de autenticação configuráveis;
-- detecção de `csrf.exempt` configurável;
-- múltiplos decorators de rota na mesma função;
-- política customizável sem assumir que o runtime usa um único decorator;
-- erro de sintaxe reportado, nunca silenciado.
+- `test_audit_db_filesystem_links.py` — **8 aprovados**.
 
-**Importante:** ausência de achado estático não significa autenticação/CSRF homologados. Proteções globais, wrappers dinâmicos, Flask-WTF e autorização de negócio ainda exigem teste do runtime.
+Cobre:
+
+- consulta SQLite somente leitura;
+- roots físicos fornecidos explicitamente;
+- caminhos relativos confinados à raiz;
+- arquivo obrigatório ausente;
+- path traversal;
+- symlink/reparse point;
+- divergência de tamanho;
+- divergência de SHA-256;
+- hash válido aprovado;
+- query mutante bloqueada sem alterar o banco;
+- schema de consulta configurável, sem tabelas/campos V8 fictícios embutidos.
 
 ## Contagem atual
 
-- **92 testes definidos**;
-- **89 testes aprovados em execuções controladas**;
+- **100 testes definidos**;
+- **97 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
@@ -65,7 +71,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 Nenhum desses testes substitui a suíte operacional do runtime V7/V8.
 
-Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, banco ↔ filesystem, regressão dos 28 casos e rollback real no Windows.
+Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, consistência banco ↔ filesystem sobre o acervo real, regressão dos 28 casos e rollback real no Windows.
 
 ## Princípio
 
