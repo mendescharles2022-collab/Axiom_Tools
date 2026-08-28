@@ -8,7 +8,6 @@ import re
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
-from typing import Iterable
 
 FORBIDDEN_DIRS = {
     ".git", ".venv", "venv", "__pycache__", ".pytest_cache",
@@ -20,7 +19,27 @@ FORBIDDEN_EXTENSIONS = {
     ".sqlite", ".sqlite3", ".db", ".mdb", ".accdb",
     ".pfx", ".p12", ".p7b", ".p7c", ".cer", ".crt", ".der",
     ".pem", ".key", ".jks", ".kdb", ".kdbx",
+    ".zip", ".7z", ".rar",
 }
+SENSITIVE_FILENAMES = {
+    "credentials.json", "credential.json", "secrets.json", "secret.json",
+    "token.json", "tokens.json", "service-account.json", "service_account.json",
+}
+TEXT_EXTENSIONS = {
+    ".py", ".ps1", ".js", ".ts", ".html", ".css", ".json", ".toml",
+    ".yaml", ".yml", ".ini", ".cfg", ".conf", ".txt", ".md", ".bat", ".cmd",
+}
+ASSIGNMENT_RE = re.compile(
+    r'''(?im)["']?(api[_-]?key|client[_-]?secret|secret|token|password|senha)["']?'''
+    r'''\s*[:=]\s*["']([^"']{8,})["']'''
+)
+PRIVATE_KEY_RE = re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----")
+PLACEHOLDER_RE = re.compile(
+    r"(example|dummy|placeholder|changeme|change-me|test|fake|mock|sample|fixture|"
+    r"none|null|your_|seu_|not[-_ ]?a[-_ ]?real|env\[|getenv|os\.environ|"
+    r"\$\{|%[^%]+%)",
+    re.IGNORECASE,
+)
 IGNORED_DIRS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 MANIFEST_NAME = "RECONCILIATION_MANIFEST.csv"
 INFO_NAME = "RECONCILIATION_INFO.txt"
@@ -65,26 +84,55 @@ def collect_files(root: Path) -> dict[str, Path]:
     return result
 
 
+def forbidden_name(path: Path) -> bool:
+    name = path.name.lower()
+    if path.is_dir() and name in FORBIDDEN_DIRS:
+        return True
+    if path.is_file():
+        if path.suffix.lower() in FORBIDDEN_EXTENSIONS:
+            return True
+        if name == ".env" or name.startswith(".env."):
+            return True
+        if name in SENSITIVE_FILENAMES:
+            return True
+    return False
+
+
 def find_forbidden(root: Path) -> list[str]:
     violations: list[str] = []
     for path in root.rglob("*"):
         rel = path.relative_to(root)
-        lowered_parts = {p.lower() for p in rel.parts}
         if path.is_symlink():
             violations.append(rel.as_posix() + " [symlink]")
             continue
-        if path.is_dir() and path.name.lower() in FORBIDDEN_DIRS:
-            violations.append(rel.as_posix() + "/")
-            continue
-        if path.is_file():
-            name = path.name.lower()
-            if path.suffix.lower() in FORBIDDEN_EXTENSIONS:
-                violations.append(rel.as_posix())
-            elif name == ".env" or name.startswith(".env."):
-                violations.append(rel.as_posix())
-            elif lowered_parts & {"certificados", "certificates", "secrets", "tokens"}:
-                violations.append(rel.as_posix())
+        if forbidden_name(path):
+            violations.append(rel.as_posix() + ("/" if path.is_dir() else ""))
     return sorted(set(violations))
+
+
+def find_embedded_secrets(root: Path) -> list[str]:
+    suspicious: list[str] = []
+    for path in root.rglob("*"):
+        if path.is_symlink() or not path.is_file() or path.suffix.lower() not in TEXT_EXTENSIONS:
+            continue
+        if path.name in RESERVED_EXPORT_FILES:
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+
+        if PRIVATE_KEY_RE.search(content):
+            suspicious.append(path.relative_to(root).as_posix())
+            continue
+
+        for match in ASSIGNMENT_RE.finditer(content):
+            value = match.group(2).strip()
+            if PLACEHOLDER_RE.search(value):
+                continue
+            suspicious.append(path.relative_to(root).as_posix())
+            break
+    return sorted(set(suspicious))
 
 
 def safe_manifest_target(runtime_root: Path, raw_relative: str) -> tuple[str, Path] | None:
@@ -202,12 +250,14 @@ def compare_area(area: str, runtime_dir: Path, repo_dir: Path) -> list[DiffRow]:
     return rows
 
 
-def resolve_runtime_area(runtime_root: Path, candidates: Iterable[str]) -> Path | None:
-    for candidate in candidates:
-        path = runtime_root / candidate
-        if path.exists() and path.is_dir():
-            return path
-    return None
+def add_area_if_present(
+    areas: list[tuple[str, Path, Path]],
+    area: str,
+    runtime_dir: Path,
+    repo_dir: Path,
+) -> None:
+    if runtime_dir.is_dir():
+        areas.append((area, runtime_dir, repo_dir))
 
 
 def write_reports(rows: list[DiffRow], output_dir: Path, metadata: dict) -> None:
@@ -274,6 +324,13 @@ def main() -> int:
             print(f" - {item}", file=sys.stderr)
         return 2
 
+    suspicious = find_embedded_secrets(runtime_root)
+    if suspicious:
+        print("ERRO: export contém possível segredo hardcoded:", file=sys.stderr)
+        for item in suspicious:
+            print(f" - {item}", file=sys.stderr)
+        return 2
+
     manifest_ok, manifest_errors = verify_manifest(runtime_root)
     if not manifest_ok:
         print("ERRO: manifesto de reconciliação inválido:", file=sys.stderr)
@@ -281,25 +338,27 @@ def main() -> int:
             print(f" - {error}", file=sys.stderr)
         return 2
 
-    runtime_src = resolve_runtime_area(runtime_root, ("app/src", "src"))
-    if runtime_src is None:
+    app_src = runtime_root / "app" / "src"
+    root_src = runtime_root / "src"
+    if not app_src.is_dir() and not root_src.is_dir():
         print("ERRO: export não contém app/src nem src; reconciliação de código não é possível.", file=sys.stderr)
         return 2
 
-    areas: list[tuple[str, Path, Path]] = [
-        ("src", runtime_src, repo_root / "src"),
-    ]
-
-    runtime_tests = resolve_runtime_area(runtime_root, ("app/tests", "tests"))
-    if runtime_tests:
-        areas.append(("tests", runtime_tests, repo_root / "tests"))
-
-    app_scripts = runtime_root / "app" / "scripts"
-    root_scripts = runtime_root / "scripts"
-    if app_scripts.is_dir():
-        areas.append(("scripts_app", app_scripts, repo_root / "scripts"))
-    if root_scripts.is_dir():
-        areas.append(("scripts_root", root_scripts, repo_root / "scripts"))
+    areas: list[tuple[str, Path, Path]] = []
+    add_area_if_present(areas, "src_app", app_src, repo_root / "src")
+    add_area_if_present(areas, "src_root", root_src, repo_root / "src")
+    add_area_if_present(areas, "tests_app", runtime_root / "app" / "tests", repo_root / "tests")
+    add_area_if_present(areas, "tests_root", runtime_root / "tests", repo_root / "tests")
+    add_area_if_present(areas, "scripts_app", runtime_root / "app" / "scripts", repo_root / "scripts")
+    add_area_if_present(areas, "scripts_root", runtime_root / "scripts", repo_root / "scripts")
+    add_area_if_present(areas, "migrations_app", runtime_root / "app" / "migrations", repo_root / "migrations")
+    add_area_if_present(areas, "migrations_root", runtime_root / "migrations", repo_root / "migrations")
+    add_area_if_present(areas, "alembic_app", runtime_root / "app" / "alembic", repo_root / "alembic")
+    add_area_if_present(areas, "alembic_root", runtime_root / "alembic", repo_root / "alembic")
+    add_area_if_present(areas, "templates_app", runtime_root / "app" / "templates", repo_root / "templates")
+    add_area_if_present(areas, "templates_root", runtime_root / "templates", repo_root / "templates")
+    add_area_if_present(areas, "static_app", runtime_root / "app" / "static", repo_root / "static")
+    add_area_if_present(areas, "static_root", runtime_root / "static", repo_root / "static")
 
     rows: list[DiffRow] = []
     for area, runtime_dir, repo_dir in areas:
