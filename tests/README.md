@@ -6,7 +6,7 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada, portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-Já existe, porém, cobertura automatizada para a infraestrutura de reconciliação.
+Já existe, porém, cobertura automatizada para a infraestrutura de reconciliação e proveniência de build.
 
 ### `test_audit_runtime_reconciliation.py`
 
@@ -22,7 +22,7 @@ Cobertura atual:
 - detecta segredo embutido em arquivo textual;
 - aceita placeholder explicitamente falso de teste.
 
-**9 testes automatizados aprovados** na revisão local da auditoria.
+**9 testes automatizados aprovados.**
 
 ### `test_export_runtime_reconciliation.py`
 
@@ -38,7 +38,7 @@ Cobertura atual:
 - suporte a `src/` na raiz além de `app/src`;
 - bloqueio de diretório de saída dentro da própria árvore exportada.
 
-**9 testes automatizados aprovados** na revisão local da auditoria.
+**9 testes automatizados aprovados.**
 
 ### `test_reconciliation_pipeline_e2e.py`
 
@@ -50,18 +50,58 @@ Três cenários ponta a ponta foram versionados:
 
 Esses **3 testes end-to-end estão versionados, mas a execução automática no GitHub Actions ainda não foi comprovada**. O workflow `.github/workflows/reconciliation-tests.yml` existe, porém commits feitos pela integração não produziram run automático no momento da auditoria.
 
+### `test_generate_build_provenance.py`
+
+Cobertura atual:
+
+- commit Git e branch/ref;
+- árvore limpa obrigatória no caminho oficial;
+- modo interno de diagnóstico para árvore suja;
+- bloqueio de banco/arquivo sensível no payload;
+- bloqueio de segredo hardcoded;
+- hash do payload muda quando conteúdo muda;
+- manifesto não faz hash de si próprio;
+- payload vazio bloqueado;
+- identidade textual inválida bloqueada;
+- release `UNRELEASED` bloqueia build final;
+- identidade `READY` fornece release/schema/python/plataforma ao build;
+- política não pode desligar `require_clean_git`.
+
+**12 testes automatizados aprovados.**
+
+### `test_verify_build_provenance.py`
+
+Cobertura atual:
+
+- build válido passa com payload + fonte Git;
+- payload adulterado é rejeitado;
+- arquivo extra no payload é rejeitado;
+- edição direta do manifesto quebra o hash próprio;
+- caminho duplicado em `files` é rejeitado;
+- commit fonte divergente é rejeitado;
+- identidade canônica alterada depois do build é rejeitada;
+- manifesto fora do payload é rejeitado;
+- chave JSON duplicada é rejeitada.
+
+**9 testes automatizados aprovados.**
+
 ## Contagem atual
 
-- 18 testes da infraestrutura já aprovados nas revisões executadas;
-- 3 testes end-to-end adicionais versionados e aguardando execução comprovada;
-- total atual definido: **21 testes de reconciliação**.
+- 9 testes do auditor de reconciliação — aprovados;
+- 9 testes do exportador — aprovados;
+- 12 testes do gerador de proveniência — aprovados;
+- 9 testes do verificador de build — aprovados;
+- 3 testes end-to-end de reconciliação — versionados, aguardando execução comprovada.
+
+**Total definido: 42 testes.**  
+**Total já aprovado nas execuções controladas: 39 testes.**
 
 ## Execução
 
-Suíte de reconciliação:
+Suíte completa do tooling V8:
 
 ```bash
-python -m unittest discover -s tests -p "test_*reconciliation*.py" -v
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
 Testes isolados:
@@ -70,6 +110,8 @@ Testes isolados:
 python -m unittest tests/test_audit_runtime_reconciliation.py -v
 python -m unittest tests/test_export_runtime_reconciliation.py -v
 python -m unittest tests/test_reconciliation_pipeline_e2e.py -v
+python -m unittest tests/test_generate_build_provenance.py -v
+python -m unittest tests/test_verify_build_provenance.py -v
 ```
 
 ## Cobertura obrigatória após reconciliação do runtime
