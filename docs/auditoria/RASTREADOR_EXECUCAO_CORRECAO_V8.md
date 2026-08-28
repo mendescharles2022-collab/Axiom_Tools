@@ -54,13 +54,48 @@ Resultado:
 - o repositório possui menos de três páginas de 100 commits na API; a terceira página retorna vazia;
 - as páginas existentes são dominadas por documentação/auditoria e não revelaram commit contendo a árvore operacional completa V7/V8;
 - o inventário atual de `src/` continua reduzido;
-- o inventário atual de `tests/` continua sem a suíte operacional do runtime.
+- o inventário atual de `tests/` não contém a suíte operacional do runtime.
 
 Conclusão operacional:
 
 **B06 não será resolvido por simples checkout de commit histórico conhecido.**
 
 A fonte de reconciliação continua sendo a cópia operacional controlada do runtime/servidor ou pacote canônico equivalente, seguida de filtragem de dados sensíveis e versionamento da árvore de código.
+
+### Ferramentas de desbloqueio preparadas — 28/08/2026
+
+Foram adicionadas ao `main` ferramentas específicas para transformar a reconciliação em processo reproduzível:
+
+1. `scripts/export_runtime_reconciliation.ps1`
+   - exportação Windows por whitelist;
+   - não altera a raiz operacional;
+   - bloqueia banco, documentos, certificados, credenciais, logs, backups, caches e temporários;
+   - bloqueia reparse points nas origens copiadas;
+   - faz varredura básica de possível segredo hardcoded;
+   - gera manifesto SHA-256 e ZIP de reconciliação;
+   - revisão estática concluída;
+   - **execução real ainda pendente no Windows**, pois o ambiente desta auditoria não possui PowerShell.
+
+2. `scripts/audit_runtime_reconciliation.py`
+   - valida `RECONCILIATION_MANIFEST.csv`;
+   - detecta conteúdo proibido;
+   - compara runtime exportado contra `src/`, `tests/`, `scripts/` e metadata do repositório;
+   - classifica `SAME`, `CHANGED`, `RUNTIME_ONLY` e `REPO_ONLY`;
+   - gera relatório CSV/JSON;
+   - implementado e testado localmente.
+
+3. `tests/test_audit_runtime_reconciliation.py`
+   - 3 testes automatizados executados e aprovados em 28/08/2026;
+   - cobre classificação de diferenças;
+   - valida manifesto e adulteração posterior;
+   - detecta conteúdo SQLite proibido.
+
+4. `docs/auditoria/GUIA_EXPORTACAO_RUNTIME_RECONCILIACAO_V8.md`
+   - comando Windows;
+   - conteúdo permitido/proibido;
+   - critérios de validação e saída de B06.
+
+Consequência: **B06 continua bloqueado pelo runtime, mas o mecanismo controlado para removê-lo está preparado e parcialmente testado.**
 
 ## 3. Lote A — integridade do ciclo e saídas
 
@@ -180,12 +215,17 @@ Antes de qualquer pacote final:
 
 ## 10. Estado desta atualização
 
-Atualizações de governança já aplicadas ao repositório em 28/08/2026:
+Atualizações de governança e tooling aplicadas ao repositório em 28/08/2026:
 
 - `docs/STATUS_ATUAL.md` atualizado para refletir a auditoria completa;
 - `README.md` alinhado ao estado `main ≠ runtime`;
 - mapa de cobertura B01–B50 preservado;
-- este rastreador criado como fonte viva da fase de correção;
-- histórico Git investigado e descartado como fonte suficiente para recuperar a árvore operacional completa.
+- este rastreador mantido como fonte viva da fase de correção;
+- histórico Git investigado e descartado como fonte suficiente para recuperar a árvore operacional completa;
+- exportador seguro do runtime criado e endurecido;
+- guia de exportação criado;
+- auditor Python de reconciliação criado e testado;
+- suíte automatizada da ferramenta criada, com 3 testes aprovados;
+- `tests/README.md` atualizado com cobertura real e cobertura futura obrigatória.
 
-Próximo avanço real: reconciliação da árvore operacional ou recuperação de evidência de runtime suficiente para começar a implementação sobre a fonte oficial.
+Próximo avanço real: executar a exportação no Windows/runtime operacional, auditar o pacote gerado e iniciar a reconciliação controlada da árvore oficial.
