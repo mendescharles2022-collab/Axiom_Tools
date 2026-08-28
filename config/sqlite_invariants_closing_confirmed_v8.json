@@ -13,7 +13,28 @@
       "id": "CLOSING_CURRENT_VERSION_MUST_EXIST",
       "severity": "error",
       "description": "Quando versao_atual estiver preenchida, ela deve apontar para uma versão existente do mesmo cliente e competência.",
-      "sql": "SELECT f.competencia, f.cliente_id, f.versao_atual FROM fechamento_mensal_cliente f WHERE f.versao_atual IS NOT NULL AND NOT EXISTS (SELECT 1 FROM fechamento_mensal_versao v WHERE v.competencia=f.competencia AND v.cliente_id=f.cliente_id AND v.versao=f.versao_atual)",
+      "sql": "SELECT f.competencia, f.cliente_id, f.versao_atual FROM fechamento_mensal_cliente f WHERE COALESCE(f.versao_atual,0)>0 AND NOT EXISTS (SELECT 1 FROM fechamento_mensal_versao v WHERE v.competencia=f.competencia AND v.cliente_id=f.cliente_id AND v.versao=f.versao_atual)",
+      "max_rows": 100
+    },
+    {
+      "id": "CLOSING_SINGLE_DETECTED_RETIFICATION",
+      "severity": "error",
+      "description": "Pode existir no máximo uma retificação DETECTADA por cliente e competência.",
+      "sql": "SELECT competencia,cliente_id,COUNT(*) quantidade FROM fechamento_mensal_retificacao WHERE status='DETECTADA' GROUP BY competencia,cliente_id HAVING COUNT(*)>1",
+      "max_rows": 100
+    },
+    {
+      "id": "CLOSING_RETIFICATION_STATE_REQUIRES_DETECTED",
+      "severity": "error",
+      "description": "Todo cliente mensal em RETIFICACAO deve possuir uma retificação DETECTADA correspondente.",
+      "sql": "SELECT f.competencia,f.cliente_id FROM fechamento_mensal_cliente f WHERE f.status='RETIFICACAO' AND NOT EXISTS (SELECT 1 FROM fechamento_mensal_retificacao r WHERE r.competencia=f.competencia AND r.cliente_id=f.cliente_id AND r.status='DETECTADA')",
+      "max_rows": 100
+    },
+    {
+      "id": "CLOSING_DETECTED_REQUIRES_RETIFICATION_STATE",
+      "severity": "error",
+      "description": "Toda retificação DETECTADA deve estar refletida como RETIFICACAO no estado mensal do cliente.",
+      "sql": "SELECT r.competencia,r.cliente_id,r.id FROM fechamento_mensal_retificacao r JOIN fechamento_mensal_cliente f ON f.competencia=r.competencia AND f.cliente_id=r.cliente_id WHERE r.status='DETECTADA' AND f.status<>'RETIFICACAO'",
       "max_rows": 100
     }
   ]
