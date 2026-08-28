@@ -3,99 +3,108 @@
 Data: 28/08/2026  
 Status: **V5.6.14V7 estável em servidor / V8 em auditoria e correção / V8 NÃO HOMOLOGADA**
 
-## 1. Instalação estável confirmada
+## 1. Referência estável
 
-A referência operacional estável continua sendo:
+A referência operacional estável continua sendo **V5.6.14V7 — Ciclo Mensal com Fechamento Automático**, instalada em 26/08/2026 preservando banco, serviços, histórico e retificações.
 
-**V5.6.14V7 — Ciclo Mensal com Fechamento Automático**
-
-A V7 foi instalada no servidor em 26/08/2026 preservando banco, serviços, histórico e retificações.
-
-A existência posterior de builds experimentais/auditados da família V8 não substitui automaticamente essa referência de estabilidade.
+Builds posteriores da família V8 não substituem essa referência sem homologação formal.
 
 ## 2. Situação atual da V8
 
-A V8 passou por auditoria funcional, arquitetural, documental e de governança em 28/08/2026.
+A auditoria de 28/08/2026 consolidou:
 
-Resultado atual:
-
-- 50 bloqueadores catalogados (`B01` a `B50`);
-- todos possuem regra de tratamento e critério objetivo de prova;
-- 28 casos reais da competência 08/2026 foram transformados em matriz de regressão e registro machine-readable;
-- nenhum bloqueador foi promovido para `CORRIGIDO_HOMOLOGADO` sem execução no runtime reconciliado;
-- nenhum pacote final V8 está autorizado.
+- 50 bloqueadores canônicos (`B01`–`B50`);
+- 28 casos reais da competência 08/2026 em matriz e registro machine-readable;
+- contratos e protocolos para reconciliação, proveniência, migração, rollback, segurança, desempenho e regressão;
+- snapshot machine-readable do estado dos 50 bloqueadores;
+- nenhum bloqueador marcado como `CORRIGIDO_HOMOLOGADO` sem prova.
 
 Estado vivo:
 
-- `docs/auditoria/RASTREADOR_EXECUCAO_CORRECAO_V8.md`
+- `docs/auditoria/RASTREADOR_EXECUCAO_CORRECAO_V8.md`;
+- `config/blocker_registry_v8.json`;
+- `config/blocker_status_v8_current.json`.
 
-Mapas e regressão:
+## 3. CI do tooling — comprovada
 
-- `docs/auditoria/MAPA_COBERTURA_BLOQUEADORES_V8.md`
-- `docs/auditoria/MATRIZ_REGRESSAO_V8_AGOSTO_2026.md`
-- `docs/auditoria/PROTOCOLO_REGRESSAO_28_CASOS_V8.md`
-- `config/regression_cases_v8_202608.json`
-- `scripts/validate_regression_results.py`
+O GitHub Actions executou oficialmente o workflow `V8 Audit Tooling Tests` no commit:
 
-## 3. Bloqueador de governança — repositório ≠ runtime
+`651771a899a3b35de3260c802e81e67f5ae8f3b3`
 
-O `main` ainda não espelha integralmente a árvore operacional auditada.
+Ambiente: Python 3.12.14.
 
-Inventário atual confirma que:
+Resultado:
 
-- `src/axiom_tools` contém apenas a fundação reduzida;
-- as implementações operacionais completas V8 ainda não estão versionadas integralmente;
-- `tests/` ainda não contém a suíte operacional empacotada do runtime auditado;
-- `pyproject.toml` ainda não representa a identidade operacional final da família V8.
+```text
+Ran 132 tests in 0.951s
+OK
+```
 
-Consequência:
+Portanto o tooling atual possui **132 testes definidos e 132 aprovados**. Os 3 testes E2E de reconciliação estão incluídos nessa aprovação.
 
-**documentação e tooling no GitHub não são prova de correção do runtime.**
+Essa aprovação é do tooling de auditoria/homologação, não da V8 operacional.
 
-Antes da implementação/homologação final é obrigatório reconciliar a árvore operacional, sem versionar banco real, documentos de clientes, certificados, credenciais, logs, caches ou outros dados sensíveis.
+## 4. Gate Zero — repositório ≠ runtime
 
-### Tooling de reconciliação
+B06 permanece **BLOQUEADO_POR_RUNTIME**.
 
-Versionado:
+O `main` ainda não espelha integralmente a implementação operacional auditada no servidor/ZIP canônico. A reconciliação deve trazer somente código, templates, assets, testes, scripts e metadata controlada.
+
+Permanecem fora do GitHub:
+
+- banco operacional;
+- PDFs/documentos de clientes;
+- certificados;
+- credenciais/tokens;
+- logs;
+- caches;
+- backups com dados reais;
+- temporários.
+
+Tooling já preparado e testado:
 
 - `scripts/export_runtime_reconciliation.py`;
 - `scripts/export_runtime_reconciliation.ps1`;
 - `scripts/audit_runtime_reconciliation.py`;
-- testes unitários do exportador/auditor;
-- 3 testes ponta a ponta do pipeline;
-- workflow de CI do tooling.
+- pipeline E2E de exportação/auditoria/diferença/adulteração.
 
-Situação:
+## 5. Estado machine-readable dos bloqueadores
 
-- exportador e auditor possuem **18 testes aprovados**;
-- os **3 testes E2E** estão versionados, mas ainda aguardam execução comprovada;
-- o container desta auditoria não consegue resolver `github.com`, portanto não foi possível executar um clone limpo por rede;
-- o workflow existe, mas ainda não foi observado run automático para commits feitos pela integração;
-- launcher PowerShell continua pendente de execução no Windows.
+Snapshot atual (`config/blocker_status_v8_current.json`):
 
-B06 permanece **BLOQUEADO_POR_RUNTIME**.
+- 35 `PRONTO_PARA_CORRIGIR`;
+- 8 `INSPECAO_PENDENTE`;
+- 3 `EM_CORRECAO`;
+- 4 `BLOQUEADO_POR_RUNTIME`;
+- 0 `CORRIGIDO_HOMOLOGADO`.
 
-## 4. Proveniência de build — B42
+Em correção:
 
-B42 está **EM CORREÇÃO**.
+- B35 — FK/invariantes;
+- B41 — backup/rollback;
+- B42 — proveniência de build.
 
-Já existem:
+Bloqueados pelo runtime:
 
-- `config/release_identity.toml`, atualmente `UNRELEASED`;
+- B05 — migração V8;
+- B06 — reconciliação fonte/runtime;
+- B45 — benchmark representativo do runtime;
+- B49 — consistência banco ↔ filesystem sobre schema/acervo reais.
+
+## 6. Proveniência de build — B42
+
+Tooling implementado/testado:
+
+- `config/release_identity.toml` — atualmente `UNRELEASED`;
 - `scripts/generate_build_provenance.py`;
 - `scripts/verify_build_provenance.py`;
-- manifesto de payload com SHA-256;
-- exigência de Git limpo no caminho oficial;
-- bloqueio de payload sensível/segredo hardcoded;
-- verificação independente de commit, identidade e conteúdo.
+- manifesto de payload e SHA-256;
+- exigência de Git limpo;
+- bloqueio de payload sensível e segredo hardcoded.
 
-Cobertura atual: **21 testes aprovados** nessa família.
+Ainda falta integrar essa identidade ao runtime reconciliado, `/health`, logs, instalador e pacote final.
 
-B42 ainda depende da integração dessa identidade ao runtime reconciliado, `/health`, logs, instalador e pacote final.
-
-## 5. SQLite, migração e invariantes — B05/B35
-
-B35 está **EM CORREÇÃO**; B05 permanece **BLOQUEADO_POR_RUNTIME** para migração real.
+## 7. SQLite / migração — B05/B35
 
 Tooling versionado:
 
@@ -104,235 +113,101 @@ Tooling versionado:
 - `scripts/clone_sqlite_for_migration.py`;
 - `scripts/run_sqlite_invariants.py`.
 
-O fluxo preparado é:
+Fluxo aprovado:
 
-1. auditar a origem sem escrever;
+1. auditar origem sem escrever;
 2. criar cópia consistente via `sqlite3.Connection.backup()`;
 3. migrar somente a cópia;
-4. auditar o pós-migração;
+4. auditar pós-migração;
 5. comparar pré/pós;
 6. executar invariantes lógicas versionadas.
 
-O executor de invariantes aceita apenas consultas somente leitura e usa a regra:
+Nenhuma invariante específica foi inventada sem o schema operacional real.
 
-**zero linhas = invariante atendida**.
+## 8. Backup/rollback — B41
 
-Ainda não foram inventadas invariantes específicas da V8 sem o schema operacional real.
-
-Cobertura atual da família SQLite/migração: **28 testes aprovados**.
-
-## 6. Backup e rollback — B41
-
-B41 possui tooling de preparação **EM CORREÇÃO**, mas rollback físico ainda não está homologado.
-
-Versionado:
+Tooling versionado:
 
 - `scripts/create_rollback_bundle.py`;
 - `scripts/verify_rollback_bundle.py`;
 - `scripts/restore_rollback_bundle.py`;
 - `docs/auditoria/GUIA_BACKUP_ROLLBACK_V8.md`.
 
-O bundle:
+O rollback já foi ensaiado em staging controlado, com hashes, SQLite consistente e validação posterior. O rollback físico na instalação Windows continua pendente e proibido até a reconciliação do runtime e o plano real de atualização.
 
-- usa lista explícita de arquivos controlados;
-- preserva as origens;
-- cria cópia SQLite consistente;
-- registra versão/schema/commit e SHA-256;
-- recusa sobrescrita e path traversal;
-- é verificado independentemente;
-- pode ser restaurado apenas em diretório novo de ensaio;
-- revalida hashes, `integrity_check` e `foreign_key_check` após restauração.
+## 9. Segurança — B38
 
-Cobertura atual da família rollback: **14 testes aprovados**.
-
-O rollback sobre a instalação real continua proibido até:
-
-- runtime reconciliado;
-- plano real dos arquivos controlados;
-- bundle da instalação real;
-- ensaio com cópia real do banco;
-- teste físico Windows;
-- smoke pós-rollback.
-
-## 7. Segurança das rotas — B38
-
-B38 permanece **INSPECAO_PENDENTE** para o runtime, mas já possui tooling estático preparado.
-
-Versionado:
+Tooling estático preparado:
 
 - `scripts/audit_route_security.py`;
 - `config/route_security_policy.example.json`;
 - `docs/auditoria/GUIA_AUDITORIA_SEGURANCA_ROTAS_V8.md`.
 
-A ferramenta inventaria rotas, métodos mutantes, decorators, markers de autenticação configuráveis e possíveis exceções de CSRF.
+Ausência de achado estático não equivale a segurança homologada. Autenticação/CSRF globais, autorização de negócio, escopo e transações ainda dependem do runtime.
 
-Cobertura atual: **8 testes aprovados**.
+## 10. Banco ↔ filesystem / retenção / escala
 
-Ausência de achado estático não equivale a segurança homologada. Proteção global, Flask-WTF, autorização de negócio, escopo e transação ainda exigem runtime.
+Preparados:
 
-## 8. Banco ↔ filesystem — B49
+- B49: `scripts/audit_db_filesystem_links.py`;
+- B48: `scripts/plan_retention_cleanup.py` em modo estritamente dry-run;
+- B45: `scripts/benchmark_sqlite_queries.py`.
 
-B49 possui tooling de auditoria **PREPARADO**, mas ainda depende do schema e acervo reais.
+As consultas, roots e políticas reais só serão definidas após reconciliação do schema/acervo/runtime.
 
-Versionado:
+## 11. Regressão canônica — 08/2026
 
-- `scripts/audit_db_filesystem_links.py`.
+Registro e validação:
 
-O auditor:
+- `config/regression_cases_v8_202608.json`;
+- `scripts/validate_regression_results.py`;
+- `tests/test_validate_regression_results.py`.
 
-- abre SQLite somente leitura;
-- usa roots físicos explícitos;
-- usa consultas configuráveis depois da reconciliação;
-- verifica caminho confinado, existência, arquivo versus diretório, symlink, tamanho e SHA-256 opcional;
-- bloqueia query mutante;
-- não embute tabela/campo V8 fictício.
+Modo final só aprova com **28/28 casos `PASS` com evidência**.
 
-Cobertura atual: **8 testes aprovados**.
+Controle adicional documental: P DA SILVA CARMO permanece como fixture contra interpretação errada de diretor/pró-labore como empregado com FGTS.
 
-## 9. Retenção / limpeza — B48
+## 12. Governança dos B01–B50
 
-B48 possui planejador **DRY_RUN_ONLY** preparado.
+Arquivos:
 
-Versionado:
-
-- `scripts/plan_retention_cleanup.py`.
-
-O planejador:
-
-- nunca apaga ou move arquivos;
-- usa roots e regras explícitas;
-- classifica antigos como `CANDIDATE` e recentes como `KEEP_RECENT`;
-- filtra por extensão quando configurado;
-- rejeita glob inseguro;
-- marca symlink para revisão;
-- preserva integralmente o acervo durante análise.
-
-Cobertura atual: **7 testes aprovados**.
-
-Nenhuma política destrutiva real foi criada sem validar o acervo operacional.
-
-## 10. Escala / desempenho — B45
-
-B45 possui benchmark SQLite somente leitura preparado.
-
-Versionado:
-
-- `scripts/benchmark_sqlite_queries.py`.
-
-O benchmark registra:
-
-- warmup e repetições;
-- média, p50, p95 e p99;
-- contagem de linhas;
-- `EXPLAIN QUERY PLAN`;
-- threshold opcional de p95;
-- bloqueio de query mutante.
-
-Cobertura atual: **7 testes aprovados**.
-
-Benchmark SQLite não substitui benchmark HTTP/UX, concorrência, workers ou Windows. As queries reais serão definidas somente depois da reconciliação do schema/runtime.
-
-## 11. Regressão canônica de 08/2026
-
-Além da matriz humana, a regressão possui agora registro verificável:
-
-- `config/regression_cases_v8_202608.json` — `C01` a `C28` + controle documental P DA SILVA CARMO;
-- `scripts/validate_regression_results.py` — valida cobertura, hash do registry, status e evidências;
-- `tests/test_validate_regression_results.py` — **8 testes aprovados**.
+- `config/blocker_registry_v8.json`;
+- `config/blocker_status_v8_current.json`;
+- `scripts/validate_blocker_statuses.py`.
 
 Regras:
 
-- o registry deve conter exatamente os 28 casos obrigatórios;
-- cada resultado usa `PASS`, `FAIL`, `NOT_RUN` ou `BLOCKED`;
-- `PASS` sem evidência é inválido;
-- resultado duplicado, caso desconhecido ou registry divergente é bloqueado;
-- modo final só aprova com **28 PASS com evidência**.
+- registry precisa conter exatamente B01–B50;
+- `CORRIGIDO_TESTADO` exige prova de código + teste;
+- `CORRIGIDO_HOMOLOGADO` exige também prova de runtime + homologação;
+- modo final só aprova com 50/50 homologados.
 
-Esse tooling não executa os casos sozinho. Ele garante que a execução real não possa ser chamada de completa se um caso estiver ausente ou sem prova.
+## 13. Arquitetura funcional preservada
 
-## 12. Contagem atual do tooling
+1. **Fechamento Mensal** abre competência e acompanha o ciclo.
+2. **Processamento de Arquivos** produz evidências técnicas dentro da competência/chamada aberta.
+3. **Central de Conferência** resolve divergências, justificativas, sem movimento, anexos e reprocessamento.
+4. **Fechado** é consequência das obrigações aplicáveis e da versão vigente; não é sinônimo de `PROCESSADO`.
 
-No repositório:
+A Conferência deve ser somente leitura ao abrir/recarregar.
 
-- **122 testes definidos**;
-- **119 testes aprovados em execuções controladas**;
-- **3 testes E2E de reconciliação aguardando execução comprovada**.
+## 14. Ordem da correção após reconciliação
 
-Essa contagem é do tooling de auditoria/homologação, não da suíte operacional V7/V8.
-
-## 13. Arquitetura funcional V8 preservada
-
-A divisão aprovada permanece:
-
-1. **Fechamento Mensal** — abre competência e acompanha o ciclo; não processa arquivos.
-2. **Processamento de Arquivos** — trabalha somente no universo da competência/chamada aberta e produz evidências técnicas.
-3. **Central de Conferência** — resolve divergências, ausências, justificativas, sem movimento mensal, anexos e reprocessamento.
-4. **Fechado** — consequência do estado canônico das obrigações aplicáveis, nunca tradução de `PROCESSADO`.
-
-A Conferência deve ser leitura sem efeitos colaterais ao abrir a tela. Mudanças de fechamento são dirigidas por eventos de negócio.
-
-## 14. Máquinas de estado separadas
-
-A V8 deve manter separados:
-
-- sessão técnica;
-- documento/processamento;
-- obrigação/fonte;
-- ciclo mensal do cliente;
-- consulta externa;
-- retificação;
-- autorização de saída.
-
-`PROCESSADO`, `100%`, `COM_CONSIGNADO`, `PRONTA` ou qualquer outro estado técnico/intermediário não autorizam impressão, entrega ou fechamento por si sós.
-
-## 15. Regras operacionais centrais já consolidadas
-
-- sem movimento permanente do cadastro ≠ sem movimento daquela competência;
-- sem movimento mensal não é herdado silenciosamente;
-- decisões manuais são por fonte/obrigação;
-- justificativa de DARF não libera FGTS/eConsignado;
-- 2ª chamada fica fora do universo da 1ª;
-- cliente fechado não pertence à mesa viva de Conferência;
-- nova evidência material em fechado gera retificação candidata e preserva versão anterior;
-- saída final exige gate único e versão autorizadora;
-- FGTS zero pode ser `NAO_APLICAVEL`;
-- MEI usa DAE sem expectativa artificial de GFD autônoma;
-- afastamento/faltas integrais com bases zeradas não geram guias artificiais;
-- eConsignado usa o universo da competência/chamada e retorno da API é evidência, não conclusão;
-- hash identifica conteúdo físico, não obrigação econômica;
-- limpeza mensal não apaga acervo probatório, versões ou retificações.
-
-## 16. Ordem oficial da fase de correção
-
-Após reconciliação do runtime:
-
-1. estabelecer baseline e executar suíte original;
+1. baseline e suíte operacional original;
 2. B01 — reprocessamento candidato/versionado;
 3. B02 — Conference GET somente leitura;
 4. B03 — gate único de saída;
-5. B07/B08 — universo e chamadas;
+5. B07/B08 — universo/chamadas;
 6. B12–B20 — identidade/composição/aplicabilidade;
 7. B24–B28 — eConsignado;
 8. schema/migração + invariantes;
 9. regressão dos 28 casos;
 10. benchmark;
-11. segurança das rotas;
-12. pacote da mesma árvore testada;
-13. instalação Windows com backup, migração, smoke e rollback comprovado.
+11. segurança;
+12. build/pacote da mesma árvore testada;
+13. instalação Windows + rollback comprovado.
 
-## 17. Critério para mudar status
-
-Um item só pode passar para `CORRIGIDO_HOMOLOGADO` quando houver:
-
-1. código corrigido na árvore oficial;
-2. teste/regressão executado;
-3. evidência objetiva;
-4. atualização do mapa/rastreador;
-5. ausência de regressão relacionada.
-
-`Documentado`, `contratado`, `implementado`, `testado` e `homologado` são estados diferentes.
-
-## 18. Estado de entrega
+## 15. Estado de entrega
 
 Neste momento:
 
@@ -342,4 +217,4 @@ Neste momento:
 - rollback físico final **não comprovado**;
 - runtime **ainda não reconciliado integralmente com o GitHub**.
 
-A documentação de auditoria no `main` e o rastreador canônico continuam sendo a referência até a reconciliação e os testes do runtime real.
+O `main`, o rastreador canônico e os registries machine-readable são a referência atual da auditoria até a reconciliação do runtime.
