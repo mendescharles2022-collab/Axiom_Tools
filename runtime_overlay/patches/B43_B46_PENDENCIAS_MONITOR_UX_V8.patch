@@ -1,0 +1,90 @@
+--- a/src/axiom_tools/web/views/documents_views.py
++++ b/src/axiom_tools/web/views/documents_views.py
+@@
+ def processamento_pendencias():
+@@
+-        if "competencia" not in request.args:
+-            cfg=obter_config_processamento(conexao)
+-            competencia=str(cfg.get("competencia_ativa") or "").strip()
++        cfg=obter_config_processamento(conexao)
++        competencia_ativa=str(cfg.get("competencia_ativa") or "").strip()
++        if "competencia" not in request.args:
++            competencia=competencia_ativa
+@@
+-        busca=busca,origem=origem,competencia=competencia,chave=chave,causa=causa,
+-        pagina_atual="processamento-arquivos",
++        busca=busca,origem=origem,competencia=competencia,competencia_ativa=competencia_ativa,
++        chave=chave,causa=causa,pagina_atual="processamento-arquivos",
+     )
+
+--- a/src/axiom_tools/web/templates/documents/processing_pendencias.html
++++ b/src/axiom_tools/web/templates/documents/processing_pendencias.html
+@@
+-  <div><div class="ax-eyebrow">PROCESSAMENTO DE ARQUIVOS</div><h1>Pendências do Processamento</h1><p>Veja somente o que exige ação. ZIPs são contêineres e não inflam a fila de revisão.</p></div>
++  <div><div class="ax-eyebrow">PROCESSAMENTO DE ARQUIVOS</div><h1>Pendências do Processamento</h1><p>A competência é o eixo da fila. Veja somente documentos que exigem ação; a chave PROC fica como rastreabilidade técnica.</p>{% if competencia %}<small class="ax-pending-scope"><i class="bi bi-calendar2-check"></i> Escopo: <strong>{{ competencia }}</strong>{% if competencia_ativa and competencia==competencia_ativa %} · competência ativa do Fechamento{% elif competencia_ativa %} · consulta histórica (ativa: {{ competencia_ativa }}){% endif %}</small>{% else %}<small class="ax-pending-scope"><i class="bi bi-calendar-x"></i> Nenhuma competência selecionada{% if competencia_ativa %} · ativa: {{ competencia_ativa }}{% endif %}</small>{% endif %}</div>
+@@
+ <form class="ax-pending-filters" method="get">
+-  <input class="form-control form-control-sm" name="busca" value="{{ busca }}" placeholder="Arquivo, empresa, CNPJ/CPF">
+-  <select class="form-select form-select-sm" name="chave"><option value="">Todas as PROC</option>{% for k in pendencias.chaves %}<option value="{{ k }}" {{ 'selected' if chave==k else '' }}>{{ k }}</option>{% endfor %}</select>
+-  <select class="form-select form-select-sm" name="origem"><option value="">Todas as origens</option>{% for o in pendencias.origens %}<option value="{{ o }}" {{ 'selected' if origem==o else '' }}>{{ o }}</option>{% endfor %}</select>
+   <select class="form-select form-select-sm" name="competencia"><option value="">Todas as competências</option><option value="__PENDENTE__" {{ 'selected' if competencia=='__PENDENTE__' else '' }}>Competência não identificada</option>{% for c in pendencias.competencias %}<option value="{{ c }}" {{ 'selected' if competencia==c else '' }}>{{ c }}</option>{% endfor %}</select>
++  <input class="form-control form-control-sm" name="busca" value="{{ busca }}" placeholder="Arquivo, empresa, CNPJ/CPF">
+   <select class="form-select form-select-sm" name="causa"><option value="">Todos os motivos</option>{% for cod,rotulo in pendencias.causa_labels.items() %}<option value="{{ cod }}" {{ 'selected' if causa==cod else '' }}>{{ rotulo }}</option>{% endfor %}</select>
++  <select class="form-select form-select-sm" name="origem"><option value="">Todas as origens</option>{% for o in pendencias.origens %}<option value="{{ o }}" {{ 'selected' if origem==o else '' }}>{{ o }}</option>{% endfor %}</select>
+   <select class="form-select form-select-sm" name="por_pagina">...</select>
+   <button class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filtrar</button>
+-  {% if busca or chave or origem or competencia or causa %}<a class="btn btn-outline-secondary btn-sm" href="{{ url_for('documents.processamento_pendencias') }}">Limpar</a>{% endif %}
++  {% if busca or chave or origem or competencia or causa %}<a class="btn btn-outline-secondary btn-sm" href="{{ url_for('documents.processamento_pendencias') }}">Voltar à competência ativa</a>{% endif %}
++  <details class="ax-pending-advanced" {% if chave %}open{% endif %}><summary><i class="bi bi-sliders"></i> Filtros avançados</summary><label>Chave PROC <select class="form-select form-select-sm" name="chave"><option value="">Todas as PROC desta competência</option>{% for k in pendencias.chaves %}<option value="{{ k }}" {{ 'selected' if chave==k else '' }}>{{ k }}</option>{% endfor %}</select></label></details>
+ </form>
+@@
+-<small>{{ item.chave_processamento or 'Sem PROC' }} · {{ formatar_rotulo_tecnico(item.origem_documental or 'Origem não identificada') }} · {{ formatar_rotulo_tecnico(item.documento_tipo or 'Tipo pendente') }}</small>
++<small>{{ formatar_rotulo_tecnico(item.origem_documental or 'Origem não identificada') }} · {{ formatar_rotulo_tecnico(item.documento_tipo or 'Tipo pendente') }}</small>
+@@
+ <div><span>Competência</span><strong>{{ item.competencia or '—' }}</strong></div>
++<div><span>Chave PROC</span><strong>{{ item.chave_processamento or '—' }}</strong></div>
+
+--- a/src/axiom_tools/web/templates/documents/processing_monitor.html
++++ b/src/axiom_tools/web/templates/documents/processing_monitor.html
+@@
+-<p>Histórico dos motores, reprocessamentos, arquivamento, saídas e atividade documental. A execução ao vivo fica na aba Execução.</p>
++<p>Histórico técnico do processamento. Execução ao vivo tem uma única fonte: a aba Execução. Revisões documentais são tratadas em Pendências.</p>
+@@
+-<section class="ax-ops-summary ax-monitor-summary">... Documentos ... Processados ... Revisão ... Erros ... Incompletos ... OCR ...</section>
++<section class="ax-ops-summary ax-monitor-summary"><div><span>Documentos auditados</span><strong>{{ monitor.metricas.total or 0 }}</strong></div><div><span>Processados</span><strong>{{ monitor.metricas.processados or 0 }}</strong></div><div><span>Erros técnicos</span><strong>{{ monitor.metricas.erros or 0 }}</strong></div><div><span>OCR</span><strong>{{ monitor.metricas.ocr or 0 }}</strong></div></section>
+@@
+-<section class="ax-audit-note">... use Execução ...</section>
++<section class="ax-audit-note"><i class="bi bi-info-circle"></i><span><strong>Uma verdade por função:</strong> acompanhe execução e percentual em <a href="{{ url_for('documents.processamento_fila') }}">Execução</a>; trate {{ monitor.metricas.revisao or 0 }} revisão(ões) documental(is) e {{ monitor.metricas.incompletos or 0 }} extração(ões) incompleta(s) em <a href="{{ url_for('documents.processamento_pendencias',competencia=competencia) }}">Pendências</a>. Esta tela permanece histórica.</span></section>
+@@
+-<section class="ax-monitor-grid">... motores ... estados do pipeline ...</section>
++<details class="ax-proc-panel ax-monitor-tech"><summary><span><i class="bi bi-cpu"></i><strong>Detalhes técnicos dos motores e pipeline</strong><small>Informação secundária de diagnóstico</small></span></summary><section class="ax-monitor-grid">... motores ... estados do pipeline ...</section></details>
+@@
+-<h2>Atividade do processamento</h2><p>Filtre documentos por chave, competência, cliente e situação.</p>
++<h2>Atividade documental histórica</h2><p>Competência, cliente e situação são o eixo; PROC permanece detalhe avançado de rastreabilidade.</p>
+@@
+-<form class="ax-history-filters ax-history-filters--audit">busca · PROC · competência · escopo · status · paginação</form>
++<form class="ax-history-filters ax-history-filters--audit">competência · busca · situação · escopo · buscar · <details class="ax-monitor-advanced">PROC e paginação</details></form>
+@@
+-<div class="ax-audit-head"><span>Data</span><span>Arquivo / cliente</span><span>Chave</span><span>Motor/origem</span><span>Situação</span><span>Leitura</span></div>
++<div class="ax-audit-head"><span>Data</span><span>Arquivo / cliente</span><span>Competência</span><span>Motor/origem</span><span>Situação</span><span>Leitura</span></div>
+
+--- a/src/axiom_tools/web/static/css/processing-hub.css
++++ b/src/axiom_tools/web/static/css/processing-hub.css
+@@
+-.ax-monitor-summary{grid-template-columns:repeat(6,minmax(120px,1fr))}
++.ax-monitor-summary{grid-template-columns:repeat(4,minmax(120px,1fr))}
+@@
+-.ax-pending-filters{display:grid;grid-template-columns:minmax(180px,1.25fr) 170px 130px 130px 170px 100px auto auto;...}
++.ax-pending-filters{display:grid;grid-template-columns:150px minmax(200px,1.25fr) 170px 135px 110px auto auto;...}
+@@
+-.ax-history-filters--audit{display:grid!important;grid-template-columns:minmax(160px,1.25fr) minmax(115px,.7fr) minmax(125px,.78fr) minmax(125px,.8fr) minmax(115px,.7fr) 118px auto!important;...}
++.ax-history-filters--audit{display:grid!important;grid-template-columns:150px minmax(180px,1.25fr) minmax(145px,.8fr) minmax(145px,.8fr) auto!important;...}
++
++/* V8 — competência como eixo; PROC e pipeline permanecem detalhes técnicos. */
++.ax-pending-scope{display:inline-flex;align-items:center;gap:.35rem;margin-top:.3rem;color:var(--bs-secondary-color);font-size:.68rem}
++.ax-pending-advanced,.ax-monitor-advanced{grid-column:1/-1;border-top:1px dashed var(--bs-border-color);padding-top:.35rem;margin-top:.1rem}
++.ax-pending-advanced summary,.ax-monitor-advanced summary{cursor:pointer;color:var(--bs-secondary-color);font-size:.66rem;font-weight:700;list-style:none;display:inline-flex;align-items:center;gap:.35rem}
++.ax-monitor-tech{margin-top:.65rem;padding:.55rem .7rem}
++.ax-monitor-tech>summary{cursor:pointer;list-style:none}
++.ax-monitor-tech>summary>span{display:flex;align-items:center;gap:.5rem}
++.ax-monitor-tech>summary small{margin-left:auto;color:var(--bs-secondary-color);font-weight:400}
