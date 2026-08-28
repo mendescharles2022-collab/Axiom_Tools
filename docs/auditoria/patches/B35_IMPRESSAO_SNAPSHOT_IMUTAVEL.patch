@@ -1,0 +1,125 @@
+--- a/app/src/axiom_tools/modules/printing/service.py
++++ b/app/src/axiom_tools/modules/printing/service.py
+@@ -40,9 +40,113 @@
+     cols={str(r[1]) for r in con.execute("PRAGMA table_info(processamento_impressao_historico)").fetchall()}
+     if "autorizacao_json" not in cols:
+         con.execute("ALTER TABLE processamento_impressao_historico ADD COLUMN autorizacao_json TEXT")
++    item_cols={str(r[1]) for r in con.execute("PRAGMA table_info(processamento_impressao_item)").fetchall()}
++    for nome, tipo in (
++        ("snapshot_json", "TEXT"),
++        ("processamento_sha256", "TEXT"),
++        ("cliente_id_snapshot", "INTEGER"),
++        ("competencia_snapshot", "TEXT"),
++        ("documento_tipo_snapshot", "TEXT"),
++        ("nome_original_snapshot", "TEXT"),
++    ):
++        if nome not in item_cols:
++            con.execute(f"ALTER TABLE processamento_impressao_item ADD COLUMN {nome} {tipo}")
++    _backfill_impressao_snapshots(con)
+     con.commit()
+ 
+ 
++def _snapshot_item_payload(processamento_id: int, row=None, historico=None) -> dict:
++    """Cria fotografia imutável do item efetivamente impresso."""
++    if row is not None:
++        keys = set(row.keys())
++        return {
++            "processamento_id": int(processamento_id),
++            "origem_snapshot": "PROCESSAMENTO_VIGENTE_NO_MOMENTO_DA_IMPRESSAO",
++            "nome_original": row["nome_original"] if "nome_original" in keys else None,
++            "sha256": row["sha256"] if "sha256" in keys else None,
++            "documento_tipo": row["documento_tipo"] if "documento_tipo" in keys else None,
++            "cliente_id": row["cliente_id"] if "cliente_id" in keys else None,
++            "documento_cliente": row["documento_cliente"] if "documento_cliente" in keys else None,
++            "competencia": row["competencia"] if "competencia" in keys else None,
++            "status": row["status"] if "status" in keys else None,
++            "parser_versao": row["parser_versao"] if "parser_versao" in keys else None,
++            "dados_json": row["dados_json"] if "dados_json" in keys else None,
++        }
++    if historico is not None:
++        keys = set(historico.keys())
++        return {
++            "processamento_id": int(processamento_id),
++            "origem_snapshot": "HISTORICO_REPROCESSAMENTO",
++            "nome_original": historico["nome_original_anterior"] if "nome_original_anterior" in keys else None,
++            "sha256": historico["sha256_anterior"] if "sha256_anterior" in keys else None,
++            "documento_tipo": historico["tipo_anterior"] if "tipo_anterior" in keys else None,
++            "cliente_id": historico["cliente_id_anterior"] if "cliente_id_anterior" in keys else None,
++            "competencia": historico["competencia_anterior"] if "competencia_anterior" in keys else None,
++            "status": historico["status_anterior"] if "status_anterior" in keys else None,
++            "parser_versao": historico["parser_anterior"] if "parser_anterior" in keys else None,
++            "dados_json": historico["dados_json_anterior"] if "dados_json_anterior" in keys else None,
++            "reprocessado_em": historico["reprocessado_em"] if "reprocessado_em" in keys else None,
++        }
++    return {}
++
++
++def _gravar_snapshot_item(con: sqlite3.Connection, impressao_id: int, processamento_id: int, ordem: int, payload: dict) -> None:
++    if not payload:
++        con.execute(
++            "INSERT OR IGNORE INTO processamento_impressao_item(impressao_id,processamento_id,ordem) VALUES(?,?,?)",
++            (impressao_id, processamento_id, ordem),
++        )
++        return
++    con.execute(
++        """INSERT OR REPLACE INTO processamento_impressao_item(
++            impressao_id,processamento_id,ordem,snapshot_json,processamento_sha256,
++            cliente_id_snapshot,competencia_snapshot,documento_tipo_snapshot,nome_original_snapshot
++        ) VALUES(?,?,?,?,?,?,?,?,?)""",
++        (
++            impressao_id,
++            processamento_id,
++            ordem,
++            json.dumps(payload, ensure_ascii=False, sort_keys=True),
++            payload.get("sha256"),
++            payload.get("cliente_id"),
++            payload.get("competencia"),
++            payload.get("documento_tipo"),
++            payload.get("nome_original"),
++        ),
++    )
++
++
++def _backfill_impressao_snapshots(con: sqlite3.Connection) -> dict:
++    """Preenche snapshots faltantes sem remover referências históricas."""
++    cols={str(r[1]) for r in con.execute("PRAGMA table_info(processamento_impressao_item)").fetchall()}
++    if "snapshot_json" not in cols:
++        return {"preenchidos": 0, "sem_evidencia": 0}
++    itens = con.execute(
++        """SELECT impressao_id,processamento_id,ordem FROM processamento_impressao_item
++        WHERE snapshot_json IS NULL OR TRIM(snapshot_json)='' ORDER BY impressao_id,ordem"""
++    ).fetchall()
++    preenchidos = 0
++    sem_evidencia = 0
++    for item in itens:
++        pid = int(item["processamento_id"] if hasattr(item, "keys") else item[1])
++        imp = int(item["impressao_id"] if hasattr(item, "keys") else item[0])
++        ordem = int(item["ordem"] if hasattr(item, "keys") else item[2])
++        atual = con.execute("SELECT * FROM processamento_arquivo WHERE id=?", (pid,)).fetchone()
++        historico = None
++        if atual is None:
++            historico = con.execute(
++                "SELECT * FROM processamento_reprocessamento_historico WHERE processamento_id=? ORDER BY id DESC LIMIT 1",
++                (pid,),
++            ).fetchone()
++        payload = _snapshot_item_payload(pid, row=atual, historico=historico)
++        if not payload:
++            sem_evidencia += 1
++            continue
++        _gravar_snapshot_item(con, imp, pid, ordem, payload)
++        preenchidos += 1
++    return {"preenchidos": preenchidos, "sem_evidencia": sem_evidencia}
++
++
+ def _ordem_sql(ordem: str) -> str:
+@@ -251,8 +355,10 @@
+         (competencia or None, modo, json.dumps(meta, ensure_ascii=False), len(usados), str(saida),
+          json.dumps(autorizacao, ensure_ascii=False)))
+     hid = int(cur.lastrowid)
+-    con.executemany("INSERT OR IGNORE INTO processamento_impressao_item(impressao_id,processamento_id,ordem) VALUES(?,?,?)",
+-                    [(hid, pid, i) for i, pid in enumerate(usados, 1)])
++    rows_por_id = {int(r["id"]): r for r in rows}
++    for ordem_item, pid in enumerate(usados, 1):
++        payload = _snapshot_item_payload(pid, row=rows_por_id.get(int(pid)))
++        _gravar_snapshot_item(con, hid, int(pid), ordem_item, payload)
+     con.commit()
