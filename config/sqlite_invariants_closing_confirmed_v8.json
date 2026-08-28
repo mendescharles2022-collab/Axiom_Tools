@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "audit": "V8",
+  "invariants": [
+    {
+      "id": "CLOSING_FECHADA_WITHOUT_VERSION",
+      "severity": "error",
+      "description": "Todo cliente mensal FECHADA deve possuir ao menos uma versão de fechamento preservada.",
+      "sql": "SELECT f.competencia, f.cliente_id FROM fechamento_mensal_cliente f WHERE f.status='FECHADA' AND NOT EXISTS (SELECT 1 FROM fechamento_mensal_versao v WHERE v.competencia=f.competencia AND v.cliente_id=f.cliente_id)",
+      "max_rows": 100
+    },
+    {
+      "id": "CLOSING_CURRENT_VERSION_MUST_EXIST",
+      "severity": "error",
+      "description": "Quando versao_atual estiver preenchida, ela deve apontar para uma versão existente do mesmo cliente e competência.",
+      "sql": "SELECT f.competencia, f.cliente_id, f.versao_atual FROM fechamento_mensal_cliente f WHERE f.versao_atual IS NOT NULL AND NOT EXISTS (SELECT 1 FROM fechamento_mensal_versao v WHERE v.competencia=f.competencia AND v.cliente_id=f.cliente_id AND v.versao=f.versao_atual)",
+      "max_rows": 100
+    }
+  ]
+}
