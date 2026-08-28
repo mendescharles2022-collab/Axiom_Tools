@@ -70,12 +70,12 @@ class ScaleIndexesV8Tests(unittest.TestCase):
         self.assertEqual(second["skipped"], [])
         con.close()
 
-    def test_partial_schema_is_skipped_without_failure(self):
+    def test_partial_schema_creates_only_compatible_index(self):
         con = sqlite3.connect(":memory:")
         con.execute("CREATE TABLE fechamento_mensal_cliente(competencia TEXT, cliente_id INTEGER)")
         result = garantir_indices_escala(con)
-        self.assertEqual(result["created"], [])
-        self.assertEqual(len(result["skipped"]), 4)
+        self.assertEqual(result["created"], ["idx_v8_fechamento_cliente_comp"])
+        self.assertEqual(len(result["skipped"]), 3)
         con.close()
 
     def test_current_call_query_uses_compound_index_above_600_clients(self):
@@ -94,8 +94,10 @@ class ScaleIndexesV8Tests(unittest.TestCase):
                     OR COALESCE(fp.participa_ciclo,0)=1)
         """
         plan = plan_text(con, sql, ("08/2026",))
+        lines = [line.strip() for line in plan.splitlines()]
         self.assertIn("idx_v8_fechamento_comp_status_chamada_mov", plan)
-        self.assertNotIn("SCAN f", plan)
+        self.assertTrue(any(line.startswith("SEARCH f USING") for line in lines))
+        self.assertFalse(any(line == "SCAN f" or line.startswith("SCAN f ") for line in lines))
         con.close()
 
     def test_document_lookup_uses_client_competence_type_index_at_scale(self):
