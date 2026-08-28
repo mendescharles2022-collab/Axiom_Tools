@@ -6,30 +6,23 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta **não substitui a suíte operacional do runtime instalado**.
 
-O tooling de auditoria/homologação, porém, já possui suíte automatizada real e execução oficial no GitHub Actions.
+O tooling de auditoria/homologação possui suíte automatizada real e execução oficial no GitHub Actions.
 
-## Execução oficial confirmada
+## Execução oficial mais recente
 
 Workflow: `V8 Audit Tooling Tests`  
-Run: `33193366593`  
-Commit testado: `651771a899a3b35de3260c802e81e67f5ae8f3b3`  
-Python: `3.12.14`  
-Comando:
-
-```bash
-python -m unittest discover -s tests -p "test_*.py" -v
-```
+Run: `33194834851`  
+Commit testado: `568f878bf8b99dc8b63466a8ab556233d7fd83b0`  
+Python: `3.12.14`
 
 Resultado oficial:
 
 ```text
-Ran 132 tests in 0.951s
+Ran 142 tests in 1.390s
 OK
 ```
 
-**132 testes definidos / 132 testes aprovados.**
-
-Os 3 testes E2E de reconciliação que antes estavam pendentes também foram executados e aprovados nessa mesma run.
+**142 testes definidos / 142 testes aprovados.**
 
 ## Suítes cobertas
 
@@ -81,6 +74,19 @@ Os 3 testes E2E de reconciliação que antes estavam pendentes também foram exe
 - `test_validate_blocker_statuses.py` — 8;
 - `test_current_blocker_status.py` — 2.
 
+### Gate único de homologação
+
+- `test_validate_release_gate.py` — **10 aprovados**.
+
+O gate final combina:
+
+- 50/50 bloqueadores homologados com evidência;
+- 28/28 casos `PASS` com evidência;
+- release canônica em `READY`;
+- build/proveniência verificados;
+- manifesto de evidências externas obrigatório;
+- CI, baseline runtime, banco, invariantes, benchmark, segurança, A4, instalação Windows e rollback Windows.
+
 ## Controles canônicos
 
 Regressão de agosto:
@@ -94,36 +100,16 @@ Governança dos bloqueadores:
 - `config/blocker_status_v8_current.json`;
 - `scripts/validate_blocker_statuses.py`.
 
-Regras principais:
+Gate final:
 
-- os 28 casos precisam estar presentes e `PASS` exige evidência;
-- o registry precisa conter exatamente B01–B50;
-- `CORRIGIDO_TESTADO` exige evidência de código + teste;
-- `CORRIGIDO_HOMOLOGADO` exige também evidência de runtime + homologação;
-- modo final da V8 só pode aprovar com 50/50 bloqueadores homologados e 28/28 casos aprovados com evidência.
+- `scripts/validate_release_gate.py`;
+- `config/release_gate_evidence.example.json`.
 
 ## Limite da suíte atual
 
-Os 132 testes aprovam o **tooling de auditoria/homologação**. Eles não significam que a V8 operacional esteja homologada.
+Os 142 testes aprovam o **tooling de auditoria/homologação**. Eles não significam que a V8 operacional esteja homologada.
 
-Após a reconciliação do runtime continuam obrigatórios testes reais de:
-
-- reprocessamento candidato/versionado;
-- Conference somente leitura;
-- gate único de saídas;
-- universo/chamada;
-- aplicabilidade;
-- multi-Extrato/multi-GFD;
-- identidade;
-- eConsignado;
-- retificação;
-- invariantes específicas do schema real;
-- segurança dinâmica;
-- banco ↔ filesystem sobre o acervo real;
-- política real de retenção;
-- benchmark runtime/HTTP/workers;
-- execução dos 28 casos;
-- rollback real no Windows.
+Após a reconciliação do runtime continuam obrigatórios testes reais de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes específicas do schema real, segurança dinâmica, banco ↔ filesystem sobre o acervo real, política real de retenção, benchmark runtime/HTTP/workers, execução dos 28 casos e rollback físico no Windows.
 
 ## Princípio
 
