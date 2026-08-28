@@ -6,7 +6,7 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática, consistência banco ↔ filesystem e planejamento de retenção.
+O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática, consistência banco ↔ filesystem, retenção dry-run e benchmark SQLite.
 
 ## Suítes aprovadas
 
@@ -45,20 +45,25 @@ O repositório já possui, porém, uma suíte real para o tooling de auditoria, 
 
 - `test_plan_retention_cleanup.py` — **7 aprovados**.
 
-O planejador de retenção:
+### Benchmark SQLite
 
-- não possui rotina de exclusão ou movimentação;
-- trabalha apenas com roots explícitos e política versionada;
-- classifica arquivos antigos como `CANDIDATE` e recentes como `KEEP_RECENT`;
-- suporta filtro por extensão;
-- rejeita glob inseguro e raiz desconhecida;
-- marca symlink para revisão;
-- preserva integralmente os arquivos analisados.
+- `test_benchmark_sqlite_queries.py` — **7 aprovados**.
+
+O benchmark:
+
+- usa conexão SQLite somente leitura;
+- bloqueia query mutante;
+- executa warmup e repetições configuráveis;
+- registra média, p50, p95 e p99;
+- registra número de linhas retornadas;
+- grava `EXPLAIN QUERY PLAN`;
+- aceita threshold opcional de p95;
+- não trata benchmark de query como substituto de HTTP/UX, workers, concorrência ou teste Windows.
 
 ## Contagem atual
 
-- **107 testes definidos**;
-- **104 testes aprovados em execuções controladas**;
+- **114 testes definidos**;
+- **111 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
@@ -71,7 +76,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 Nenhum desses testes substitui a suíte operacional do runtime V7/V8.
 
-Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, consistência banco ↔ filesystem sobre o acervo real, política real de retenção, regressão dos 28 casos e rollback real no Windows.
+Após a reconciliação, continuam obrigatórios testes de reprocessamento, Conference somente leitura, gate de saídas, universo/chamada, aplicabilidade, multi-Extrato/multi-GFD, identidade, eConsignado, retificação, invariantes V8 específicas, segurança dinâmica das rotas, consistência banco ↔ filesystem sobre o acervo real, política real de retenção, benchmark com queries/runtime reais, regressão dos 28 casos e rollback real no Windows.
 
 ## Princípio
 
