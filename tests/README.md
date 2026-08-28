@@ -12,6 +12,9 @@ Já existe, porém, cobertura automatizada para a ferramenta de reconciliação:
   - classifica arquivos `SAME`, `CHANGED`, `RUNTIME_ONLY` e `REPO_ONLY`;
   - valida o manifesto SHA-256 do export do runtime;
   - detecta adulteração de arquivo após o manifesto;
+  - rejeita `RelativePath` com tentativa de `../`/saída da raiz;
+  - detecta arquivo presente no export mas ausente do manifesto;
+  - detecta `RelativePath` duplicado no manifesto;
   - detecta conteúdo proibido como banco SQLite dentro do export.
 
 Executar com Python padrão:
@@ -20,7 +23,7 @@ Executar com Python padrão:
 python -m unittest tests/test_audit_runtime_reconciliation.py -v
 ```
 
-A suíte foi validada em 28/08/2026 com 3 testes aprovados.
+A suíte foi ampliada e validada em 28/08/2026 com **6 testes aprovados**.
 
 ## Cobertura obrigatória após reconciliação do runtime
 
