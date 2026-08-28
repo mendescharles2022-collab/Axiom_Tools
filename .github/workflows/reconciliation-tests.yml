@@ -47,6 +47,7 @@ jobs:
         env:
           PYTHONPATH: runtime_overlay/app/src
         run: |
+          python runtime_overlay/app/tests/core/test_build_identity_v8.py -v
           python runtime_overlay/app/tests/modules/test_logical_dedup_v8.py -v
           python runtime_overlay/app/tests/modules/test_multi_gfd_composition_v8.py -v
           python runtime_overlay/app/tests/modules/test_output_gate_v8.py -v
