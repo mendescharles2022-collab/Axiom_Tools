@@ -1,0 +1,54 @@
+--- a/app/src/axiom_tools/modules/processing/queue.py
++++ b/app/src/axiom_tools/modules/processing/queue.py
+@@
+ TERMINAIS={"PROCESSADO","REVISAO","ERRO","DUPLICADO","CANCELADO","FORA_COMPETENCIA"}
+ ATIVOS={"AGUARDANDO","EM_LEITURA","TRIAGEM","EXTRACAO","VALIDACAO","ARQUIVAMENTO"}
++
++def _status_tecnico_sessao(*, percentual: float, counts: dict, docs: dict, persistido: str | None = None) -> str:
++    """Estado técnico da execução; nunca incorpora resultado da Conferência."""
++    if percentual >= 100:
++        if int(counts.get("ERRO", 0) or 0) or int(docs.get("erros", 0) or 0):
++            return "PROCESSAMENTO_CONCLUIDO_COM_FALHAS_TECNICAS"
++        if int(counts.get("CANCELADO", 0) or 0):
++            return "CANCELADO"
++        return "PROCESSAMENTO_CONCLUIDO"
++    return str(persistido or "AGUARDANDO")
+@@
++    # Revisão documental não é estado da sessão técnica.
++    con.execute("UPDATE processamento_sessao SET status='CONCLUIDO' WHERE status='COM_PENDENCIAS'")
++    if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='processamento_chave'").fetchone():
++        con.execute("UPDATE processamento_chave SET status='CONCLUIDO' WHERE status='COM_PENDENCIAS'")
+@@
+-        elif docs.get("revisao",0): status="COM_PENDENCIAS"
+@@
+-        if d["percentual"] >= 100:
+-            d["status_operacional"] = "PROCESSAMENTO_CONCLUIDO"
+-        elif d["documentos"].get("erros",0): d["status_operacional"]="COM_ERROS"
+-        elif d["documentos"].get("revisao",0): d["status_operacional"]="COM_PENDENCIAS"
+-        else: d["status_operacional"]=d.get("status")
++        d["status_operacional"] = _status_tecnico_sessao(
++            percentual=d["percentual"], counts=d["counts"], docs=d["documentos"], persistido=d.get("status")
++        )
+@@
+-    if d["percentual"] >= 100:
+-        d["status_operacional"] = "PROCESSAMENTO_CONCLUIDO"
+-    elif d["documentos"].get("erros",0): d["status_operacional"]="COM_ERROS"
+-    elif d["documentos"].get("revisao",0): d["status_operacional"]="COM_PENDENCIAS"
+-    else: d["status_operacional"]=d.get("status")
++    d["status_operacional"] = _status_tecnico_sessao(
++        percentual=d["percentual"], counts=d["counts"], docs=d["documentos"], persistido=d.get("status")
++    )
+
+--- a/app/src/axiom_tools/modules/processing/central.py
++++ b/app/src/axiom_tools/modules/processing/central.py
+@@
+     status="CONCLUIDO"
+     if int(resultado.get("erros") or 0): status="COM_ERROS"
+-    elif int(resultado.get("revisao") or 0): status="COM_PENDENCIAS"
++    # revisão documental permanece como contador, sem contaminar o estado técnico da PROC.
+
+--- a/app/src/axiom_tools/web/templates/documents/processing_keys.html
++++ b/app/src/axiom_tools/web/templates/documents/processing_keys.html
+@@
+-<span class="badge {{ 'text-bg-success' if k.status=='CONCLUIDO' else ('text-bg-warning' if k.status=='COM_PENDENCIAS' else ('text-bg-danger' if k.status=='COM_ERROS' else 'text-bg-secondary')) }}">
++<span class="badge {{ 'text-bg-success' if k.status=='CONCLUIDO' else ('text-bg-danger' if k.status=='COM_ERROS' else 'text-bg-secondary') }}">
