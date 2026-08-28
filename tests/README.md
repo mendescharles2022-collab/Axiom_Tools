@@ -6,24 +6,71 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada, portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-Já existe, porém, cobertura automatizada para a ferramenta de reconciliação:
+Já existe, porém, cobertura automatizada para a infraestrutura de reconciliação.
 
-- `test_audit_runtime_reconciliation.py`
-  - classifica arquivos `SAME`, `CHANGED`, `RUNTIME_ONLY` e `REPO_ONLY`;
-  - valida o manifesto SHA-256 do export do runtime;
-  - detecta adulteração de arquivo após o manifesto;
-  - rejeita `RelativePath` com tentativa de `../`/saída da raiz;
-  - detecta arquivo presente no export mas ausente do manifesto;
-  - detecta `RelativePath` duplicado no manifesto;
-  - detecta conteúdo proibido como banco SQLite dentro do export.
+### `test_audit_runtime_reconciliation.py`
 
-Executar com Python padrão:
+Cobertura atual:
+
+- classifica `SAME`, `CHANGED`, `RUNTIME_ONLY` e `REPO_ONLY`;
+- valida o manifesto SHA-256;
+- detecta adulteração após geração do manifesto;
+- rejeita `../`/saída da raiz;
+- detecta arquivo extra fora do manifesto;
+- detecta caminho duplicado no manifesto;
+- detecta banco/arquivo sensível no export;
+- detecta segredo embutido em arquivo textual;
+- aceita placeholder explicitamente falso de teste.
+
+**9 testes automatizados aprovados** na revisão local da auditoria.
+
+### `test_export_runtime_reconciliation.py`
+
+Cobertura atual:
+
+- whitelist de código/testes/configuração controlada;
+- exclusão de banco e documentos;
+- manifesto cobrindo exatamente o payload;
+- bloqueio de segredo hardcoded;
+- label inseguro;
+- conteúdo do ZIP;
+- symlink/reparse point;
+- suporte a `src/` na raiz além de `app/src`;
+- bloqueio de diretório de saída dentro da própria árvore exportada.
+
+**9 testes automatizados aprovados** na revisão local da auditoria.
+
+### `test_reconciliation_pipeline_e2e.py`
+
+Três cenários ponta a ponta foram versionados:
+
+1. `runtime → export ZIP → extração → auditoria` sem divergência;
+2. divergência real entre runtime e repositório retorna código específico de diferença;
+3. adulteração do pacote após o manifesto é rejeitada antes da comparação.
+
+Esses **3 testes end-to-end estão versionados, mas a execução automática no GitHub Actions ainda não foi comprovada**. O workflow `.github/workflows/reconciliation-tests.yml` existe, porém commits feitos pela integração não produziram run automático no momento da auditoria.
+
+## Contagem atual
+
+- 18 testes da infraestrutura já aprovados nas revisões executadas;
+- 3 testes end-to-end adicionais versionados e aguardando execução comprovada;
+- total atual definido: **21 testes de reconciliação**.
+
+## Execução
+
+Suíte de reconciliação:
+
+```bash
+python -m unittest discover -s tests -p "test_*reconciliation*.py" -v
+```
+
+Testes isolados:
 
 ```bash
 python -m unittest tests/test_audit_runtime_reconciliation.py -v
+python -m unittest tests/test_export_runtime_reconciliation.py -v
+python -m unittest tests/test_reconciliation_pipeline_e2e.py -v
 ```
-
-A suíte foi ampliada e validada em 28/08/2026 com **6 testes aprovados**.
 
 ## Cobertura obrigatória após reconciliação do runtime
 
