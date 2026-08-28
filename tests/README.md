@@ -6,7 +6,7 @@ Testes automatizados do Axiom Tools ficam nesta pasta.
 
 A árvore operacional completa V7/V8 ainda não foi reconciliada; portanto esta pasta ainda não representa a suíte do runtime instalado.
 
-O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática, consistência banco ↔ filesystem, retenção dry-run, benchmark SQLite e controle machine-readable da regressão de agosto.
+O repositório já possui, porém, uma suíte real para o tooling de auditoria, reconciliação, proveniência, preparação segura de migração, rollback verificável, segurança estática, consistência banco ↔ filesystem, retenção dry-run, benchmark SQLite, regressão de agosto e governança dos bloqueadores.
 
 ## Suítes aprovadas
 
@@ -53,21 +53,32 @@ O repositório já possui, porém, uma suíte real para o tooling de auditoria, 
 
 - `test_validate_regression_results.py` — **8 aprovados**.
 
-A regressão machine-readable usa:
+A regressão machine-readable usa `config/regression_cases_v8_202608.json` e exige 28 casos completos. `PASS` sem evidência é inválido e o modo final só aceita 28 `PASS` com evidência.
 
-- `config/regression_cases_v8_202608.json` como registro canônico dos casos `C01` a `C28`;
-- `scripts/validate_regression_results.py` para validar cobertura e evidência;
-- hash SHA-256 do registry para impedir validar resultados contra uma matriz diferente;
-- `PASS`, `FAIL`, `NOT_RUN` e `BLOCKED` como estados explícitos;
-- regra obrigatória: `PASS` sem evidência é inválido;
-- modo final: somente 28 `PASS` com evidência autorizam `final_ok=true`.
+### Governança dos B01–B50
 
-O controle adicional `P DA SILVA CARMO` permanece registrado no registry como fixture/controle, sem substituir os 28 casos obrigatórios.
+- `test_validate_blocker_statuses.py` — **8 aprovados**;
+- `test_current_blocker_status.py` — **2 aprovados**.
+
+A governança machine-readable usa:
+
+- `config/blocker_registry_v8.json` — identidade imutável B01–B50, tema e cobertura;
+- `config/blocker_status_v8_current.json` — snapshot vivo do estado atual;
+- `scripts/validate_blocker_statuses.py` — valida todos os estados e evidências.
+
+Regras principais:
+
+- registry deve conter exatamente B01–B50 em ordem e sem duplicidade;
+- arquivo de status precisa estar amarrado ao SHA-256 do registry;
+- `CORRIGIDO_TESTADO` exige evidência de código e teste;
+- `CORRIGIDO_HOMOLOGADO` exige, além disso, evidência de runtime e homologação;
+- modo final só aprova com 50/50 `CORRIGIDO_HOMOLOGADO`;
+- snapshot atual possui 0 bloqueadores homologados, evitando falsa conclusão da V8.
 
 ## Contagem atual
 
-- **122 testes definidos**;
-- **119 testes aprovados em execuções controladas**;
+- **132 testes definidos**;
+- **129 testes aprovados em execuções controladas**;
 - **3 testes end-to-end de reconciliação aguardando execução comprovada**.
 
 ## Execução
