@@ -104,6 +104,8 @@ def authorize_manifest(review_doc: dict, confirmation: dict) -> dict:
         rule_id = str(item.get("rule_id", "")).strip()
         root_key = str(item.get("root", "")).strip()
         path = str(item.get("path", "")).strip().replace("\\", "/")
+        sha256 = str(item.get("sha256", "")).strip().upper()
+        mtime_ns = item.get("mtime_ns")
         if not review.ID_RE.fullmatch(rule_id):
             raise RetentionAuthorizationError(
                 f"Item elegível com rule_id inválido: {rule_id!r}"
@@ -116,6 +118,14 @@ def authorize_manifest(review_doc: dict, confirmation: dict) -> dict:
             raise RetentionAuthorizationError(
                 f"Item elegível com caminho inseguro: {path!r}"
             )
+        if not review.SHA_RE.fullmatch(sha256):
+            raise RetentionAuthorizationError(
+                f"Item elegível sem SHA-256 válido: {path!r}"
+            )
+        if not isinstance(mtime_ns, int) or mtime_ns < 0:
+            raise RetentionAuthorizationError(
+                f"Item elegível sem mtime_ns válido: {path!r}"
+            )
         eligible.append(
             {
                 "rule_id": rule_id,
@@ -124,6 +134,8 @@ def authorize_manifest(review_doc: dict, confirmation: dict) -> dict:
                 "category": category,
                 "size": int(item.get("size") or 0),
                 "age_days": item.get("age_days"),
+                "mtime_ns": mtime_ns,
+                "sha256": sha256,
                 "reason": str(item.get("reason", "")),
                 "evidence": list(evidence),
             }
