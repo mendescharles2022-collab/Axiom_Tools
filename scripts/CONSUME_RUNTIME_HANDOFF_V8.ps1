@@ -25,7 +25,8 @@ function Resolve-FullPath([string]$PathValue) {
 function Test-IsInside([string]$Child, [string]$Parent) {
     $childPath = (Resolve-FullPath $Child).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
     $parentPath = (Resolve-FullPath $Parent).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
-    $comparison = if ($IsWindows) { [System.StringComparison]::OrdinalIgnoreCase } else { [System.StringComparison]::Ordinal }
+    $isWindowsPath = [System.IO.Path]::DirectorySeparatorChar -eq [char]92
+    $comparison = if ($isWindowsPath) { [System.StringComparison]::OrdinalIgnoreCase } else { [System.StringComparison]::Ordinal }
     if ($childPath.Equals($parentPath, $comparison)) { return $true }
     return $childPath.StartsWith($parentPath + [System.IO.Path]::DirectorySeparatorChar, $comparison)
 }
