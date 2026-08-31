@@ -1,17 +1,17 @@
 # Rastreador canônico — Execução de correção V8
 
 Data: 31/08/2026  
-Status: **DIAGNÓSTICO B01–B50 REVISTO / 0 INSPEÇÕES PENDENTES / TOOLING ATÉ ETAPA 72 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
+Status: **DIAGNÓSTICO B01–B50 REVISTO / 0 INSPEÇÕES PENDENTES / TOOLING ATÉ ETAPA 73 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico atual do tooling
 
-GitHub Actions run `33446425395`  
-Commit `49b9093fcd3060f020dd3dfbb7eee58d2913a7bf`  
+GitHub Actions run `33447254039`  
+Commit `e51bc61f13bbb21922b295eb57f8794a481962ed`  
 Python `3.12.14`
 
 ```text
 POWERSHELL_B06_SMOKE_OK
-Ran 338 tests in 1.491s
+Ran 371 tests in 1.531s
 OK
 ```
 
@@ -26,12 +26,12 @@ Preflight do mesmo marco:
 
 Artifact `v8-release-preflight`:
 
-- ID `9778186417`;
-- SHA-256 `3e7d358b201025096378ba505b35fbd237c38c76f52f8c0cf69a921e6d9a7d42`.
+- ID `9778467287`;
+- SHA-256 `4ce32783f1cd0d4fd2df6300d39d7a7cb3c87e2b4054fdbe3b06c1bfad2e6919`.
 
 Este é o marco de tooling. Ele **não** representa homologação da árvore operacional integral.
 
-## 2. Evolução canônica — Etapas 42–72
+## 2. Evolução canônica — Etapas 42–73
 
 A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patrimônio válido.
 
@@ -64,7 +64,8 @@ A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patri
 - Etapa 69 — B06, handoff único runtime: código/config + SQLite separado + manifesto comum;
 - Etapa 70 — B06, launcher Windows parametrizado para executar o handoff em um comando;
 - Etapa 71 — B06, autodiscovery SQLite conservadora e `-Database` opcional somente quando a seleção for inequívoca;
-- Etapa 72 — B06, smoke end-to-end do launcher sob PowerShell no CI, com runtime e SQLite reais descartáveis e trigger obrigatório para `scripts/*.ps1`.
+- Etapa 72 — B06, smoke end-to-end do launcher sob PowerShell no CI, com runtime e SQLite reais descartáveis e trigger obrigatório para `scripts/*.ps1`;
+- Etapa 73 — B01/B02/B03/B39, auditores executáveis para reprocessamento candidato, pureza GET, gate único de saída e reautorização backend de seleção manual.
 
 Resultado da fase: **nenhum B permanece em mera inspeção sem critério executável**.
 
@@ -74,14 +75,14 @@ Fonte: `config/blocker_status_v8_current.json`.
 
 | Estado | Quantidade |
 |---|---:|
-| `PRONTO_PARA_CORRIGIR` | 34 |
+| `PRONTO_PARA_CORRIGIR` | 30 |
 | `INSPECAO_PENDENTE` | 0 |
-| `EM_CORRECAO` | 12 |
+| `EM_CORRECAO` | 16 |
 | `BLOQUEADO_POR_RUNTIME` | 4 |
 | `CORRIGIDO_TESTADO` | 0 |
 | `CORRIGIDO_HOMOLOGADO` | 0 |
 
-Em correção: B04, B08, B28, B32, B34, B35, B36, B38, B40, B41, B42 e B48.  
+Em correção: B01, B02, B03, B04, B08, B28, B32, B34, B35, B36, B38, B39, B40, B41, B42 e B48.  
 Bloqueados pelo runtime: B05, B06, B45 e B49.
 
 Regra permanente:
@@ -90,7 +91,7 @@ Regra permanente:
 
 ## 4. B06 — gate estrutural atual
 
-Não implementar B01/B02/B03 sobre uma fundação reduzida da `main` como se ela fosse o runtime final.
+Não implementar correções operacionais diretamente sobre uma fundação reduzida da `main` como se ela fosse o runtime final.
 
 Tooling já preparado/testado:
 
@@ -129,15 +130,15 @@ O mapa cobre `28/28` casos. Nenhum caso pode ser marcado PASS enquanto seus bloq
 
 ### B01 — reprocessamento
 
-V8F2 ainda possui caminho destrutivo sobre vigente/pessoas antes da nova leitura. Correção final exige candidato isolado + promoção atômica.
+O padrão destrutivo observado no V8F2 agora possui auditor executável. Ele bloqueia remoção de interpretação vigente antes do candidato, `commit` prematuro, falta de promoção e recálculo fora de ordem. A correção operacional final ainda exige candidato isolado + promoção atômica na árvore reconciliada.
 
 ### B02 — GET com efeito colateral
 
-Fechamento automático entrou no agregador de Conferência no salto V6→V7. GET deve voltar a ser leitura pura.
+O defeito histórico V6→V7 agora possui auditor de grafo de chamadas. GET que alcance mutador ou SQL de escrita, direta ou indiretamente, é bloqueado. A correção integrada ainda depende da árvore real.
 
 ### B03/B39 — autorização de saída
 
-Views/serviços aplicam filtros distintos. É necessário gate único por versão FECHADA, inclusive contra IDs manipulados.
+Existe tooling executável para exigir gate canônico nos caminhos de geração/impressão/entrega e reinterseção backend dos IDs selecionados. `PROCESSADO` isolado não autoriza saída. A aplicação real aos serviços depende do B06.
 
 ### B07/B09/B10/B37
 
@@ -191,9 +192,9 @@ Retenção segue deliberadamente não destrutiva até política/acervo reais. Au
 
 1. reconciliar árvore/runtime e fixar baseline;
 2. executar B35/B49 sobre a cópia real;
-3. B01 — candidato não destrutivo;
-4. B02 — GET puro + evento explícito de fechamento;
-5. B03/B39 — gate único de saída;
+3. aplicar B01 — candidato não destrutivo;
+4. aplicar B02 — GET puro + evento explícito de fechamento;
+5. aplicar B03/B39 — gate único de saída;
 6. B07/B09/B10/B11/B37 — universo e máquinas de estado;
 7. B40/B08 — CAS, concorrência e causa T L;
 8. B18/B36 + B05 — decisão por fonte/migração;
@@ -224,4 +225,4 @@ Modo final continua exigindo cumulativamente:
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-A auditoria/tooling avançou até a Etapa 72. O gargalo agora é exclusivamente material em B06: executar o launcher na instalação Windows física, trazer a fotografia segura e iniciar as correções integradas sobre a árvore operacional correta.
+A auditoria/tooling avançou até a Etapa 73. O gargalo material continua sendo B06, mas as correções B01/B02/B03/B39 agora já possuem guardrails executáveis para aplicação imediata quando a árvore operacional for reconciliada.
