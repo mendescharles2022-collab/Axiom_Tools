@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "audit": "V8",
+  "sensitive_areas": ["config_app", "config_root", "metadata"],
+  "sensitive_path_patterns": [
+    "release_identity.toml",
+    "security",
+    "auth",
+    "credential",
+    "secret",
+    "token",
+    ".env"
+  ],
+  "allowed_statuses": ["SAME", "CHANGED", "RUNTIME_ONLY", "REPO_ONLY"],
+  "action_by_status": {
+    "SAME": "NO_ACTION",
+    "CHANGED": "REVIEW_MERGE",
+    "RUNTIME_ONLY": "REVIEW_IMPORT_RUNTIME",
+    "REPO_ONLY": "REVIEW_KEEP_REPO"
+  },
+  "sensitive_action": "SECURITY_REVIEW_REQUIRED",
+  "automatic_write_allowed": false
+}
