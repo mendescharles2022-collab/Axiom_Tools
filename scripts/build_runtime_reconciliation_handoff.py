@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -16,6 +17,31 @@ HANDOFF_VERSION = 1
 MANIFEST_NAME = "RUNTIME_HANDOFF_MANIFEST.json"
 DB_REPORT_NAME = "RUNTIME_DATABASE_CLONE_REPORT.json"
 LABEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+SQLITE_HEADER = b"SQLite format 3\x00"
+SQLITE_EXTENSIONS = {".sqlite", ".sqlite3", ".db"}
+DISCOVERY_PRUNE_DIRS = {
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "documentos",
+    "documents",
+    "uploads",
+    "upload",
+    "logs",
+    "log",
+    "backups",
+    "backup",
+    "temp",
+    "tmp",
+    "certificados",
+    "certificates",
+    "cache",
+    "caches",
+}
 
 
 class RuntimeHandoffError(RuntimeError):
@@ -80,23 +106,78 @@ def _remove_artifact(path: Path) -> None:
         path.unlink(missing_ok=True)
 
 
+def _has_sqlite_header(path: Path) -> bool:
+    try:
+        with path.open("rb") as stream:
+            return stream.read(len(SQLITE_HEADER)) == SQLITE_HEADER
+    except OSError:
+        return False
+
+
+def discover_sqlite_candidates(runtime_root: Path) -> list[Path]:
+    runtime_root = runtime_root.resolve()
+    if not runtime_root.is_dir():
+        raise RuntimeHandoffError(f"Raiz operacional inválida: {runtime_root}")
+
+    candidates: list[Path] = []
+    for current_root, dirs, files in os.walk(runtime_root, followlinks=False):
+        root_path = Path(current_root)
+        dirs[:] = [
+            name
+            for name in dirs
+            if name.lower() not in DISCOVERY_PRUNE_DIRS
+            and not (root_path / name).is_symlink()
+        ]
+        for name in files:
+            path = root_path / name
+            if path.suffix.lower() not in SQLITE_EXTENSIONS or path.is_symlink():
+                continue
+            if _has_sqlite_header(path):
+                candidates.append(path.resolve())
+
+    return sorted(candidates, key=lambda item: item.relative_to(runtime_root).as_posix().lower())
+
+
+def _resolve_database(runtime_root: Path, database: Path | None) -> tuple[Path, str]:
+    if database is not None:
+        resolved = database.resolve()
+        if not resolved.is_file():
+            raise RuntimeHandoffError(f"Banco operacional não encontrado: {resolved}")
+        if not _has_sqlite_header(resolved):
+            raise RuntimeHandoffError(
+                f"Arquivo informado não possui cabeçalho SQLite válido: {resolved.name}"
+            )
+        return resolved, "EXPLICIT"
+
+    candidates = discover_sqlite_candidates(runtime_root)
+    if not candidates:
+        raise RuntimeHandoffError(
+            "Nenhum SQLite válido foi descoberto no runtime. Informe --database explicitamente."
+        )
+    if len(candidates) > 1:
+        relative = [path.relative_to(runtime_root).as_posix() for path in candidates]
+        raise RuntimeHandoffError(
+            "Mais de um SQLite válido foi descoberto; seleção automática bloqueada. "
+            "Informe --database explicitamente. Candidatos: " + ", ".join(relative)
+        )
+    return candidates[0], "AUTO_DISCOVERED_SINGLE"
+
+
 def build_handoff(
     *,
     runtime_root: Path,
-    database: Path,
+    database: Path | None,
     output_dir: Path,
     label: str = "runtime-v8",
     include_row_counts: bool = True,
 ) -> dict:
     runtime_root = runtime_root.resolve()
-    database = database.resolve()
     output_dir = output_dir.resolve()
     label = _safe_label(label)
 
     if not runtime_root.is_dir():
         raise RuntimeHandoffError(f"Raiz operacional inválida: {runtime_root}")
-    if not database.is_file():
-        raise RuntimeHandoffError(f"Banco operacional não encontrado: {database}")
+    database, database_selection = _resolve_database(runtime_root, database)
     _assert_output_outside_runtime(runtime_root, output_dir)
     _assert_database_not_output(database, output_dir)
 
@@ -107,10 +188,8 @@ def build_handoff(
             f"Destino do handoff já existe: {handoff_dir.name}"
         )
 
-    runtime_hash_before = None
     database_hash_before = sha256_file(database)
     handoff_dir.mkdir(parents=True)
-    export_result = None
     try:
         export_result = runtime_export.export_runtime(
             runtime_root,
@@ -143,6 +222,7 @@ def build_handoff(
             "source": {
                 "runtime_root_name": runtime_root.name,
                 "database_name": database.name,
+                "database_selection": database_selection,
                 "database_sha256_before": database_hash_before,
                 "database_sha256_after": database_hash_after,
                 "source_mutation_performed": False,
@@ -199,7 +279,15 @@ def main() -> int:
         )
     )
     parser.add_argument("--runtime-root", required=True, type=Path)
-    parser.add_argument("--database", required=True, type=Path)
+    parser.add_argument(
+        "--database",
+        type=Path,
+        default=None,
+        help=(
+            "SQLite operacional. Se omitido, só há seleção automática quando exatamente "
+            "um SQLite válido for descoberto no runtime."
+        ),
+    )
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--label", default="runtime-v8")
     parser.add_argument("--skip-row-counts", action="store_true")
