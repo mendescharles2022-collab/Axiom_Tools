@@ -38,6 +38,7 @@ def reviewed(decision: str = "ELIGIBLE", category: str = "TEMPORARIO_PROCESSAMEN
         "items": [
             {
                 "rule_id": "temp",
+                "root": "temp",
                 "path": "job/a.tmp",
                 "category": category,
                 "decision": decision,
@@ -73,6 +74,7 @@ class RetentionAuthorizationTests(unittest.TestCase):
         self.assertEqual(manifest["mode"], "AUTHORIZED_MANIFEST_NOT_EXECUTED")
         self.assertEqual(manifest["summary"]["authorized_items"], 1)
         self.assertEqual(manifest["summary"]["authorized_bytes"], 3)
+        self.assertEqual(manifest["items"][0]["root"], "temp")
         self.assertFalse(manifest["execution_performed"])
         self.assertEqual(len(manifest["manifest_sha256"]), 64)
 
@@ -124,6 +126,15 @@ class RetentionAuthorizationTests(unittest.TestCase):
         manifest = module.authorize_manifest(review_doc, confirmation(review_doc))
         self.assertEqual(manifest["items"][0]["path"], "job/a.tmp")
         self.assertFalse(Path(manifest["items"][0]["path"]).is_absolute())
+
+    def test_missing_root_on_eligible_item_is_rejected(self):
+        review_doc = reviewed()
+        review_doc["items"][0].pop("root")
+        review_doc["review_sha256"] = review_module.canonical_hash(
+            {key: value for key, value in review_doc.items() if key != "review_sha256"}
+        )
+        with self.assertRaises(module.RetentionAuthorizationError):
+            module.authorize_manifest(review_doc, confirmation(review_doc))
 
 
 if __name__ == "__main__":
