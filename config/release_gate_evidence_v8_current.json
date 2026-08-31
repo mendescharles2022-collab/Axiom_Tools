@@ -6,14 +6,14 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33439050816",
-        "commit:54fa9c798fc0e5edd633d7e337b5e03143a05019",
-        "result:189-tests-OK",
+        "github-actions:run/33440070146",
+        "commit:0b980637de843fb1fbef61836da4a03b975dff2f",
+        "result:215-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9775507384",
-        "artifact-sha256:e812bfce93067067c97c189583dbf2d693e8bd03be88251c6ed6165d74bd2bf9"
+        "artifact:v8-release-preflight#9775877239",
+        "artifact-sha256:bee98e0797da5549b8d63cc0f2fd092d4cc9bcac031ef3dc07bf8c753a5cf8c4"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal C01-C28 → B01-B50 integrado ao preflight, reconciliação segura de config/release_identity e auditoria B49 bidirecional banco ↔ filesystem em modo somente leitura. O run 33439050816 concluiu com 189 testes OK, preflight válido, 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal C01-C28 → B01-B50, reconciliação segura B06/B42, auditoria B49 bidirecional e fluxo B48 não destrutivo Simular → Revisar → Confirmar → Revalidar, com raiz autorizada e fingerprint mtime_ns/SHA-256. O run 33440070146 concluiu com 215 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
