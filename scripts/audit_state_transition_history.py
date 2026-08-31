@@ -30,7 +30,7 @@ def _ident(value: object, field: str, *, optional: bool = False) -> str | None:
 def _ident_list(value: object, field: str) -> list[str]:
     if not isinstance(value, list) or not value:
         raise TransitionAuditError(f"{field} deve ser lista não vazia.")
-    result = []
+    result: list[str] = []
     for item in value:
         ident = _ident(item, field)
         assert ident is not None
@@ -51,24 +51,29 @@ def _state_list(value: object, field: str, *, allow_empty: bool = False) -> list
 def normalize_spec(spec: dict) -> dict:
     if not isinstance(spec, dict) or spec.get("version") != SPEC_VERSION:
         raise TransitionAuditError(f"Spec deve ser objeto version={SPEC_VERSION}.")
+
     raw_allowed = spec.get("allowed_transitions", {})
     if not isinstance(raw_allowed, dict):
         raise TransitionAuditError("allowed_transitions deve ser objeto.")
-    allowed = {}
+    allowed: dict[str, list[str]] = {}
     for state, targets in raw_allowed.items():
         source = str(state).strip()
         if not source:
             raise TransitionAuditError("Estado origem vazio em allowed_transitions.")
-        allowed[source] = _state_list(targets, f"allowed_transitions.{source}", allow_empty=True)
+        allowed[source] = _state_list(
+            targets, f"allowed_transitions.{source}", allow_empty=True
+        )
 
     raw_floor = spec.get("call_floor_by_state", {})
     if not isinstance(raw_floor, dict):
         raise TransitionAuditError("call_floor_by_state deve ser objeto.")
-    floor = {}
+    floor: dict[str, int] = {}
     for state, value in raw_floor.items():
         name = str(state).strip()
         if not name or not isinstance(value, int) or value < 1:
-            raise TransitionAuditError(f"Floor inválido para estado {state!r}: {value!r}")
+            raise TransitionAuditError(
+                f"Floor inválido para estado {state!r}: {value!r}"
+            )
         floor[name] = value
 
     current_table = _ident(spec.get("current_table"), "current_table", optional=True)
@@ -98,7 +103,8 @@ def normalize_spec(spec: dict) -> dict:
         "current_table": current_table,
         "current_state_column": current_state,
         "current_call_column": current_call,
-        "require_history_for_current": spec.get("require_history_for_current", True) is True,
+        "require_history_for_current": spec.get("require_history_for_current", True)
+        is True,
     }
 
 
@@ -143,6 +149,13 @@ def _key_dict(key: tuple, columns: list[str]) -> dict:
     return {columns[index]: key[index] for index in range(len(columns))}
 
 
+def _parse_call(raw: object) -> int | None:
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 def audit_database(database: Path, spec: dict) -> dict:
     policy = normalize_spec(spec)
     before_hash = sha256_file(database)
@@ -157,7 +170,9 @@ def audit_database(database: Path, spec: dict) -> dict:
         ]
         history_columns = _columns(conn, history_table)
         if not history_columns:
-            raise TransitionAuditError(f"Tabela de histórico inexistente: {history_table}")
+            raise TransitionAuditError(
+                f"Tabela de histórico inexistente: {history_table}"
+            )
         missing = sorted(set(required_history) - set(history_columns))
         if missing:
             raise TransitionAuditError(
@@ -166,7 +181,8 @@ def audit_database(database: Path, spec: dict) -> dict:
 
         select_cols = ", ".join(_q(item) for item in required_history)
         order_cols = ", ".join(
-            _q(item) for item in [*policy["key_columns"], str(policy["order_column"])]
+            _q(item)
+            for item in [*policy["key_columns"], str(policy["order_column"])]
         )
         history_rows = conn.execute(
             f"SELECT {select_cols} FROM {_q(history_table)} ORDER BY {order_cols}"
@@ -176,28 +192,15 @@ def audit_database(database: Path, spec: dict) -> dict:
             grouped[_key(row, policy["key_columns"])].append(row)
 
         findings: list[dict] = []
-        last_by_key: dict[tuple, sqlite3.Row] = {}
+        last_valid_by_key: dict[tuple, tuple[str, int]] = {}
         for key, rows in grouped.items():
             seen_orders = set()
-            previous = None
+            previous: tuple[object, str, int] | None = None
             enforced_floor = 0
             for row in rows:
                 order_value = row[str(policy["order_column"])]
                 state = str(row[str(policy["state_column"])])
                 raw_call = row[str(policy["call_column"])]
-                try:
-                    call = int(raw_call)
-                except (TypeError, ValueError):
-                    findings.append(
-                        {
-                            "code": "INVALID_CALL_VALUE",
-                            "severity": "block",
-                            "key": _key_dict(key, policy["key_columns"]),
-                            "order": order_value,
-                            "value": raw_call,
-                        }
-                    )
-                    continue
 
                 if order_value in seen_orders:
                     findings.append(
@@ -209,6 +212,20 @@ def audit_database(database: Path, spec: dict) -> dict:
                         }
                     )
                 seen_orders.add(order_value)
+
+                call = _parse_call(raw_call)
+                if call is None:
+                    findings.append(
+                        {
+                            "code": "INVALID_CALL_VALUE",
+                            "severity": "block",
+                            "key": _key_dict(key, policy["key_columns"]),
+                            "order": order_value,
+                            "value": raw_call,
+                        }
+                    )
+                    previous = None
+                    continue
 
                 own_floor = int(policy["call_floor_by_state"].get(state, 0))
                 if own_floor and call < own_floor:
@@ -238,15 +255,14 @@ def audit_database(database: Path, spec: dict) -> dict:
                     )
 
                 if previous is not None:
-                    prev_state = str(previous[str(policy["state_column"])])
-                    prev_call = int(previous[str(policy["call_column"])])
+                    prev_order, prev_state, prev_call = previous
                     if policy["forbid_call_decrease"] and call < prev_call:
                         findings.append(
                             {
                                 "code": "CALL_DECREASE",
                                 "severity": "block",
                                 "key": _key_dict(key, policy["key_columns"]),
-                                "from_order": previous[str(policy["order_column"])],
+                                "from_order": prev_order,
                                 "to_order": order_value,
                                 "from_call": prev_call,
                                 "to_call": call,
@@ -263,13 +279,12 @@ def audit_database(database: Path, spec: dict) -> dict:
                                 "key": _key_dict(key, policy["key_columns"]),
                                 "from_state": prev_state,
                                 "to_state": state,
-                                "from_order": previous[str(policy["order_column"])],
+                                "from_order": prev_order,
                                 "to_order": order_value,
                             }
                         )
-                previous = row
-            if rows:
-                last_by_key[key] = rows[-1]
+                previous = (order_value, state, call)
+                last_valid_by_key[key] = (state, call)
 
         current_checked = 0
         if policy["current_table"]:
@@ -281,41 +296,62 @@ def audit_database(database: Path, spec: dict) -> dict:
             ]
             current_columns = _columns(conn, current_table)
             if not current_columns:
-                raise TransitionAuditError(f"Tabela current inexistente: {current_table}")
+                raise TransitionAuditError(
+                    f"Tabela current inexistente: {current_table}"
+                )
             missing_current = sorted(set(required_current) - set(current_columns))
             if missing_current:
                 raise TransitionAuditError(
                     "Colunas ausentes no current: " + ", ".join(missing_current)
                 )
             current_rows = conn.execute(
-                f"SELECT {', '.join(_q(item) for item in required_current)} FROM {_q(current_table)}"
+                f"SELECT {', '.join(_q(item) for item in required_current)} "
+                f"FROM {_q(current_table)}"
             ).fetchall()
             for row in current_rows:
                 current_checked += 1
                 key = _key(row, policy["key_columns"])
-                last = last_by_key.get(key)
+                last = last_valid_by_key.get(key)
                 if last is None:
                     if policy["require_history_for_current"]:
                         findings.append(
                             {
-                                "code": "CURRENT_WITHOUT_HISTORY",
+                                "code": "CURRENT_WITHOUT_VALID_HISTORY",
                                 "severity": "block",
                                 "key": _key_dict(key, policy["key_columns"]),
                             }
                         )
                     continue
-                current_state = str(row[str(policy["current_state_column"])])
-                current_call = int(row[str(policy["current_call_column"])])
-                history_state = str(last[str(policy["state_column"])])
-                history_call = int(last[str(policy["call_column"])])
+
+                current_state = str(row[str(policy["current_state_column"])] )
+                raw_current_call = row[str(policy["current_call_column"])]
+                current_call = _parse_call(raw_current_call)
+                if current_call is None:
+                    findings.append(
+                        {
+                            "code": "CURRENT_INVALID_CALL_VALUE",
+                            "severity": "block",
+                            "key": _key_dict(key, policy["key_columns"]),
+                            "value": raw_current_call,
+                        }
+                    )
+                    continue
+
+                history_state, history_call = last
                 if current_state != history_state or current_call != history_call:
                     findings.append(
                         {
                             "code": "CURRENT_HISTORY_MISMATCH",
                             "severity": "block",
                             "key": _key_dict(key, policy["key_columns"]),
-                            "history": {"state": history_state, "call": history_call},
-                            "current": {"state": current_state, "call": current_call},
+                            "history": {
+                                "state": history_state,
+                                "call": history_call,
+                            },
+                            "current": {
+                                "state": current_state,
+                                "call": current_call,
+                            },
                         }
                     )
 
@@ -350,11 +386,15 @@ def audit_database(database: Path, spec: dict) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Reconstrói e audita transições de estado/chamada SQLite sem alterar o banco."
+        description=(
+            "Reconstrói e audita transições de estado/chamada SQLite sem alterar o banco."
+        )
     )
     parser.add_argument("--database", required=True, type=Path)
     parser.add_argument("--spec", required=True, type=Path)
-    parser.add_argument("--output", type=Path, default=Path("STATE_TRANSITION_AUDIT.json"))
+    parser.add_argument(
+        "--output", type=Path, default=Path("STATE_TRANSITION_AUDIT.json")
+    )
     args = parser.parse_args()
     try:
         report = audit_database(args.database, load_spec(args.spec))
@@ -366,7 +406,11 @@ def main() -> int:
     except TransitionAuditError as exc:
         print(f"STATE_TRANSITION_AUDIT_ERRO: {exc}", file=sys.stderr)
         return 2
-    print("STATE_TRANSITION_AUDIT_OK" if report["ok"] else "STATE_TRANSITION_AUDIT_DIVERGENTE")
+    print(
+        "STATE_TRANSITION_AUDIT_OK"
+        if report["ok"]
+        else "STATE_TRANSITION_AUDIT_DIVERGENTE"
+    )
     print(f"Entidades: {report['summary']['entities']}")
     print(f"Achados: {report['summary']['blocking_findings']}")
     print("Mutação: NÃO")
