@@ -1,6 +1,6 @@
 # Rastreador canônico — Execução de correção V8
 
-Data: 28/08/2026  
+Data: 31/08/2026  
 Status: **RUNTIME AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico do tooling
@@ -28,6 +28,8 @@ Artifact `v8-release-preflight`:
 - 2.288 bytes;
 - SHA-256 `380162c6ed4b1d5b01b0f7c7c834f8f1d300699db54b4b050ed967b5e9181d85`.
 
+**Observação de 31/08/2026:** a Etapa 42 reabriu a cobertura funcional do tooling de reconciliação. Os 165 testes continuam válidos para o código do marco acima, mas não provam cobertura de configuração-modelo/metadata de identidade no export runtime.
+
 ## 2. Snapshot B01–B50
 
 | Estado | Quantidade |
@@ -46,15 +48,23 @@ Bloqueados pelo runtime: B05, B06, B45, B49.
 
 Não implementar B01/B02/B03 sobre a fundação reduzida da `main`.
 
-Pronto/testado:
+Infraestrutura já existente e testada no marco de 28/08:
 
-- exportador runtime;
+- exportador runtime com whitelist e bloqueio de conteúdo sensível;
 - launcher PowerShell;
-- auditor de reconciliação;
+- auditor de reconciliação e manifesto;
 - E2E;
 - preflight automático/artifact.
 
-Pendente:
+Revisão obrigatória aberta pela Etapa 42:
+
+1. incluir cobertura segura de configuração-modelo e metadata/identidade de release no export;
+2. comparar configuração/identidade no auditor de reconciliação;
+3. adicionar regressões específicas para essa cobertura;
+4. evitar exposição desnecessária de caminhos absolutos nos artefatos de reconciliação;
+5. executar novamente a suíte canônica após o ajuste.
+
+Depois dessa revisão:
 
 1. exportar instalação Windows real ou recuperar pacote canônico equivalente;
 2. auditar export;
@@ -83,6 +93,8 @@ Estado `EM_CORRECAO`.
 
 Pronto: identidade canônica, geração/verificação de build, Git limpo, SHA-256 e bloqueio de conteúdo sensível.
 
+Achado de 31/08: a reconciliação ainda não garante que configuração/metadata de identidade do runtime seja exportada e comparada com o repositório. Essa lacuna deve ser fechada antes de usar a cadeia de B42 como prova final.
+
 Pendente: runtime, `/health`, logs, instalador e pacote final consumirem a mesma identidade.
 
 ## 6. B41 — rollback
@@ -93,7 +105,9 @@ Pronto: bundle, verificador e restauração em staging.
 
 Pendente: arquivos reais, cópia real, rollback físico Windows e smoke posterior.
 
-## 7. Achado runtime — Processamento ainda carrega Auditoria
+## 7. Achados de auditoria ativos
+
+### Processamento ainda carrega Auditoria
 
 Registro:
 
@@ -102,6 +116,14 @@ Registro:
 Template operacional preservado mostra `PROCESSAMENTO DE ARQUIVOS` no eyebrow e `<h1>` começando em `Aud...`.
 
 Reforça B37/B43/B46; não cria novo bloqueador.
+
+### Cobertura do exportador de reconciliação
+
+Registro:
+
+`docs/auditoria/AUDITORIA_CANONICA_V8_20260831_ETAPA42.md`.
+
+O protocolo B06 exige configuração-modelo/metadata de versão entre os artefatos elegíveis, porém o exportador e o auditor atuais não possuem cobertura explícita equivalente. O achado reforça B06/B42 e não cria B51.
 
 ## 8. B08/T L
 
@@ -143,4 +165,4 @@ Modo final exige 50/50 B homologados, 28/28 C PASS, release READY, build verific
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-O próximo salto de valor continua sendo remover B06 e trabalhar sobre a árvore operacional real.
+O próximo salto de valor continua sendo remover B06 e trabalhar sobre a árvore operacional real, agora com a cobertura do tooling de reconciliação corrigida e revalidada.
