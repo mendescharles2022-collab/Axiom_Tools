@@ -46,6 +46,8 @@ def reviewed(decision: str = "ELIGIBLE", category: str = "TEMPORARIO_PROCESSAMEN
                 "evidence": ["job-status:completed"] if decision == "ELIGIBLE" else [],
                 "size": 3,
                 "age_days": 40.0,
+                "mtime_ns": 123456789,
+                "sha256": "A" * 64,
             }
         ],
         "execution_authorized": False,
@@ -53,6 +55,11 @@ def reviewed(decision: str = "ELIGIBLE", category: str = "TEMPORARIO_PROCESSAMEN
     }
     payload["review_sha256"] = review_module.canonical_hash(payload)
     return payload
+
+
+def rehash(review_doc: dict) -> None:
+    payload = {key: value for key, value in review_doc.items() if key != "review_sha256"}
+    review_doc["review_sha256"] = review_module.canonical_hash(payload)
 
 
 def confirmation(review_doc: dict, **overrides) -> dict:
@@ -75,6 +82,8 @@ class RetentionAuthorizationTests(unittest.TestCase):
         self.assertEqual(manifest["summary"]["authorized_items"], 1)
         self.assertEqual(manifest["summary"]["authorized_bytes"], 3)
         self.assertEqual(manifest["items"][0]["root"], "temp")
+        self.assertEqual(manifest["items"][0]["sha256"], "A" * 64)
+        self.assertEqual(manifest["items"][0]["mtime_ns"], 123456789)
         self.assertFalse(manifest["execution_performed"])
         self.assertEqual(len(manifest["manifest_sha256"]), 64)
 
@@ -130,9 +139,14 @@ class RetentionAuthorizationTests(unittest.TestCase):
     def test_missing_root_on_eligible_item_is_rejected(self):
         review_doc = reviewed()
         review_doc["items"][0].pop("root")
-        review_doc["review_sha256"] = review_module.canonical_hash(
-            {key: value for key, value in review_doc.items() if key != "review_sha256"}
-        )
+        rehash(review_doc)
+        with self.assertRaises(module.RetentionAuthorizationError):
+            module.authorize_manifest(review_doc, confirmation(review_doc))
+
+    def test_missing_fingerprint_on_eligible_item_is_rejected(self):
+        review_doc = reviewed()
+        review_doc["items"][0].pop("sha256")
+        rehash(review_doc)
         with self.assertRaises(module.RetentionAuthorizationError):
             module.authorize_manifest(review_doc, confirmation(review_doc))
 
