@@ -6,16 +6,17 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33446139531",
-        "commit:7181b47a58a73843ff3dd8e10ff5947081bd81b1",
-        "result:336-tests-OK",
+        "github-actions:run/33446425395",
+        "commit:49b9093fcd3060f020dd3dfbb7eee58d2913a7bf",
+        "result:338-tests-OK",
+        "powershell-smoke:POWERSHELL_B06_SMOKE_OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9778084041",
-        "artifact-sha256:b958e73077c5e0dadd1f7372bdbe3d22d44890ad0cc14bbf62c4bb4854263cc9"
+        "artifact:v8-release-preflight#9778186417",
+        "artifact-sha256:3e7d358b201025096378ba505b35fbd237c38c76f52f8c0cf69a921e6d9a7d42"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui handoff único B06, launcher Windows e autodiscovery SQLite conservadora: seleção automática somente quando exatamente um arquivo com cabeçalho SQLite válido é encontrado fora das áreas podadas; zero ou múltiplos candidatos exigem escolha explícita. O manifesto registra EXPLICIT ou AUTO_DISCOVERED_SINGLE. Permanecem os toolings B04/B08/B28/B32/B34/B35/B36/B38/B40/B41/B42/B48/B49 e mapa causal 28/28. O run 33446139531 concluiu com 336 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS. A execução física contra o runtime Windows real ainda não ocorreu."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui handoff único B06, launcher PowerShell, autodiscovery SQLite conservadora e smoke end-to-end real sob pwsh. O smoke criou runtime descartável, SQLite real, executou BUILD_RUNTIME_HANDOFF_V8.ps1 sem -Database e comprovou AUTO_DISCOVERED_SINGLE, origem intacta e banco fora do ZIP de código. O workflow também passa a disparar para scripts/*.ps1. Permanecem os toolings B04/B08/B28/B32/B34/B35/B36/B38/B40/B41/B42/B48/B49 e mapa causal 28/28. O run 33446425395 concluiu com 338 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS. A execução física contra o runtime Windows real ainda não ocorreu."
     },
-    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Handoff B06, launcher Windows e autodiscovery conservadora estão testados, porém a instalação Windows real ainda não foi materializada e reconciliada."},
+    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Handoff B06, launcher, autodiscovery e smoke PowerShell estão testados, porém a instalação Windows física real ainda não foi materializada e reconciliada."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
     {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
     {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes e auditores estruturais estão integrados ao tooling, mas ainda não executados contra a cópia do banco/schema operacional reconciliado."},
