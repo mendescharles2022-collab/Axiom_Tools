@@ -1,169 +1,155 @@
 # Auditoria canônica V8 — Etapa 55
 
 Data: 31/08/2026  
-Status: **lacuna de tooling B06/B42 corrigida e testada / runtime real ainda não reconciliado / V8 NÃO HOMOLOGADA**
+Status: **tooling causal/reconciliação corrigido e testado / runtime integral ainda não reconciliado / V8 NÃO HOMOLOGADA**
 
-## 1. Objetivo
+## 1. Escopo
 
-Fechar, no nível de implementação e regressão automatizada, a lacuna identificada na Etapa 42 no exportador/auditor de reconciliação.
+A Etapa 55 consolidou dois avanços que não dependem do servidor:
 
-A Etapa 42 havia demonstrado que o protocolo exigia configuração-modelo/metadata de release, mas o tooling não as exportava/comparava explicitamente e ainda registrava caminhos absolutos da instalação nos artefatos.
+1. amarração causal dos casos reais C01–C28 aos bloqueadores B01–B50;
+2. fechamento da lacuna de tooling B06/B42 identificada na Etapa 42.
 
-## 2. Implementação aplicada
+Nenhum bloqueador foi homologado apenas por esses avanços.
 
-### Exportador
+## 2. Mapa causal C01–C28 → B01–B50
 
-`scripts/export_runtime_reconciliation.py`
+Foi criado:
 
-Alterações:
+`config/regression_case_blocker_map_v8_202608.json`
 
-- adiciona `app/config` e `config` à whitelist controlada;
-- inclui `requirements-dev.txt` quando presente;
-- mantém os mesmos bloqueios para `.env`, credenciais, certificados, bancos, logs, backups e compactados;
-- continua varrendo possível segredo hardcoded mesmo dentro de `config`;
-- permite exportar `release_identity.toml` quando seguro;
-- remove do `RECONCILIATION_INFO.txt` a raiz operacional absoluta e o caminho absoluto do staging;
-- CLI passa a exibir apenas nome de stage/ZIP, não caminho completo.
+Cada caso C01–C28 aponta para os bloqueadores estruturais que precisam estar resolvidos para que o resultado seja aceito.
 
-### Auditor
+Isso impede “PASS de tela”: um valor final aparentemente correto não basta se parser, composição, identidade documental, estado ou autorização continuarem incorretos.
 
-`scripts/audit_runtime_reconciliation.py`
+## 3. Validador causal
 
-Alterações:
+Foi criado:
 
-- compara `app/config` ou `config` com `config` do repositório;
-- `release_identity.toml` passa a entrar na comparação normal de config;
-- compara requirements controlados adicionais;
-- metadata registra `config_compared` e `release_identity_compared`;
-- remove `runtime_root` e `repo_root` absolutos do JSON de saída;
-- saída textual também evita publicar o path absoluto do relatório.
+`scripts/validate_regression_case_blocker_map.py`
 
-### Guia operacional
+O validador exige:
 
-`docs/auditoria/GUIA_EXPORTACAO_RUNTIME_RECONCILIACAO_V8.md`
+- exatamente 28 casos canônicos;
+- nenhum caso duplicado;
+- bloqueadores existentes em B01–B50;
+- nenhuma dependência repetida no mesmo caso;
+- gate causal preenchido;
+- controles técnicos com dependências válidas.
 
-Foi alinhado ao novo comportamento e continua proibindo export cego de dados reais.
+O formato canônico do registry usa `blocker_id`.
 
-## 3. Regressões adicionadas
+## 4. Integração ao preflight
 
-Novo arquivo:
+`build_current_preflight.py` passou a validar o mapa causal antes de produzir artifact.
 
-`tests/test_reconciliation_config_identity.py`
+Mapa inválido:
 
-Cinco regressões:
+- bloqueia o preflight;
+- remove staging parcial;
+- impede artifact enganoso.
 
-1. configuração segura + `release_identity.toml` são exportadas;
-2. `.env` e `credentials.json` dentro de config permanecem excluídos;
-3. segredo hardcoded em arquivo de configuração com nome aparentemente seguro bloqueia o export;
-4. `RECONCILIATION_INFO.txt` não expõe root/output/staging absolutos;
-5. auditor compara `release_identity.toml` e o JSON do relatório não expõe paths absolutos.
+Mapa válido passa a aparecer no resumo como `28/28`.
 
-## 4. Self-test anterior ao commit
+## 5. B06/B42 — configuração e identidade
 
-Foi executado cenário local controlado com:
+O exportador de reconciliação foi ampliado para incluir configuração-modelo segura e metadata de identidade.
 
-- runtime `app/src`;
-- runtime `app/config/release_identity.toml`;
-- repositório `src`;
-- repositório `config/release_identity.toml`.
+O auditor passou a comparar `config/release_identity.toml` e demais arquivos seguros da área `config`.
+
+Proteções mantidas/ampliadas:
+
+- `.env` excluído;
+- credenciais/tokens/segredos bloqueados;
+- hardcoded secret em config bloqueia exportação;
+- banco/documentos continuam proibidos;
+- caminhos absolutos da instalação deixaram de ser gravados no `RECONCILIATION_INFO.txt` e no JSON de comparação.
+
+## 6. Regressões adicionadas
+
+Foram adicionadas regressões para:
+
+- mapa causal válido/inválido;
+- integração do mapa ao preflight;
+- `config/release_identity.toml` no export;
+- exclusão de `.env`/credentials;
+- segredo hardcoded em config;
+- ausência de paths absolutos;
+- comparação da identidade runtime ↔ repositório.
+
+## 7. Histórico de CI
+
+### Run 33436522428
+
+- 170 testes OK;
+- mapa causal validado por suíte própria.
+
+### Run 33437072646
+
+- 175 testes OK;
+- config/identidade e proteção de paths absolutos aprovadas.
+
+### Run 33437318080 — FALHA REAL
+
+A integração do mapa ao preflight expôs incompatibilidade do novo validador:
+
+- fixtures sintéticas usavam `id`;
+- registry canônico usa `blocker_id`;
+- cinco testes falharam.
+
+A falha foi mantida no histórico e corrigida, não mascarada.
+
+### Correção
+
+`validate_regression_case_blocker_map.py` passou a aceitar o formato canônico `blocker_id`, preservando compatibilidade com fixtures anteriores.
+
+### Run 33437412590 — SUCESSO
+
+Commit:
+
+`a7082171fadac9e42093fdf41a6da8d07d3d07b8`
 
 Resultado:
 
 ```text
-RECONCILIATION_AUDIT_OK
-Manifesto: OK
-Áreas: src_app, config_app
-SAME: 2
-CHANGED: 0
-RUNTIME_ONLY: 0
-REPO_ONLY: 0
-SELFTEST_OK
-```
-
-Também foi comprovado que o path temporário não aparecia no INFO nem no relatório JSON.
-
-## 5. GitHub Actions
-
-Workflow:
-
-`V8 Audit Tooling Tests`
-
-Run:
-
-`33437072646`
-
-Head commit:
-
-`f96fe7283c01c07d57205d627be48d1300b916ff`
-
-Python:
-
-`3.12.14`
-
-Resultado:
-
-```text
-Ran 175 tests in 4.521s
+Ran 178 tests in 1.084s
 OK
 ```
 
-Os cinco testes novos de config/identidade passaram individualmente no log do CI.
+Preflight:
 
-## 6. Preflight da mesma execução
+- B homologados: 0/50;
+- C PASS: 0/28;
+- mapa causal: 28/28;
+- evidências PASS: 1/10;
+- release READY: False;
+- build OK: False.
 
-```text
-V8_PREFLIGHT_OK
-Final OK: False
-Bloqueadores homologados: 0/50
-Casos PASS: 0/28
-Evidências PASS: 1/10
-Release READY: False
-Build OK: False
-```
+Artifact:
 
-O resultado permanece corretamente bloqueado.
+- `v8-release-preflight`;
+- ID `9774913082`;
+- SHA-256 `04b84bcd46e65092ad351e24448002ca8cd349262034a9eaf8f3f0d63aeb8d98`.
 
-## 7. Artifact
+## 8. Estado de B06
 
-`v8-release-preflight`
+A lacuna específica de tooling da Etapa 42 está implementada e testada.
 
-Artifact ID:
+B06 permanece `BLOQUEADO_POR_RUNTIME` porque ainda falta:
 
-`9774792701`
+1. executar exportação sobre a instalação Windows/ZIP integral;
+2. comparar árvore operacional completa;
+3. reconciliar código e suíte originais;
+4. estabelecer baseline da mesma árvore que será corrigida e empacotada.
 
-Tamanho:
-
-`2357 bytes`
-
-SHA-256 do ZIP enviado pelo workflow:
-
-`F4C679D82FF279C55D31DC53137FE5B4E1716AB3629AFA27100CA1171B45FAD0`
-
-## 8. Classificação correta
-
-A lacuna específica de tooling descoberta na Etapa 42 está agora:
-
-**IMPLEMENTADA + TESTADA NO CI**.
-
-Isso **não** promove B06 para corrigido, porque B06 é maior que o tooling.
-
-Ainda falta executar a cadeia contra:
-
-- instalação Windows real;
-- árvore operacional integral;
-- configuração-modelo real;
-- suíte operacional original;
-- comparação runtime ↔ repositório;
-- baseline de inicialização.
-
-Também não promove B42, pois runtime/health/logs/instalador/pacote ainda não consomem uma identidade única de release.
-
-## 9. Estado
-
-O tooling canônico avança para **175 testes aprovados**.
-
-B06 permanece `BLOQUEADO_POR_RUNTIME`.
+## 9. Estado de B42
 
 B42 permanece `EM_CORRECAO`.
 
-A V8 permanece **NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO**.
+A cadeia de identidade/proveniência do repositório melhorou, mas runtime, `/health`, logs, instalador e pacote final ainda precisam consumir a mesma identidade canônica.
+
+## 10. Regra de governança
+
+**Tooling verde não equivale a runtime homologado.**
+
+A V8 permanece não homologada e nenhum C01–C28 foi promovido para PASS por esta etapa.
