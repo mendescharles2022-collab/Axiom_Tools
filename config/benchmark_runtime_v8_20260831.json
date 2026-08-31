@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "fechamento_competencia",
+      "sql": "SELECT f.id,f.cliente_id,f.status,f.chamada,f.movimento_competencia,c.nome FROM fechamento_mensal_cliente f JOIN clientes c ON c.id=f.cliente_id WHERE f.competencia='08/2026' ORDER BY c.nome COLLATE NOCASE",
+      "repeat": 50,
+      "warmup": 1,
+      "max_p95_ms": 20
+    },
+    {
+      "id": "conference_trabalho",
+      "sql": "SELECT f.id,f.cliente_id,f.status,f.chamada,f.movimento_competencia,c.nome FROM fechamento_mensal_cliente f JOIN clientes c ON c.id=f.cliente_id WHERE f.competencia='08/2026' AND f.status='PRONTA' AND f.chamada=1 AND f.movimento_competencia='COM_MOVIMENTO' ORDER BY c.nome COLLATE NOCASE",
+      "repeat": 50,
+      "warmup": 1,
+      "max_p95_ms": 20
+    },
+    {
+      "id": "pendencias_competencia",
+      "sql": "SELECT p.id,p.nome_original,p.status,p.cliente_id,p.competencia,c.nome FROM processamento_arquivo p LEFT JOIN clientes c ON c.id=p.cliente_id WHERE p.competencia='08/2026' AND p.status='REVISAO' ORDER BY p.processado_em DESC",
+      "repeat": 50,
+      "warmup": 1,
+      "max_p95_ms": 20
+    },
+    {
+      "id": "monitor_competencia",
+      "sql": "SELECT p.id,p.nome_original,p.status,p.documento_tipo,p.cliente_id FROM processamento_arquivo p WHERE p.competencia='08/2026' AND p.documento_vigente=1 ORDER BY p.processado_em DESC LIMIT 100",
+      "repeat": 50,
+      "warmup": 1,
+      "max_p95_ms": 20
+    },
+    {
+      "id": "econsignado_universo",
+      "sql": "SELECT f.cliente_id,c.nome FROM fechamento_mensal_cliente f JOIN clientes c ON c.id=f.cliente_id WHERE f.competencia='08/2026' AND f.status='PRONTA' AND f.chamada=1 AND f.movimento_competencia='COM_MOVIMENTO' ORDER BY c.nome COLLATE NOCASE",
+      "repeat": 50,
+      "warmup": 1,
+      "max_p95_ms": 20
+    },
+    {
+      "id": "saidas_fechadas",
+      "sql": "SELECT f.cliente_id,c.nome,f.versao_atual FROM fechamento_mensal_cliente f JOIN clientes c ON c.id=f.cliente_id JOIN fechamento_mensal_versao v ON v.competencia=f.competencia AND v.cliente_id=f.cliente_id AND v.versao=f.versao_atual LEFT JOIN fechamento_mensal_retificacao r ON r.competencia=f.competencia AND r.cliente_id=f.cliente_id AND r.status='DETECTADA' WHERE f.competencia='08/2026' AND f.status='FECHADA' AND r.id IS NULL ORDER BY c.nome COLLATE NOCASE",
+      "repeat": 50,
+      "warmup": 1,
+      "max_p95_ms": 20
+    }
+  ]
+}
