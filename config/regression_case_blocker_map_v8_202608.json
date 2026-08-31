@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "audit": "V8",
+  "competence": "08/2026",
+  "description": "Dependências mínimas entre os 28 casos reais e os bloqueadores B01-B50. PASS do caso não substitui homologação dos bloqueadores associados.",
+  "cases": [
+    {"case_id":"C01","blockers":["B01","B04","B15","B17","B40"],"gate":"Reprocessamento candidato, versionamento e recomposição sem destruir vigente."},
+    {"case_id":"C02","blockers":["B01","B14","B18","B21"],"gate":"Contexto rescisório por obrigação e incorporação posterior da DARF sem degradar estado."},
+    {"case_id":"C03","blockers":["B18","B23"],"gate":"Impedimento externo aplicado somente à DARF, preservando demais fontes."},
+    {"case_id":"C04","blockers":["B14","B17","B50"],"gate":"Composição econômica multi-FGTS sem soma de reemissões."},
+    {"case_id":"C05","blockers":["B15","B49"],"gate":"Arquivo físico existente precisa ser descoberto, indexado, vinculado e chegar à Conferência."},
+    {"case_id":"C06","blockers":["B18","B26","B28"],"gate":"eConsignado só conclui após cruzamento contextual e fotografia idempotente."},
+    {"case_id":"C07","blockers":["B24","B25","B27","B28"],"gate":"Retorno residual precisa respeitar vínculo/remuneração e o universo mensal do job."},
+    {"case_id":"C08","blockers":["B15","B16","B49"],"gate":"Matching CPF/CAEPF e auditoria física da GFD rural PF."},
+    {"case_id":"C09","blockers":["B19","B21","B30"],"gate":"Saldo federal final zero por deduções não gera ausência artificial de DARF."},
+    {"case_id":"C10","blockers":["B18","B20"],"gate":"MEI usa obrigação DAE própria, sem expectativa genérica de GFD/DARF."},
+    {"case_id":"C11","blockers":["B15","B49"],"gate":"Extrato existente percorre descoberta, identidade, competência, persistência e composição."},
+    {"case_id":"C12","blockers":["B04","B14","B17","B18","B27","B50"],"gate":"Rescisão, garantias e retificação material são compostas/versionadas sem totais cegos."},
+    {"case_id":"C13","blockers":["B15","B49"],"gate":"GFD fisicamente existente não pode permanecer invisível sem ocorrência técnica precisa."},
+    {"case_id":"C14","blockers":["B18","B22","B27"],"gate":"Afastamento por acidente mantém FGTS e pagamento direto contextualiza eConsignado."},
+    {"case_id":"C15","blockers":["B19","B21","B22"],"gate":"Afastamento integral e bases zeradas tornam DARF/FGTS não aplicáveis de forma explicável."},
+    {"case_id":"C16","blockers":["B01","B15","B49"],"gate":"Documentos adicionados depois precisam ser ingeridos e recompor a Conferência."},
+    {"case_id":"C17","blockers":["B12","B13","B16","B17","B50"],"gate":"Multi-Extrato preserva matrículas; federal consolida uma vez e FGTS soma componentes distintos."},
+    {"case_id":"C18","blockers":["B19","B21","B30"],"gate":"FGTS zero fica não aplicável e o saldo federal autoritativo positivo continua exigível."},
+    {"case_id":"C19","blockers":["B18","B26","B28"],"gate":"Diferença entre fontes permanece divergente até confronto por contrato; nenhuma fonte vence sozinha."},
+    {"case_id":"C20","blockers":["B18","B20"],"gate":"MEI usa DAE como obrigação normal, sem GFD autônoma padrão."},
+    {"case_id":"C21","blockers":["B16","B19","B22"],"gate":"Rural PF afastado com bases zeradas produz obrigações não aplicáveis sem perder identidade CAEPF."},
+    {"case_id":"C22","blockers":["B07","B18","B23"],"gate":"Procuração revogada resolve somente DARF; saída do ciclo deve repercutir nas competências posteriores."},
+    {"case_id":"C23","blockers":["B21","B30"],"gate":"Saldo à recolher após salário-família deve dirigir a DARF e manter FGTS independente."},
+    {"case_id":"C24","blockers":["B14","B18","B23","B27"],"gate":"Responsabilidade Fiscal da DARF não libera outras fontes; rescisão/garantias exigem composição contextual."},
+    {"case_id":"C25","blockers":["B14","B18","B27","B50"],"gate":"Parcela mensal, garantias e recolhimento rescisório são componentes distintos e auditáveis."},
+    {"case_id":"C26","blockers":["B01","B11","B15","B49"],"gate":"Novas evidências invalidam estado operacional antigo e recompõem a Conferência sem reprocessamento destrutivo."},
+    {"case_id":"C27","blockers":["B07","B08","B40"],"gate":"ADIADA/chamada 2 permanece fora da chamada 1 sob navegação, sincronização, restart e concorrência."},
+    {"case_id":"C28","blockers":["B19","B22"],"gate":"Faltas integrais + remuneração/base zero derivam obrigações não aplicáveis com explicação."}
+  ],
+  "controls": [
+    {"case_id":"CTRL-P-DA-SILVA-CARMO","blockers":["B29","B30"],"gate":"Diretor/contribuinte não vira empregado por Situação Trabalhando; FGTS zero e federal R$ 220,00 preservados."}
+  ]
+}
