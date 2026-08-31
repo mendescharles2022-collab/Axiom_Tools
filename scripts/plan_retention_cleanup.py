@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 import json
 import re
 import sys
@@ -14,6 +15,14 @@ ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
 class RetentionError(RuntimeError):
     pass
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest().upper()
 
 
 def parse_root_map(values: list[str]) -> dict[str, Path]:
@@ -171,21 +180,21 @@ def plan_cleanup(
 
             stat = path.stat()
             age_days = max(0.0, (now - stat.st_mtime) / 86400.0)
+            item = {
+                "path": rel,
+                "age_days": round(age_days, 3),
+                "size": stat.st_size,
+                "mtime_ns": stat.st_mtime_ns,
+            }
             if age_days > rule["older_than_days"]:
-                status = "CANDIDATE"
+                item["status"] = "CANDIDATE"
+                item["sha256"] = sha256_file(path)
                 total_candidates += 1
                 total_bytes += stat.st_size
             else:
-                status = "KEEP_RECENT"
+                item["status"] = "KEEP_RECENT"
 
-            items.append(
-                {
-                    "path": rel,
-                    "status": status,
-                    "age_days": round(age_days, 3),
-                    "size": stat.st_size,
-                }
-            )
+            items.append(item)
 
         results.append(
             {
