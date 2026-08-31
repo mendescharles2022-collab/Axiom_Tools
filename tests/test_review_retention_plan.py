@@ -65,6 +65,7 @@ class RetentionReviewTests(unittest.TestCase):
         self.assertEqual(report["mode"], "REVIEWED_NOT_AUTHORIZED")
         self.assertEqual(report["summary"]["eligible"], 1)
         self.assertEqual(report["summary"]["eligible_bytes"], 3)
+        self.assertEqual(report["items"][0]["root"], "temp")
         self.assertFalse(report["execution_authorized"])
         self.assertEqual(len(report["review_sha256"]), 64)
 
@@ -112,10 +113,18 @@ class RetentionReviewTests(unittest.TestCase):
         report = module.review_plan(plan_doc, decisions)
         self.assertEqual(report["summary"]["keep"], 1)
         self.assertEqual(report["summary"]["eligible"], 0)
+        self.assertEqual(report["items"][0]["root"], "temp")
 
     def test_decision_for_unknown_candidate_is_rejected(self):
         plan_doc = plan()
         decisions = decisions_for(plan_doc, path="other.tmp")
+        with self.assertRaises(module.RetentionReviewError):
+            module.review_plan(plan_doc, decisions)
+
+    def test_invalid_root_in_plan_is_rejected(self):
+        plan_doc = plan()
+        plan_doc["rules"][0]["root"] = "../outside"
+        decisions = decisions_for(plan_doc)
         with self.assertRaises(module.RetentionReviewError):
             module.review_plan(plan_doc, decisions)
 
