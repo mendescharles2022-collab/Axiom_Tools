@@ -6,19 +6,19 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33440070146",
-        "commit:0b980637de843fb1fbef61836da4a03b975dff2f",
-        "result:215-tests-OK",
+        "github-actions:run/33440483913",
+        "commit:4ece56c4612151305f5042ac7809d925a73d88bf",
+        "result:222-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9775877239",
-        "artifact-sha256:bee98e0797da5549b8d63cc0f2fd092d4cc9bcac031ef3dc07bf8c753a5cf8c4"
+        "artifact:v8-release-preflight#9776031310",
+        "artifact-sha256:9a993013b764a242216774e495e71e1c09f2a4a4215d7be8cb1b6665d76c8ddd"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal C01-C28 → B01-B50, reconciliação segura B06/B42, auditoria B49 bidirecional e fluxo B48 não destrutivo Simular → Revisar → Confirmar → Revalidar, com raiz autorizada e fingerprint mtime_ns/SHA-256. O run 33440070146 concluiu com 215 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal C01-C28 → B01-B50, reconciliação segura B06/B42, B49 bidirecional, B48 não destrutivo e preflight B35 consolidando integrity_check, foreign_key_check, invariantes lógicas e auditoria opcional banco ↔ filesystem sobre a mesma fotografia SHA-256. O run 33440483913 concluiu com 222 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
-    {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
-    {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
-    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Duas invariantes de Fechamento já foram confirmadas no runtime preservado, mas ainda não executadas contra cópia real do banco."},
+    {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
+    {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
+    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Duas invariantes confirmadas do Fechamento estão integradas ao tooling, mas ainda não executadas contra cópia real do banco/schema reconciliado."},
     {"gate_id":"BENCHMARK_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Benchmark representativo depende do runtime real."},
     {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Segurança dinâmica depende das rotas reais reconciliadas."},
     {"gate_id":"REPORT_A4","status":"NOT_RUN","evidence":[],"notes":"Preview/impressão final ainda não homologados."},
