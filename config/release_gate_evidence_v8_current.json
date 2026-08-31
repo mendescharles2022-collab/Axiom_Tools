@@ -6,16 +6,16 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33445712854",
-        "commit:57c9af8c54b5a2c8fd49534671cf43a6cad0e5a7",
-        "result:328-tests-OK",
+        "github-actions:run/33446139531",
+        "commit:7181b47a58a73843ff3dd8e10ff5947081bd81b1",
+        "result:336-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9777930296",
-        "artifact-sha256:11c10192254f7de653a00c318e0de3b39910184b1a3f320a2fa6cb7e576f1a38"
+        "artifact:v8-release-preflight#9778084041",
+        "artifact-sha256:b958e73077c5e0dadd1f7372bdbe3d22d44890ad0cc14bbf62c4bb4854263cc9"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui o handoff único B06 e seu launcher Windows parametrizado, além dos toolings B04/B08/B28/B32/B34/B35/B36/B38/B40/B41/B42/B48/B49 e mapa causal 28/28. O launcher não contém drive operacional hardcoded nem comandos de remoção/movimentação, chama a implementação Python canônica e valida no manifesto origem intacta e separação código/banco. O run 33445712854 concluiu com 328 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS. A execução física contra o runtime Windows real ainda não ocorreu."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui handoff único B06, launcher Windows e autodiscovery SQLite conservadora: seleção automática somente quando exatamente um arquivo com cabeçalho SQLite válido é encontrado fora das áreas podadas; zero ou múltiplos candidatos exigem escolha explícita. O manifesto registra EXPLICIT ou AUTO_DISCOVERED_SINGLE. Permanecem os toolings B04/B08/B28/B32/B34/B35/B36/B38/B40/B41/B42/B48/B49 e mapa causal 28/28. O run 33446139531 concluiu com 336 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS. A execução física contra o runtime Windows real ainda não ocorreu."
     },
-    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Handoff B06 e launcher Windows estão testados, porém a instalação Windows real ainda não foi materializada e reconciliada."},
+    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Handoff B06, launcher Windows e autodiscovery conservadora estão testados, porém a instalação Windows real ainda não foi materializada e reconciliada."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
     {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
     {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes e auditores estruturais estão integrados ao tooling, mas ainda não executados contra a cópia do banco/schema operacional reconciliado."},
