@@ -27,6 +27,13 @@ def _list_of_strings(value: object, field: str, *, allow_empty: bool = True) -> 
     return result
 
 
+def _required_text(value: object, field: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        raise SecurityPreflightError(f"{field} é obrigatório.")
+    return text
+
+
 def normalize_spec(spec: dict) -> dict:
     if not isinstance(spec, dict) or spec.get("version") != SPEC_VERSION:
         raise SecurityPreflightError(f"Spec deve ser objeto version={SPEC_VERSION}.")
@@ -57,22 +64,54 @@ def normalize_spec(spec: dict) -> dict:
         path = str(raw.get("path", "")).strip()
         if not path.startswith("/"):
             raise SecurityPreflightError(f"{ident}: path deve iniciar por '/'.")
-        methods = sorted(set(_list_of_strings(raw.get("methods", []), f"{ident}.methods", allow_empty=False)))
+        methods = sorted(
+            set(
+                _list_of_strings(
+                    raw.get("methods", []),
+                    f"{ident}.methods",
+                    allow_empty=False,
+                )
+            )
+        )
         methods = [method.upper() for method in methods]
         if not set(methods) <= route_audit.MUTATING:
-            raise SecurityPreflightError(f"{ident}: methods só pode conter POST/PUT/PATCH/DELETE.")
+            raise SecurityPreflightError(
+                f"{ident}: methods só pode conter POST/PUT/PATCH/DELETE."
+            )
         required = _list_of_strings(
             raw.get("required_decorators", []),
             f"{ident}.required_decorators",
             allow_empty=False,
         )
+        if raw.get("reviewed") is not True:
+            raise SecurityPreflightError(
+                f"{ident}: reviewed=true é obrigatório após revisão explícita da regra."
+            )
+        business_purpose = _required_text(
+            raw.get("business_purpose"), f"{ident}.business_purpose"
+        )
+        reviewer = _required_text(raw.get("reviewer"), f"{ident}.reviewer")
+        evidence = _list_of_strings(
+            raw.get("evidence", []), f"{ident}.evidence", allow_empty=False
+        )
+        allow_csrf_exempt = raw.get("allow_csrf_exempt", False) is True
+        csrf_reason = str(raw.get("csrf_reason") or "").strip()
+        if allow_csrf_exempt and not csrf_reason:
+            raise SecurityPreflightError(
+                f"{ident}: csrf_reason é obrigatório quando allow_csrf_exempt=true."
+            )
         rules.append(
             {
                 "id": ident,
                 "path": path,
                 "methods": methods,
                 "required_decorators": required,
-                "allow_csrf_exempt": raw.get("allow_csrf_exempt", False) is True,
+                "allow_csrf_exempt": allow_csrf_exempt,
+                "csrf_reason": csrf_reason,
+                "reviewed": True,
+                "business_purpose": business_purpose,
+                "reviewer": reviewer,
+                "evidence": evidence,
             }
         )
 
@@ -176,7 +215,9 @@ def build_preflight(root: Path, spec: dict) -> dict:
             }
         )
 
-    unused = sorted(set(rule["id"] for rule in normalized["rules"]) - matched_rule_ids)
+    unused = sorted(
+        set(rule["id"] for rule in normalized["rules"]) - matched_rule_ids
+    )
     for rule_id in unused:
         findings.append(
             {
@@ -196,8 +237,12 @@ def build_preflight(root: Path, spec: dict) -> dict:
         "summary": {
             "routes": static["summary"]["routes"],
             "mutating_routes": len(mutating),
-            "classified_mutating_routes": sum(1 for item in route_results if item["rule_id"]),
-            "approved_mutating_routes": sum(1 for item in route_results if item["ok"]),
+            "classified_mutating_routes": sum(
+                1 for item in route_results if item["rule_id"]
+            ),
+            "approved_mutating_routes": sum(
+                1 for item in route_results if item["ok"]
+            ),
             "unused_rules": len(unused),
             "blocking_findings": len(findings),
         },
@@ -220,11 +265,15 @@ def write_report(path: Path, report: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Pré-homologação estática de autenticação/autorização das rotas mutáveis V8."
+        description=(
+            "Pré-homologação estática de autenticação/autorização das rotas mutáveis V8."
+        )
     )
     parser.add_argument("--root", required=True, type=Path)
     parser.add_argument("--spec", required=True, type=Path)
-    parser.add_argument("--output", type=Path, default=Path("SECURITY_PREFLIGHT.json"))
+    parser.add_argument(
+        "--output", type=Path, default=Path("SECURITY_PREFLIGHT.json")
+    )
     args = parser.parse_args()
     try:
         report = build_preflight(args.root, load_spec(args.spec))
@@ -233,9 +282,16 @@ def main() -> int:
         print(f"SECURITY_PREFLIGHT_ERRO: {exc}", file=sys.stderr)
         return 2
 
-    print("SECURITY_PREFLIGHT_OK" if report["static_ok"] else "SECURITY_PREFLIGHT_BLOQUEADO")
+    print(
+        "SECURITY_PREFLIGHT_OK"
+        if report["static_ok"]
+        else "SECURITY_PREFLIGHT_BLOQUEADO"
+    )
     print(f"Rotas mutáveis: {report['summary']['mutating_routes']}")
-    print(f"Aprovadas estaticamente: {report['summary']['approved_mutating_routes']}")
+    print(
+        "Aprovadas estaticamente: "
+        f"{report['summary']['approved_mutating_routes']}"
+    )
     print(f"Achados bloqueantes: {report['summary']['blocking_findings']}")
     print("Runtime homologado: NÃO")
     return 0 if report["static_ok"] else 4
