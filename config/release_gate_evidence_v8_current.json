@@ -6,20 +6,21 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33452021223",
-        "commit:47da595d2eed0d6a18176bc4eddb0cc2dd3e6891",
-        "result:494-tests-OK",
+        "github-actions:run/33452559940",
+        "commit:9939b660d17c68c6848cb8d9cb5e24fffefd38dd",
+        "result:514-tests-OK",
         "powershell-smoke:POWERSHELL_B06_SMOKE_OK",
+        "powershell-consumer-smoke:POWERSHELL_B06_CONSUMER_SMOKE_OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9780092100",
-        "artifact-sha256:21010ecfbd5bf75d2fed3b691ba5a5a11c6e63de78878e6eafa0b40af4891db4"
+        "artifact:v8-release-preflight#9780276903",
+        "artifact-sha256:511d75258d3f7f28a519708d61407963ef6bf2c0ecf8b74051252464b5432e1f"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco da Etapa 78 preserva todos os toolings anteriores e acrescenta contrato operacional de UI parametrizável para B43 Pendências, B44 A4, B46 Monitor e B47 Sintegra, incluindo política canônica e regressões que exigem separadamente backend Sintegra e atalho href visível. O run 33452021223 concluiu com 494 testes OK, POWERSHELL_B06_SMOKE_OK e preflight válido. O snapshot passa a ter 0 PRONTO_PARA_CORRIGIR, 46 EM_CORRECAO e 4 BLOQUEADO_POR_RUNTIME, mantendo 0/50 B homologados, 0/28 C PASS e mapa causal 28/28. A execução física contra o runtime Windows real ainda não ocorreu."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. A Etapa 79 completa em tooling a cadeia B06 produtor→consumidor: o mesmo smoke PowerShell produz o handoff, valida manifesto/autodiscovery/origem intacta, consome o handoff em staging isolado, valida hashes e manifesto interno, executa reconciliação runtime↔repositório e preflight SQLite, comprova handoff intacto e mantém V8 não homologada. O run 33452559940 concluiu com 514 testes OK, POWERSHELL_B06_SMOKE_OK, POWERSHELL_B06_CONSUMER_SMOKE_OK e preflight válido. O snapshot permanece com 0 PRONTO_PARA_CORRIGIR, 46 EM_CORRECAO e 4 BLOQUEADO_POR_RUNTIME. A instalação Windows física ainda não foi coletada/consumida, portanto RUNTIME_BASELINE e gates de banco continuam NOT_RUN no mundo real."
     },
-    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Handoff B06, launcher, autodiscovery e smoke PowerShell estão testados, porém a instalação Windows física real ainda não foi materializada e reconciliada."},
-    {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
-    {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
-    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes e auditores estruturais estão integrados ao tooling, mas ainda não executados contra a cópia do banco/schema operacional reconciliado."},
+    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Produtor e consumidor B06 estão testados ponta a ponta em runtime descartável, mas a instalação Windows física real ainda não foi coletada, consumida e reconciliada."},
+    {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"O consumidor executa preflight SQLite sobre a cópia do handoff em testes; falta executar sobre a cópia SQLite da instalação física real."},
+    {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"O consumidor executa preflight SQLite sobre a cópia do handoff em testes; falta executar sobre a cópia SQLite da instalação física real."},
+    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes e auditores estruturais estão integrados ao consumidor B06, mas ainda não executados contra a fotografia operacional física real."},
     {"gate_id":"BENCHMARK_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Benchmark representativo depende do runtime real."},
     {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"B38 possui preflight estático testado; falta executar contra a árvore reconciliada e comprovar autenticação, autorização de negócio, CSRF, sessão e manipulação de IDs no runtime real."},
     {"gate_id":"REPORT_A4","status":"NOT_RUN","evidence":[],"notes":"Preview/impressão final ainda não homologados."},
