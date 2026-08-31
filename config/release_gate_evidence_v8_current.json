@@ -6,16 +6,16 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33444558459",
-        "commit:067d626c0ddaa96ffb1588f358dfa18b90d1136c",
-        "result:292-tests-OK",
+        "github-actions:run/33444873556",
+        "commit:af23e64da69ac69fe92db9ec39a56ba98dbad03e",
+        "result:312-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9777519633",
-        "artifact-sha256:547de95d40a7551676e20e243b43b125502e6e8b8cd6a5a86ac2320b3050a136"
+        "artifact:v8-release-preflight#9777628205",
+        "artifact-sha256:9fe1d37c0e51e17920f1dca7a706356a77bffa25ea1285fff920f8af4e63fdec"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção, B35 banco, B41 rollback, B42 identidade, B38 segurança, B34 string↔Enum, B40 CAS, B28 idempotência/retry, B04 linhagem de versões e B08 auditor de histórico de transições/chamadas com regressão explícita do caso T L. O run 33444558459 concluiu com 292 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui B04/B08/B28/B32/B34/B35/B36/B38/B40/B41/B42/B48/B49 em tooling/reconciliação, além do mapa causal 28/28. B36 ganhou planner read-only de migração estado global→fonte e B32 ganhou validação de competência temporal/proveniência IRRF baseada em política explícita. O run 33444873556 concluiu com 312 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
     },
-    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
+    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado; B06 continua o principal gate estrutural."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
     {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
     {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes e auditores estruturais estão integrados ao tooling, mas ainda não executados contra cópia real do banco/schema reconciliado."},
