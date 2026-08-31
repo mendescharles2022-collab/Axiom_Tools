@@ -77,7 +77,7 @@ def policy() -> dict:
                 "min_files": 2,
                 "require_any": [
                     {"rule_id": "backend_sintegra", "regexes": [r"sintegra_go_url", r"sintegra_nacional_url"]},
-                    {"rule_id": "atalho_visivel", "regexes": [r"href\s*=\s*['\"][^'\"]*sintegra", r"sintegra_go_url", r"sintegra_nacional_url"]},
+                    {"rule_id": "atalho_visivel", "regexes": [r"href\s*=\s*['\"][^'\"]*sintegra"]},
                 ],
             },
         ]
@@ -162,24 +162,18 @@ class OperationalUiContractTests(unittest.TestCase):
             root = Path(tmp)
             self._write_valid_fixture(root)
             write(root, "templates/inscricoes.html", "<div>Inscrição Estadual</div>\n")
-            # Backend sozinho não satisfaz a intenção visual quando o template não usa o marcador.
-            local_policy = policy()
-            sintegra = next(x for x in local_policy["contracts"] if x["id"] == "B47_SINTEGRA_ATALHOS")
-            sintegra["require_any"][1]["regexes"] = [r"href\s*=\s*['\"][^'\"]*sintegra"]
-            report = module.audit(root, local_policy)
+            report = module.audit(root, policy())
             self.assertTrue(any(x.get("rule_id") == "atalho_visivel" for x in report["findings"]))
 
     def test_missing_target_files_blocks_contract(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            root.mkdir()
             report = module.audit(root, policy())
             self.assertIn("UI_CONTRACT_FILES_MISSING", [x["code"] for x in report["findings"]])
 
     def test_duplicate_contract_id_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            root.mkdir()
             p = policy()
             p["contracts"].append(dict(p["contracts"][0]))
             with self.assertRaises(module.UiContractError):
@@ -188,7 +182,6 @@ class OperationalUiContractTests(unittest.TestCase):
     def test_invalid_regex_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            root.mkdir()
             p = {"contracts": [{"id": "x", "globs": ["*.txt"], "min_files": 0, "require": [{"regex": "["}]}]}
             with self.assertRaises(module.UiContractError):
                 module.audit(root, p)
