@@ -1,16 +1,17 @@
 # Rastreador canônico — Execução de correção V8
 
 Data: 31/08/2026  
-Status: **DIAGNÓSTICO B01–B50 REVISTO / 0 INSPEÇÕES PENDENTES / TOOLING ATÉ ETAPA 71 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
+Status: **DIAGNÓSTICO B01–B50 REVISTO / 0 INSPEÇÕES PENDENTES / TOOLING ATÉ ETAPA 72 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico atual do tooling
 
-GitHub Actions run `33446139531`  
-Commit `7181b47a58a73843ff3dd8e10ff5947081bd81b1`  
+GitHub Actions run `33446425395`  
+Commit `49b9093fcd3060f020dd3dfbb7eee58d2913a7bf`  
 Python `3.12.14`
 
 ```text
-Ran 336 tests in 1.585s
+POWERSHELL_B06_SMOKE_OK
+Ran 338 tests in 1.491s
 OK
 ```
 
@@ -25,12 +26,12 @@ Preflight do mesmo marco:
 
 Artifact `v8-release-preflight`:
 
-- ID `9778084041`;
-- SHA-256 `b958e73077c5e0dadd1f7372bdbe3d22d44890ad0cc14bbf62c4bb4854263cc9`.
+- ID `9778186417`;
+- SHA-256 `3e7d358b201025096378ba505b35fbd237c38c76f52f8c0cf69a921e6d9a7d42`.
 
 Este é o marco de tooling. Ele **não** representa homologação da árvore operacional integral.
 
-## 2. Evolução canônica — Etapas 42–71
+## 2. Evolução canônica — Etapas 42–72
 
 A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patrimônio válido.
 
@@ -62,7 +63,8 @@ A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patri
 - Etapa 68 — B32, competência temporal/proveniência IRRF;
 - Etapa 69 — B06, handoff único runtime: código/config + SQLite separado + manifesto comum;
 - Etapa 70 — B06, launcher Windows parametrizado para executar o handoff em um comando;
-- Etapa 71 — B06, autodiscovery SQLite conservadora e `-Database` opcional somente quando a seleção for inequívoca.
+- Etapa 71 — B06, autodiscovery SQLite conservadora e `-Database` opcional somente quando a seleção for inequívoca;
+- Etapa 72 — B06, smoke end-to-end do launcher sob PowerShell no CI, com runtime e SQLite reais descartáveis e trigger obrigatório para `scripts/*.ps1`.
 
 Resultado da fase: **nenhum B permanece em mera inspeção sem critério executável**.
 
@@ -103,12 +105,13 @@ Tooling já preparado/testado:
 - handoff único da Etapa 69 com ZIP de código/configuração + banco separado + relatório + manifesto comum;
 - prova de não mutação da origem;
 - equivalência efetiva de schema origem × cópia testada;
-- launcher Windows da Etapa 70, parametrizado, sem drive hardcoded e sem comandos de remoção/movimentação;
-- autodiscovery da Etapa 71, limitada a exatamente um SQLite com cabeçalho válido; zero/múltiplos exigem caminho explícito e o manifesto registra `database_selection`.
+- launcher PowerShell da Etapa 70, parametrizado, sem drive hardcoded e sem comandos de remoção/movimentação;
+- autodiscovery da Etapa 71, limitada a exatamente um SQLite com cabeçalho válido; zero/múltiplos exigem caminho explícito e o manifesto registra `database_selection`;
+- smoke PowerShell da Etapa 72, executando o launcher real em CI e exigindo `POWERSHELL_B06_SMOKE_OK`.
 
 B06 continua `BLOQUEADO_POR_RUNTIME` até:
 
-1. executar o launcher contra a instalação Windows real;
+1. executar o launcher contra a instalação Windows física real;
 2. materializar o ZIP seguro e a cópia SQLite real;
 3. auditar/reconciliar runtime ↔ repositório;
 4. executar os preflights estruturais sobre a fotografia real;
@@ -178,7 +181,7 @@ Preservar melhorias válidas de Pendências e A4; simplificar monitor e restaura
 
 ### B45
 
-Há paginação, mas persistem N+1, `status_sessao()` pesado e polling. Benchmark >600 clientes depende do runtime real.
+Há paginação, mas persistem N+1, `status_sessao()` pesado e polling. Benchmark >600 clientes depende da árvore real.
 
 ### B48/B49
 
@@ -221,4 +224,4 @@ Modo final continua exigindo cumulativamente:
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-A auditoria/tooling avançou até a Etapa 71. O gargalo agora é físico: executar o launcher B06 na instalação Windows real, materializar a fotografia segura e iniciar as correções integradas sobre a árvore operacional correta.
+A auditoria/tooling avançou até a Etapa 72. O gargalo agora é exclusivamente material em B06: executar o launcher na instalação Windows física, trazer a fotografia segura e iniciar as correções integradas sobre a árvore operacional correta.
