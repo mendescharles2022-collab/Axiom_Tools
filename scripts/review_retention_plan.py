@@ -66,8 +66,13 @@ def candidate_keys(plan: dict) -> dict[tuple[str, str], dict]:
         if not isinstance(rule, dict):
             raise RetentionReviewError("Regra inválida no plano.")
         rule_id = str(rule.get("id", "")).strip()
+        root_key = str(rule.get("root", "")).strip()
         if not ID_RE.fullmatch(rule_id):
             raise RetentionReviewError(f"ID de regra inválido: {rule_id!r}")
+        if not ID_RE.fullmatch(root_key):
+            raise RetentionReviewError(
+                f"Raiz lógica inválida em {rule_id}: {root_key!r}"
+            )
         items = rule.get("items")
         if not isinstance(items, list):
             raise RetentionReviewError(f"Items inválidos em {rule_id}.")
@@ -86,7 +91,10 @@ def candidate_keys(plan: dict) -> dict[tuple[str, str], dict]:
                 raise RetentionReviewError(
                     f"Candidato duplicado no plano: {rule_id}/{rel}"
                 )
-            result[key] = item
+            result[key] = {
+                "root": root_key,
+                "item": item,
+            }
     return result
 
 
@@ -160,15 +168,18 @@ def review_plan(plan: dict, decisions_doc: dict) -> dict:
                     f"ELIGIBLE exige evidência: {rule_id}/{rel}"
                 )
 
+        candidate = candidates[key]
+        item = candidate["item"]
         reviewed[key] = {
             "rule_id": rule_id,
+            "root": candidate["root"],
             "path": rel,
             "category": category,
             "decision": decision,
             "reason": reason,
             "evidence": evidence,
-            "size": int(candidates[key].get("size") or 0),
-            "age_days": candidates[key].get("age_days"),
+            "size": int(item.get("size") or 0),
+            "age_days": item.get("age_days"),
         }
 
     missing = [
