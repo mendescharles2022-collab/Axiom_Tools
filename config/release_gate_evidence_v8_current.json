@@ -6,14 +6,14 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33444141491",
-        "commit:09f331ea07c222388b3911ba8e43587e495284c2",
-        "result:280-tests-OK",
+        "github-actions:run/33444558459",
+        "commit:067d626c0ddaa96ffb1588f358dfa18b90d1136c",
+        "result:292-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9777371725",
-        "artifact-sha256:e1b7dc55a87fb80cc7755f7ceefa18b90a74c326e697aed5afe223a43302ad6d"
+        "artifact:v8-release-preflight#9777519633",
+        "artifact-sha256:547de95d40a7551676e20e243b43b125502e6e8b8cd6a5a86ac2320b3050a136"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção, B35 banco, B41 rollback, B42 identidade, B38 segurança, B34 string↔Enum, B40 CAS, B28 idempotência/retry e B04 linhagem de versões/retificações. O run 33444141491 concluiu com 280 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção, B35 banco, B41 rollback, B42 identidade, B38 segurança, B34 string↔Enum, B40 CAS, B28 idempotência/retry, B04 linhagem de versões e B08 auditor de histórico de transições/chamadas com regressão explícita do caso T L. O run 33444558459 concluiu com 292 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
