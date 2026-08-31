@@ -48,6 +48,8 @@ PLACEHOLDER_RE = re.compile(
 )
 LABEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
+# Somente artefatos versionáveis. Configuração entra na whitelist, mas continua
+# sujeita às mesmas barreiras contra .env, credenciais, certificados e segredos.
 CANDIDATES = (
     ("app/src", "app/src"),
     ("src", "src"),
@@ -63,11 +65,14 @@ CANDIDATES = (
     ("templates", "templates"),
     ("app/static", "app/static"),
     ("static", "static"),
+    ("app/config", "app/config"),
+    ("config", "config"),
     ("app/pyproject.toml", "app/pyproject.toml"),
     ("app/requirements.txt", "app/requirements.txt"),
     ("app/requirements-dev.txt", "app/requirements-dev.txt"),
     ("pyproject.toml", "pyproject.toml"),
     ("requirements.txt", "requirements.txt"),
+    ("requirements-dev.txt", "requirements-dev.txt"),
 )
 
 
@@ -85,8 +90,8 @@ class ExportError(RuntimeError):
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest().upper()
 
@@ -144,13 +149,8 @@ def copy_safe(source: Path, destination: Path, root: Path) -> bool:
 
     if source.is_dir():
         def ignore(directory: str, names: list[str]) -> set[str]:
-            ignored: set[str] = set()
             base = Path(directory)
-            for name in names:
-                candidate = base / name
-                if forbidden_name(candidate):
-                    ignored.add(name)
-            return ignored
+            return {name for name in names if forbidden_name(base / name)}
 
         shutil.copytree(source, destination, dirs_exist_ok=True, ignore=ignore)
     else:
@@ -162,8 +162,7 @@ def copy_safe(source: Path, destination: Path, root: Path) -> bool:
 
 
 def prune_forbidden(stage: Path) -> None:
-    items = sorted(stage.rglob("*"), key=lambda p: len(p.parts), reverse=True)
-    for path in items:
+    for path in sorted(stage.rglob("*"), key=lambda p: len(p.parts), reverse=True):
         if not path.exists() and not path.is_symlink():
             continue
         if is_reparse_point(path):
@@ -199,17 +198,13 @@ def find_embedded_secrets(stage: Path) -> list[str]:
             content = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-
         if PRIVATE_KEY_RE.search(content):
             suspicious.append(path.relative_to(stage).as_posix())
             continue
-
         for match in ASSIGNMENT_RE.finditer(content):
-            value = match.group(2).strip()
-            if PLACEHOLDER_RE.search(value):
-                continue
-            suspicious.append(path.relative_to(stage).as_posix())
-            break
+            if not PLACEHOLDER_RE.search(match.group(2).strip()):
+                suspicious.append(path.relative_to(stage).as_posix())
+                break
     return sorted(set(suspicious))
 
 
@@ -230,13 +225,13 @@ def copy_entrypoints(root: Path, stage: Path, copied: list[str]) -> None:
 
 
 def output_overlaps_source(root: Path, output_dir: Path) -> str | None:
+    output_resolved = output_dir.resolve()
     for source_rel, _ in CANDIDATES:
         source = root / source_rel
         if not source.exists() or not source.is_dir():
             continue
-        source_resolved = source.resolve()
         try:
-            output_dir.relative_to(source_resolved)
+            output_resolved.relative_to(source.resolve())
             return source_rel
         except ValueError:
             pass
@@ -249,35 +244,27 @@ def generate_manifest(stage: Path) -> list[dict[str, str | int]]:
         if not path.is_file() or path.name in {MANIFEST_NAME, INFO_NAME}:
             continue
         stat_result = path.stat()
-        rows.append(
-            {
-                "RelativePath": path.relative_to(stage).as_posix(),
-                "Length": stat_result.st_size,
-                "SHA256": sha256(path),
-                "LastWriteUtc": datetime.fromtimestamp(
-                    stat_result.st_mtime, tz=timezone.utc
-                ).isoformat(),
-            }
-        )
+        rows.append({
+            "RelativePath": path.relative_to(stage).as_posix(),
+            "Length": stat_result.st_size,
+            "SHA256": sha256(path),
+            "LastWriteUtc": datetime.fromtimestamp(stat_result.st_mtime, tz=timezone.utc).isoformat(),
+        })
     return rows
 
 
 def write_manifest(stage: Path, rows: list[dict[str, str | int]]) -> None:
-    manifest_path = stage / MANIFEST_NAME
-    with manifest_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["RelativePath", "Length", "SHA256", "LastWriteUtc"]
-        )
+    with (stage / MANIFEST_NAME).open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["RelativePath", "Length", "SHA256", "LastWriteUtc"])
         writer.writeheader()
         writer.writerows(rows)
 
 
-def write_info(stage: Path, root: Path, copied: list[str], count: int) -> None:
+def write_info(stage: Path, copied: list[str], count: int) -> None:
+    # O arquivo viaja para fora do servidor. Não registrar root/staging absolutos.
     lines = [
         "Axiom Tools - exportação segura para reconciliação V8",
         f"Gerado em: {datetime.now(timezone.utc).isoformat()}",
-        f"Raiz lida: {root}",
-        f"Staging: {stage}",
         f"Arquivos exportados: {count}",
         "",
         "Candidatos encontrados:",
@@ -293,24 +280,21 @@ def write_info(stage: Path, root: Path, copied: list[str], count: int) -> None:
         "- sem junction/symlink/reparse point nas origens copiadas",
         "- bloqueio se houver possível segredo hardcoded",
         "",
+        "Configurações-modelo e metadata de release podem ser exportadas somente quando passam pelos filtros acima.",
+        "Nenhum caminho absoluto da instalação é gravado neste artefato.",
         "Nenhum arquivo operacional de origem foi alterado ou removido.",
-        "A única escrita ocorre no diretório de saída informado/configurado.",
     ]
     (stage / INFO_NAME).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def create_zip(stage: Path, zip_path: Path) -> None:
-    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(stage.rglob("*")):
             if path.is_file():
-                zf.write(path, path.relative_to(stage).as_posix())
+                archive.write(path, path.relative_to(stage).as_posix())
 
 
-def export_runtime(
-    root: Path,
-    output_dir: Path | None = None,
-    label: str = "runtime-reconciliation-v8",
-) -> ExportResult:
+def export_runtime(root: Path, output_dir: Path | None = None, label: str = "runtime-reconciliation-v8") -> ExportResult:
     if not LABEL_RE.fullmatch(label):
         raise ExportError("Label inválido; use apenas letras, números, ponto, sublinhado ou hífen.")
 
@@ -321,9 +305,7 @@ def export_runtime(
     output_dir = (output_dir or (root / "temp")).resolve()
     overlap = output_overlaps_source(root, output_dir)
     if overlap:
-        raise ExportError(
-            f"Diretório de saída não pode ficar dentro da origem exportada '{overlap}': {output_dir}"
-        )
+        raise ExportError(f"Diretório de saída não pode ficar dentro da origem exportada '{overlap}': {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
@@ -334,12 +316,9 @@ def export_runtime(
 
     stage.mkdir(parents=True)
     copied: list[str] = []
-
     try:
         for source_rel, destination_rel in CANDIDATES:
-            source = root / source_rel
-            destination = stage / destination_rel
-            if copy_safe(source, destination, root):
+            if copy_safe(root / source_rel, stage / destination_rel, root):
                 copied.append(source_rel)
 
         copy_entrypoints(root, stage, copied)
@@ -347,43 +326,28 @@ def export_runtime(
 
         forbidden = find_forbidden(stage)
         if forbidden:
-            raise ExportError(
-                "Conteúdo proibido/sensível permaneceu no export:\n" + "\n".join(forbidden)
-            )
+            raise ExportError("Conteúdo proibido/sensível permaneceu no export:\n" + "\n".join(forbidden))
 
         suspicious = find_embedded_secrets(stage)
         if suspicious:
-            raise ExportError(
-                "Possível segredo hardcoded encontrado; revise:\n" + "\n".join(suspicious)
-            )
+            raise ExportError("Possível segredo hardcoded encontrado; revise:\n" + "\n".join(suspicious))
 
-        runtime_src = stage / "app" / "src"
-        fallback_src = stage / "src"
-        if not runtime_src.is_dir() and not fallback_src.is_dir():
+        if not (stage / "app" / "src").is_dir() and not (stage / "src").is_dir():
             raise ExportError("Nenhuma árvore app/src ou src foi encontrada na raiz operacional.")
 
         rows = generate_manifest(stage)
         write_manifest(stage, rows)
-        write_info(stage, root, copied, len(rows))
+        write_info(stage, copied, len(rows))
         create_zip(stage, zip_path)
-
-        return ExportResult(
-            stage=stage,
-            zip_path=zip_path,
-            zip_sha256=sha256(zip_path),
-            file_count=len(rows),
-        )
+        return ExportResult(stage, zip_path, sha256(zip_path), len(rows))
     except Exception:
         shutil.rmtree(stage, ignore_errors=True)
-        if zip_path.exists():
-            zip_path.unlink(missing_ok=True)
+        zip_path.unlink(missing_ok=True)
         raise
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Exporta somente código/testes controlados do runtime Axiom Tools para reconciliação."
-    )
+    parser = argparse.ArgumentParser(description="Exporta código, testes e configuração-modelo do runtime Axiom Tools para reconciliação segura.")
     parser.add_argument("--root", required=True, type=Path, help="Raiz operacional do Axiom Tools")
     parser.add_argument("--output-dir", type=Path, default=None, help="Diretório de saída")
     parser.add_argument("--label", default="runtime-reconciliation-v8")
@@ -399,8 +363,8 @@ def main() -> int:
         return 3
 
     print("EXPORT_V8_OK")
-    print(f"Stage: {result.stage}")
-    print(f"ZIP:   {result.zip_path}")
+    print(f"Stage: {result.stage.name}")
+    print(f"ZIP:   {result.zip_path.name}")
     print(f"SHA256: {result.zip_sha256}")
     print(f"Arquivos: {result.file_count}")
     print("Nenhum arquivo operacional de origem foi alterado; somente a saída foi criada.")
