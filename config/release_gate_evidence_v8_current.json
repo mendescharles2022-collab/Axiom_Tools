@@ -6,15 +6,15 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33447553697",
-        "commit:74074198aa79cecfe23c169ac6ed2cec8caa3cf2",
-        "result:388-tests-OK",
+        "github-actions:run/33447976729",
+        "commit:d3df113b297c86db72531c70537eceb5b1e9f6f6",
+        "result:414-tests-OK",
         "powershell-smoke:POWERSHELL_B06_SMOKE_OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9778573414",
-        "artifact-sha256:d056e2c3339696e8748f891f0a7b2d68686958aa7cfa8b4bc515115aa74cdbf5"
+        "artifact:v8-release-preflight#9778709806",
+        "artifact-sha256:c341df455b483d37824709c8da1ddda75c3ea69130113b155edb867f90c59aaf"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual preserva o handoff B06 e os auditores B01/B02/B03/B39, acrescentando guardrails executáveis para B07/B09/B10 universo operacional e B11/B37 semântica de estados. O run 33447553697 concluiu com 388 testes OK, POWERSHELL_B06_SMOKE_OK e preflight válido, mantendo 0/50 B homologados, 0/28 C PASS e mapa causal 28/28. A execução física contra o runtime Windows real ainda não ocorreu."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual preserva os toolings anteriores e acrescenta planner de composição documental/econômica B12/B13/B14/B17/B50 e validador de descoberta/identidade/vínculo B15/B16. Há regressões explícitas para Jair, Leosmar, reemissão, versões, mensal+rescisório e PF/CAEPF. O run 33447976729 concluiu com 414 testes OK, POWERSHELL_B06_SMOKE_OK e preflight válido, mantendo 0/50 B homologados, 0/28 C PASS e mapa causal 28/28. A execução física contra o runtime Windows real ainda não ocorreu."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Handoff B06, launcher, autodiscovery e smoke PowerShell estão testados, porém a instalação Windows física real ainda não foi materializada e reconciliada."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
