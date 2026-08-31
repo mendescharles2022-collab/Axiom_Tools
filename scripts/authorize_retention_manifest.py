@@ -43,6 +43,19 @@ def computed_review_hash(review_doc: dict) -> str:
     return calculated
 
 
+def validate_reference(reference: str) -> None:
+    if not REFERENCE_RE.fullmatch(reference):
+        raise RetentionAuthorizationError("reference inválida.")
+    normalized = reference.replace("\\", "/")
+    if (
+        normalized.startswith("/")
+        or normalized.endswith("/")
+        or ".." in normalized.split("/")
+        or "//" in normalized
+    ):
+        raise RetentionAuthorizationError("reference inválida/insegura.")
+
+
 def authorize_manifest(review_doc: dict, confirmation: dict) -> dict:
     if confirmation.get("version") != VERSION:
         raise RetentionAuthorizationError(
@@ -66,8 +79,7 @@ def authorize_manifest(review_doc: dict, confirmation: dict) -> dict:
     reference = str(confirmation.get("reference", "")).strip()
     if len(approver) < 2 or len(approver) > 120:
         raise RetentionAuthorizationError("approver inválido.")
-    if not REFERENCE_RE.fullmatch(reference):
-        raise RetentionAuthorizationError("reference inválida.")
+    validate_reference(reference)
 
     items = review_doc.get("items")
     if not isinstance(items, list):
