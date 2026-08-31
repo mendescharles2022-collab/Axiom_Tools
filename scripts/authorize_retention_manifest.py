@@ -102,14 +102,24 @@ def authorize_manifest(review_doc: dict, confirmation: dict) -> dict:
                 f"Item elegível sem evidência: {item.get('path')!r}"
             )
         rule_id = str(item.get("rule_id", "")).strip()
+        root_key = str(item.get("root", "")).strip()
         path = str(item.get("path", "")).strip().replace("\\", "/")
-        if not rule_id or not path or path.startswith("/") or ".." in Path(path).parts:
+        if not review.ID_RE.fullmatch(rule_id):
             raise RetentionAuthorizationError(
-                f"Item elegível com identificação/caminho inseguro: {path!r}"
+                f"Item elegível com rule_id inválido: {rule_id!r}"
+            )
+        if not review.ID_RE.fullmatch(root_key):
+            raise RetentionAuthorizationError(
+                f"Item elegível sem raiz autorizada válida: {root_key!r}"
+            )
+        if not path or path.startswith("/") or ".." in Path(path).parts:
+            raise RetentionAuthorizationError(
+                f"Item elegível com caminho inseguro: {path!r}"
             )
         eligible.append(
             {
                 "rule_id": rule_id,
+                "root": root_key,
                 "path": path,
                 "category": category,
                 "size": int(item.get("size") or 0),
