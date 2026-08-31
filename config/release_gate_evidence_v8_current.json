@@ -6,14 +6,14 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33440483913",
-        "commit:4ece56c4612151305f5042ac7809d925a73d88bf",
-        "result:222-tests-OK",
+        "github-actions:run/33440693101",
+        "commit:9b593623c78ef2f5d636fde42ce03cc5a8c094bf",
+        "result:228-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9776031310",
-        "artifact-sha256:9a993013b764a242216774e495e71e1c09f2a4a4215d7be8cb1b6665d76c8ddd"
+        "artifact:v8-release-preflight#9776107830",
+        "artifact-sha256:07f86f83627bcc0ecce17a4ed9ed7a7ccf9d92489408bf50fc6feecb06c88d43"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal C01-C28 → B01-B50, reconciliação segura B06/B42, B49 bidirecional, B48 não destrutivo e preflight B35 consolidando integrity_check, foreign_key_check, invariantes lógicas e auditoria opcional banco ↔ filesystem sobre a mesma fotografia SHA-256. O run 33440483913 concluiu com 222 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06/B42 reconciliation, B49 bidirecional, B48 não destrutivo, B35 database homologation preflight e B41 rollback readiness: cobertura mínima code+config, backup SQLite verificável, restore em staging e B35 no banco restaurado sem alterar a origem. O run 33440693101 concluiu com 228 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
@@ -22,7 +22,7 @@
     {"gate_id":"BENCHMARK_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Benchmark representativo depende do runtime real."},
     {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Segurança dinâmica depende das rotas reais reconciliadas."},
     {"gate_id":"REPORT_A4","status":"NOT_RUN","evidence":[],"notes":"Preview/impressão final ainda não homologados."},
-    {"gate_id":"WINDOWS_INSTALLATION","status":"NOT_RUN","evidence":[],"notes":"Pacote final ainda não autorizado."},
-    {"gate_id":"ROLLBACK_WINDOWS","status":"NOT_RUN","evidence":[],"notes":"Rollback físico depende do pacote/runtime final."}
+    {"gate_id":"WINDOWS_INSTALLATION","status":"NOT_RUN","evidence":[],"notes":"Pacote final ainda não autorizado; readiness em staging não substitui instalação física."},
+    {"gate_id":"ROLLBACK_WINDOWS","status":"NOT_RUN","evidence":[],"notes":"Bundle+restore staging estão testados; rollback físico Windows com serviços/ports ainda pendente."}
   ]
 }
