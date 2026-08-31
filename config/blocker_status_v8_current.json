@@ -15,12 +15,12 @@
     {"blocker_id":"B09","state":"EM_CORRECAO","notes":"Auditor de mesa viva implementado/testado: função de Conferência que inclua FECHADA é bloqueada. Falta corrigir a composição real e provar que fechados não retornam ao ciclo vivo."},
     {"blocker_id":"B10","state":"EM_CORRECAO","notes":"Auditor de mesa viva implementado/testado: RETIFICACAO em escopo normal de Conferência é bloqueada. Falta separar o fluxo real de retificação na árvore reconciliada."},
     {"blocker_id":"B11","state":"EM_CORRECAO","notes":"Auditor de semântica de estados implementado/testado: PRONTA→Em conferência é mapeamento proibido, enquanto PRONTA→Aguardando processamento é compatível com a migração. Falta aplicar ao código real e preservar a mitigação válida da V8A baseada em evidência."},
-    {"blocker_id":"B12","state":"PRONTO_PARA_CORRIGIR","notes":"Conference/retificação reduzem múltiplos Extratos ao último documento do tipo."},
-    {"blocker_id":"B13","state":"PRONTO_PARA_CORRIGIR","notes":"Composição federal x FGTS rural ainda depende de identidade/granularidade correta dos documentos."},
-    {"blocker_id":"B14","state":"PRONTO_PARA_CORRIGIR","notes":"Multi-GFD/FGTS rescisório exige composição de evidências economicamente distintas."},
-    {"blocker_id":"B15","state":"PRONTO_PARA_CORRIGIR","notes":"Descoberta→leitura→identidade→vínculo precisa ser comprovada e corrigida no runtime integral."},
-    {"blocker_id":"B16","state":"PRONTO_PARA_CORRIGIR","notes":"Identidade PF/CAEPF permanece requisito crítico para produtor rural."},
-    {"blocker_id":"B17","state":"PRONTO_PARA_CORRIGIR","notes":"Hash físico ainda não representa deduplicação/identidade econômica da obrigação."},
+    {"blocker_id":"B12","state":"EM_CORRECAO","notes":"Planner de composição documental/econômica implementado/testado: múltiplos documentos deixam de depender do último arquivo e são agrupados por identidade física, lógica e econômica. Falta aplicar ao dossiê/parser real e validar C17/C19/C20."},
+    {"blocker_id":"B13","state":"EM_CORRECAO","notes":"Regressão Jair implementada no planner: federal consolidado R$ 511,43 é contado uma vez, enquanto FGTS por matrículas distintas soma R$ 129,68 + R$ 259,36 = R$ 389,04. Falta integrar ao runtime real."},
+    {"blocker_id":"B14","state":"EM_CORRECAO","notes":"Planner distingue componentes aditivos, unidade distinta, mensal/rescisório e versões/substitutivos antes da soma. Falta alimentar com classificação real das GFD e validar rescisões."},
+    {"blocker_id":"B15","state":"EM_CORRECAO","notes":"Validador descoberta→índice→vínculo implementado/testado: documento elegível à Conferência precisa estar descoberto, indexado, vinculado e com proveniência/confiança suficientes. Falta executar sobre o repositório/acervo real."},
+    {"blocker_id":"B16","state":"EM_CORRECAO","notes":"Validador de identidade PF/CAEPF implementado/testado: CPF não substitui identidade de unidade quando CAEPF/matrícula é necessária; mismatches bloqueiam. Falta aplicar às identidades reais e casos rurais."},
+    {"blocker_id":"B17","state":"EM_CORRECAO","notes":"Planner implementado/testado separa deduplicação física, lógica e econômica: SHA igual não pode carregar identidades conflitantes; SHA diferente não autoriza soma; reemissão equivalente não dobra. Falta persistência/integração real."},
     {"blocker_id":"B18","state":"PRONTO_PARA_CORRIGIR","notes":"Decisão manual recuperada permanece global por competência+cliente; precisa ser por fonte/obrigação."},
     {"blocker_id":"B19","state":"PRONTO_PARA_CORRIGIR","notes":"V8F2 contém correção coerente para FGTS zero, porém a validação pode passar sem fixture zero real; regressão integrada ainda pendente."},
     {"blocker_id":"B20","state":"PRONTO_PARA_CORRIGIR","notes":"MEI/DAE precisa prevalecer sobre expectativa genérica de GFD no domínio final."},
@@ -53,6 +53,6 @@
     {"blocker_id":"B47","state":"PRONTO_PARA_CORRIGIR","notes":"Regressão Sintegra isolada: backend mantém URLs, template V1+ removeu botões. Restaurar atalhos sem reverter modelagem de IE."},
     {"blocker_id":"B48","state":"EM_CORRECAO","notes":"Tooling não destrutivo implementado/testado para Simular→Revisar→Confirmar→Revalidar. Candidatos preservam raiz lógica, caminho relativo, mtime_ns e SHA-256; categorias protegidas não podem ser elegíveis e arquivo trocado após confirmação é bloqueado. Executor real e relatório pós-execução dependem de política/schema/acervo reais."},
     {"blocker_id":"B49","state":"BLOQUEADO_POR_RUNTIME","notes":"Tooling bidirecional banco↔filesystem implementado/testado em modo somente leitura, incluindo MISSING, divergência tamanho/SHA e UNINDEXED_FILE. Falta configurar consultas/roots do schema real e executar contra cópia do banco/acervo operacional."},
-    {"blocker_id":"B50","state":"PRONTO_PARA_CORRIGIR","notes":"Hash físico não substitui identidade documental/econômica; deduplicação final depende da composição multi-documento."}
+    {"blocker_id":"B50","state":"EM_CORRECAO","notes":"Planner implementado/testado torna explícito que hash físico não substitui identidade lógica/econômica: arquivos com hashes diferentes podem representar a mesma obrigação e não são somados sem relação declarada. Falta integração/persistência real."}
   ]
 }
