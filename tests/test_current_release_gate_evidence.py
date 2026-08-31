@@ -27,16 +27,16 @@ class CurrentReleaseGateEvidenceTests(unittest.TestCase):
     def test_current_ci_evidence_is_traceable(self):
         report = gate.validate_evidence_manifest(self.document)
         evidence = report["gates"]["CI_TOOLING"]["evidence"]
-        self.assertIn("github-actions:run/33437412590", evidence)
-        self.assertIn("result:178-tests-OK", evidence)
+        self.assertIn("github-actions:run/33439050816", evidence)
+        self.assertIn("result:189-tests-OK", evidence)
         self.assertIn("causal-map:28-of-28", evidence)
         self.assertIn(
-            "commit:a7082171fadac9e42093fdf41a6da8d07d3d07b8",
+            "commit:54fa9c798fc0e5edd633d7e337b5e03143a05019",
             evidence,
         )
-        self.assertIn("artifact:v8-release-preflight#9774913082", evidence)
+        self.assertIn("artifact:v8-release-preflight#9775507384", evidence)
         self.assertIn(
-            "artifact-sha256:04b84bcd46e65092ad351e24448002ca8cd349262034a9eaf8f3f0d63aeb8d98",
+            "artifact-sha256:e812bfce93067067c97c189583dbf2d693e8bd03be88251c6ed6165d74bd2bf9",
             evidence,
         )
         for gate_id in gate.REQUIRED_EVIDENCE_GATES:
