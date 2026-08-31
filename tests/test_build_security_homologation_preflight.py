@@ -23,16 +23,32 @@ def write(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def rule(
+    *,
+    ident="admin-x",
+    path="/admin/x",
+    methods=None,
+    required=None,
+    csrf=False,
+    reviewed=True,
+    evidence=None,
+) -> dict:
+    return {
+        "id": ident,
+        "path": path,
+        "methods": methods or ["POST"],
+        "required_decorators": required or ["login_required", "admin_required"],
+        "allow_csrf_exempt": csrf,
+        "csrf_reason": "Webhook legado isolado e validado." if csrf else "",
+        "reviewed": reviewed,
+        "business_purpose": "Alterar configuração administrativa controlada.",
+        "reviewer": "Auditoria V8",
+        "evidence": evidence if evidence is not None else ["review:B38/admin-x"],
+    }
+
+
 def policy(*, required=None, csrf=False, path="/admin/x", extra_rules=None) -> dict:
-    rules = [
-        {
-            "id": "admin-x",
-            "path": path,
-            "methods": ["POST"],
-            "required_decorators": required or ["login_required", "admin_required"],
-            "allow_csrf_exempt": csrf,
-        }
-    ]
+    rules = [rule(path=path, required=required, csrf=csrf)]
     rules.extend(extra_rules or [])
     return {
         "version": 1,
@@ -122,13 +138,12 @@ class SecurityHomologationPreflightTests(unittest.TestCase):
                 root / "routes.py",
                 "@bp.post('/admin/x')\n@login_required\n@admin_required\ndef x(): pass\n",
             )
-            extra = {
-                "id": "removed-route",
-                "path": "/removed",
-                "methods": ["DELETE"],
-                "required_decorators": ["admin_required"],
-                "allow_csrf_exempt": False,
-            }
+            extra = rule(
+                ident="removed-route",
+                path="/removed",
+                methods=["DELETE"],
+                required=["admin_required"],
+            )
             report = module.build_preflight(root, policy(extra_rules=[extra]))
             self.assertFalse(report["static_ok"])
             self.assertEqual(report["summary"]["unused_rules"], 1)
@@ -140,15 +155,26 @@ class SecurityHomologationPreflightTests(unittest.TestCase):
                 root / "routes.py",
                 "@bp.post('/admin/x')\n@login_required\n@admin_required\ndef x(): pass\n",
             )
-            duplicate = {
-                "id": "duplicate",
-                "path": "/admin/x",
-                "methods": ["POST"],
-                "required_decorators": ["login_required"],
-                "allow_csrf_exempt": False,
-            }
+            duplicate = rule(ident="duplicate", required=["login_required"])
             with self.assertRaises(module.SecurityPreflightError):
                 module.build_preflight(root, policy(extra_rules=[duplicate]))
+
+    def test_rule_requires_explicit_review_and_evidence(self):
+        raw = policy()
+        raw["rules"][0]["reviewed"] = False
+        with self.assertRaises(module.SecurityPreflightError):
+            module.normalize_spec(raw)
+
+        raw = policy()
+        raw["rules"][0]["evidence"] = []
+        with self.assertRaises(module.SecurityPreflightError):
+            module.normalize_spec(raw)
+
+    def test_csrf_exception_requires_documented_reason(self):
+        raw = policy(csrf=True)
+        raw["rules"][0]["csrf_reason"] = ""
+        with self.assertRaises(module.SecurityPreflightError):
+            module.normalize_spec(raw)
 
 
 if __name__ == "__main__":
