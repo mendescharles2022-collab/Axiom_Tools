@@ -6,21 +6,21 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33440917657",
-        "commit:61a519f1f9b6db866d2a34a7a66b6918d3c77bf0",
-        "result:235-tests-OK",
+        "github-actions:run/33443352109",
+        "commit:97798a561a646ab70847c96c595a758f18ab23d6",
+        "result:245-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9776186424",
-        "artifact-sha256:a149a692e92d194d8c750151e0d2bb4b86c3b9cff4e1c2a2b96364543578d8ce"
+        "artifact:v8-release-preflight#9777080392",
+        "artifact-sha256:8c797da288322944bc350b81c04a8f3bcf1159ebd9b1b4e9bfdd3894b8edd5e4"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção não destrutiva, B35 database homologation preflight, B41 rollback readiness e B42 cadeia única de identidade release → build → runtime/health → installer. O run 33440917657 concluiu com 235 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção não destrutiva, B35 database homologation preflight, B41 rollback readiness, B42 cadeia única de identidade e B38 preflight estático de autenticação/autorização com classificação explícita de toda rota mutável, evidência de revisão e controle de exceções CSRF. O run 33443352109 concluiu com 245 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
     {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
     {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Duas invariantes confirmadas do Fechamento estão integradas ao tooling, mas ainda não executadas contra cópia real do banco/schema reconciliado."},
     {"gate_id":"BENCHMARK_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Benchmark representativo depende do runtime real."},
-    {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Segurança dinâmica depende das rotas reais reconciliadas."},
+    {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"B38 possui preflight estático testado; falta executar contra a árvore reconciliada e comprovar autenticação, autorização de negócio, CSRF, sessão e manipulação de IDs no runtime real."},
     {"gate_id":"REPORT_A4","status":"NOT_RUN","evidence":[],"notes":"Preview/impressão final ainda não homologados."},
     {"gate_id":"WINDOWS_INSTALLATION","status":"NOT_RUN","evidence":[],"notes":"Pacote final ainda não autorizado; readiness em staging e cadeia de identidade não substituem instalação física."},
     {"gate_id":"ROLLBACK_WINDOWS","status":"NOT_RUN","evidence":[],"notes":"Bundle+restore staging estão testados; rollback físico Windows com serviços/ports ainda pendente."}
