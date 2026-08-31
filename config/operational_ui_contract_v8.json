@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "audit": "V8",
+  "contracts": [
+    {
+      "id": "B43_PENDENCIAS_COMPETENCIA_ATIVA",
+      "globs": ["**/pendencias*.py", "**/pendencias*.html"],
+      "min_files": 1,
+      "require_any": [
+        {
+          "rule_id": "contexto_competencia_ativa",
+          "regexes": ["competencia_ativa", "competencia_trabalho"]
+        },
+        {
+          "rule_id": "proc_filtro_secundario",
+          "regexes": ["request\\.args\\.get\\(['\\\"]proc['\\\"]", "proc_filter"]
+        }
+      ],
+      "forbid": [
+        {
+          "rule_id": "proc_contexto_primario",
+          "regex": "default_proc|proc_default|contexto_primario\\s*=\\s*['\\\"]PROC"
+        }
+      ]
+    },
+    {
+      "id": "B44_RELATORIO_A4",
+      "globs": ["**/report*.css", "**/relatorio*.css", "**/report*.html", "**/relatorio*.html"],
+      "min_files": 1,
+      "require": [
+        {
+          "rule_id": "a4_retrato",
+          "regex": "@page\\s*\\{[^}]*size\\s*:\\s*A4\\s+portrait",
+          "min": 1
+        },
+        {
+          "rule_id": "cabecalho_repetivel",
+          "regex": "thead[^{}]*\\{[^}]*display\\s*:\\s*table-header-group",
+          "min": 1
+        }
+      ],
+      "require_any": [
+        {
+          "rule_id": "evitar_quebra_bloco",
+          "regexes": ["break-inside\\s*:\\s*avoid", "page-break-inside\\s*:\\s*avoid"]
+        }
+      ],
+      "forbid": [
+        {
+          "rule_id": "orientacao_paisagem",
+          "regex": "size\\s*:\\s*A4\\s+landscape"
+        }
+      ]
+    },
+    {
+      "id": "B46_MONITOR_FONTE_UNICA",
+      "globs": ["**/monitor*.py", "**/monitor*.html"],
+      "min_files": 1,
+      "require": [
+        {
+          "rule_id": "status_operacional_canonico",
+          "regex": "status_operacional",
+          "min": 1
+        }
+      ],
+      "forbid": [
+        {
+          "rule_id": "status_legado_primario",
+          "regex": "status_sessao_legacy|status_persistido_primario|duplo_status_primario"
+        }
+      ]
+    },
+    {
+      "id": "B47_SINTEGRA_ATALHOS",
+      "globs": ["**/inscri*.py", "**/inscri*.html", "**/cliente*.py", "**/cliente*.html"],
+      "min_files": 2,
+      "require_any": [
+        {
+          "rule_id": "backend_sintegra",
+          "regexes": ["sintegra_go_url", "sintegra_nacional_url"]
+        },
+        {
+          "rule_id": "atalho_visivel",
+          "regexes": ["href\\s*=\\s*['\\\"][^'\\\"]*sintegra"]
+        }
+      ]
+    }
+  ]
+}
