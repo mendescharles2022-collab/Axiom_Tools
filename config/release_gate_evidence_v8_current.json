@@ -6,19 +6,19 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33443838223",
-        "commit:641fbf71ff144a4809a4054e445c8dee4bb37eea",
-        "result:261-tests-OK",
+        "github-actions:run/33444141491",
+        "commit:09f331ea07c222388b3911ba8e43587e495284c2",
+        "result:280-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9777258147",
-        "artifact-sha256:422e0586eac56df72edc9a4a793d3d49669dc667ebbd7949cee7368c58dfcfd9"
+        "artifact:v8-release-preflight#9777371725",
+        "artifact-sha256:e1b7dc55a87fb80cc7755f7ceefa18b90a74c326e697aed5afe223a43302ad6d"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção não destrutiva, B35 database homologation preflight, B41 rollback readiness, B42 cadeia única de identidade, B38 segurança/autorização estática, B34 contrato string↔Enum e B40 auditor de compare-and-set para transições SQLite. O run 33443838223 concluiu com 261 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção, B35 banco, B41 rollback, B42 identidade, B38 segurança, B34 string↔Enum, B40 CAS, B28 idempotência/retry e B04 linhagem de versões/retificações. O run 33444141491 concluiu com 280 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
     {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
-    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Duas invariantes confirmadas do Fechamento estão integradas ao tooling, mas ainda não executadas contra cópia real do banco/schema reconciliado."},
+    {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes e auditores estruturais estão integrados ao tooling, mas ainda não executados contra cópia real do banco/schema reconciliado."},
     {"gate_id":"BENCHMARK_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"Benchmark representativo depende do runtime real."},
     {"gate_id":"SECURITY_RUNTIME","status":"NOT_RUN","evidence":[],"notes":"B38 possui preflight estático testado; falta executar contra a árvore reconciliada e comprovar autenticação, autorização de negócio, CSRF, sessão e manipulação de IDs no runtime real."},
     {"gate_id":"REPORT_A4","status":"NOT_RUN","evidence":[],"notes":"Preview/impressão final ainda não homologados."},
