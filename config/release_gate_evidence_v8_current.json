@@ -6,14 +6,14 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33437412590",
-        "commit:a7082171fadac9e42093fdf41a6da8d07d3d07b8",
-        "result:178-tests-OK",
+        "github-actions:run/33439050816",
+        "commit:54fa9c798fc0e5edd633d7e337b5e03143a05019",
+        "result:189-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9774913082",
-        "artifact-sha256:04b84bcd46e65092ad351e24448002ca8cd349262034a9eaf8f3f0d63aeb8d98"
+        "artifact:v8-release-preflight#9775507384",
+        "artifact-sha256:e812bfce93067067c97c189583dbf2d693e8bd03be88251c6ed6165d74bd2bf9"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui validação canônica do mapa causal C01-C28 → B01-B50, integração do mapa ao preflight, configuração/identidade no tooling de reconciliação e proteção contra caminhos absolutos/segredos. O run anterior 33437318080 falhou por incompatibilidade do validador com a chave canônica blocker_id; a correção foi aplicada e o run 33437412590 concluiu com 178 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal C01-C28 → B01-B50 integrado ao preflight, reconciliação segura de config/release_identity e auditoria B49 bidirecional banco ↔ filesystem em modo somente leitura. O run 33439050816 concluiu com 189 testes OK, preflight válido, 0/50 B homologados e 0/28 C PASS."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Aguardando cópia real de homologação."},
