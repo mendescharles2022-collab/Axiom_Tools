@@ -69,7 +69,7 @@ class RuntimeHandoffWindowsLauncherTests(unittest.TestCase):
         self.assertGreaterEqual(self.workflow.count('- "scripts/*.ps1"'), 2)
 
     def test_ci_executes_real_powershell_launcher_smoke(self):
-        self.assertIn("Smoke PowerShell B06 launcher", self.workflow)
+        self.assertIn("Smoke PowerShell B06 producer and consumer", self.workflow)
         self.assertIn("shell: pwsh", self.workflow)
         self.assertIn("./scripts/BUILD_RUNTIME_HANDOFF_V8.ps1", self.workflow)
         self.assertIn("POWERSHELL_B06_SMOKE_OK", self.workflow)
