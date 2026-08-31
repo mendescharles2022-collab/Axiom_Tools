@@ -1,7 +1,7 @@
 # Guia — Handoff seguro do runtime para reconciliação V8
 
 Data: 31/08/2026  
-Status: **handoff B06 + launcher Windows + autodiscovery SQLite conservadora testados / execução na instalação real ainda pendente**
+Status: **handoff B06 + launcher PowerShell + autodiscovery SQLite + smoke end-to-end testados / execução na instalação física ainda pendente**
 
 ## 1. Objetivo
 
@@ -93,7 +93,27 @@ O launcher:
 11. informa o banco selecionado e `database_selection`;
 12. termina declarando explicitamente `V8 homologada: NÃO`.
 
-## 5. Whitelist do ZIP de código/configuração
+## 5. Smoke PowerShell contínuo no CI
+
+O workflow `.github/workflows/reconciliation-tests.yml` executa o launcher em `pwsh` a cada mudança relevante, inclusive em `scripts/*.ps1`.
+
+O smoke cria um runtime descartável com:
+
+- árvore mínima `app/src`;
+- SQLite real em `data/operational.sqlite3`;
+- saída externa ao runtime.
+
+Em seguida chama `BUILD_RUNTIME_HANDOFF_V8.ps1` **sem `-Database`** e exige:
+
+- `AUTO_DISCOVERED_SINGLE`;
+- origem intacta;
+- banco fora do ZIP de código;
+- manifesto válido;
+- término `POWERSHELL_B06_SMOKE_OK`.
+
+Esse smoke reduz o risco de chegar ao Windows operacional com erro de sintaxe ou integração PowerShell → Python, mas não substitui a execução física no escritório.
+
+## 6. Whitelist do ZIP de código/configuração
 
 Quando existirem, o exportador considera áreas versionáveis como:
 
@@ -111,7 +131,7 @@ Quando existirem, o exportador considera áreas versionáveis como:
 
 O script não faz espelhamento cego da instalação.
 
-## 6. Conteúdo proibido no ZIP de código
+## 7. Conteúdo proibido no ZIP de código
 
 O exportador remove/bloqueia:
 
@@ -131,7 +151,7 @@ O exportador remove/bloqueia:
 
 Também existe varredura textual para possíveis segredos hardcoded. Se houver material suspeito, a coleta falha em vez de publicá-lo silenciosamente.
 
-## 7. Tratamento do banco
+## 8. Tratamento do banco
 
 O SQLite é tratado em trilha separada.
 
@@ -148,7 +168,7 @@ O handoff usa o tooling de backup/cópia consistente e registra:
 
 A existência de divergência estrutural pode ser preservada para diagnóstico; ela **não** é convertida em homologação automática.
 
-## 8. Saída esperada
+## 9. Saída esperada
 
 Após sucesso do launcher:
 
@@ -170,7 +190,7 @@ No diretório `<label>-handoff` devem existir, entre outros:
 - `RUNTIME_DATABASE_CLONE_REPORT.json`;
 - `RUNTIME_HANDOFF_MANIFEST.json`.
 
-## 9. Exportador legado de código
+## 10. Exportador legado de código
 
 O fluxo anterior permanece disponível para diagnóstico isolado:
 
@@ -180,7 +200,7 @@ O fluxo anterior permanece disponível para diagnóstico isolado:
 
 Porém, para remover o bloqueio B06, o **handoff único** é o caminho preferencial porque preserva na mesma fotografia a árvore versionável e uma cópia consistente do banco sem misturá-las.
 
-## 10. Verificação após a coleta real
+## 11. Verificação após a coleta real
 
 Antes de qualquer reconciliação ou commit:
 
@@ -195,7 +215,7 @@ Antes de qualquer reconciliação ou commit:
 9. inventariar módulos e suíte operacional;
 10. reconciliar apenas diferenças comprovadas, preservando trabalho válido.
 
-## 11. O que NÃO fazer
+## 12. O que NÃO fazer
 
 - não compactar manualmente a raiz inteira do servidor;
 - não subir o SQLite operacional ao GitHub;
@@ -206,7 +226,7 @@ Antes de qualquer reconciliação ou commit:
 - não escolher automaticamente entre dois bancos possíveis;
 - não declarar B06 resolvido somente porque o handoff foi gerado.
 
-## 12. Critério para B06 sair de `BLOQUEADO_POR_RUNTIME`
+## 13. Critério para B06 sair de `BLOQUEADO_POR_RUNTIME`
 
 B06 só avança quando:
 
@@ -219,17 +239,18 @@ B06 só avança quando:
 7. a árvore reconciliada iniciar e reproduzir o baseline esperado;
 8. dados reais permanecerem fora do repositório.
 
-## 13. Evidência do tooling
+## 14. Evidência do tooling
 
-Handoff, launcher Windows e autodiscovery conservadora foram validados no GitHub Actions run `33446139531`:
+O fluxo completo foi validado no GitHub Actions run `33446425395`:
 
 ```text
-Ran 336 tests in 1.585s
+POWERSHELL_B06_SMOKE_OK
+Ran 338 tests in 1.491s
 OK
 ```
 
-Isso valida o tooling, **não a instalação física**.
+Isso valida launcher/handoff em PowerShell no CI, **não a instalação física Windows do escritório**.
 
-## 14. Estado atual
+## 15. Estado atual
 
 **B06 BLOQUEADO_POR_RUNTIME / RUNTIME_BASELINE NOT_RUN / V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
