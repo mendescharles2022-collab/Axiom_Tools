@@ -1,17 +1,17 @@
 # Rastreador canônico — Execução de correção V8
 
 Data: 31/08/2026  
-Status: **DIAGNÓSTICO B01–B50 REVISTO / 0 INSPEÇÕES PENDENTES / TOOLING ATÉ ETAPA 73 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
+Status: **B01–B50 REVISTOS / 0 INSPEÇÕES / 0 PRONTOS / TOOLING ATÉ ETAPA 78 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico atual do tooling
 
-GitHub Actions run `33447254039`  
-Commit `e51bc61f13bbb21922b295eb57f8794a481962ed`  
+GitHub Actions run `33452021223`  
+Commit `47da595d2eed0d6a18176bc4eddb0cc2dd3e6891`  
 Python `3.12.14`
 
 ```text
 POWERSHELL_B06_SMOKE_OK
-Ran 371 tests in 1.531s
+Ran 494 tests in 1.584s
 OK
 ```
 
@@ -26,48 +26,42 @@ Preflight do mesmo marco:
 
 Artifact `v8-release-preflight`:
 
-- ID `9778467287`;
-- SHA-256 `4ce32783f1cd0d4fd2df6300d39d7a7cb3c87e2b4054fdbe3b06c1bfad2e6919`.
+- ID `9780092100`;
+- SHA-256 `21010ecfbd5bf75d2fed3b691ba5a5a11c6e63de78878e6eafa0b40af4891db4`.
 
 Este é o marco de tooling. Ele **não** representa homologação da árvore operacional integral.
 
-## 2. Evolução canônica — Etapas 42–73
+## 2. Evolução canônica — Etapas 42–78
 
 A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patrimônio válido.
 
-- Etapa 42 — lacuna de config/identidade no tooling de reconciliação;
-- Etapa 43 — B01/B02 reconfirmados no V8F2 e side effect do validador;
-- Etapa 44 — origem histórica B02 V6→V7 e investigação B08;
-- Etapa 45 — B03 isolado em autorização espalhada;
-- Etapa 46 — B07/B09/B10 e mitigação B11;
-- Etapa 47 — B12–B17, multi-documento e identidade econômica;
-- Etapa 48 — B18–B23, decisão por fonte e aplicabilidade;
-- Etapa 49 — B24–B28, eConsignado;
+- Etapa 42 — cobertura de config/identidade no tooling de reconciliação;
+- Etapas 43–49 — reconfirmação dos defeitos B01–B28 e isolamento das causas nos deltas/runtime recuperado;
 - Etapa 50 — B29–B33, parser, competência, IRRF e 13º;
 - Etapa 51 — B34–B40, banco, segurança e concorrência;
 - Etapa 52 — B41–B50, instalação, UX, escala, Sintegra, retenção e acervo;
-- Etapa 53 — mapa causal C01–C28 → B01–B50;
-- Etapa 54 — validador causal e integração de governança;
-- Etapa 55 — config/release_identity no tooling B06/B42 e recuperação do CI;
-- Etapa 56 — B49 bidirecional banco ↔ filesystem;
-- Etapa 57 — B48 retenção segura sem executor destrutivo;
-- Etapas 58–59 — consolidação de preflights/readiness e avanço da cadeia de tooling;
-- Etapa 60 — B42, cadeia de identidade/proveniência de build;
-- Etapa 61 — B38, preflight de autorização/CSRF por contrato explícito;
-- Etapa 62 — B34, auditor string ↔ Enum para `classificacao_inativacao`;
-- Etapa 63 — B40, auditor compare-and-set e `rowcount`;
+- Etapas 53–55 — mapa causal, governança e reconciliação de config/identidade;
+- Etapa 56 — B49, banco ↔ filesystem bidirecional read-only;
+- Etapa 57 — B48, retenção segura Simular→Revisar→Confirmar→Revalidar;
+- Etapas 58–59 — preflights de banco e rollback/readiness;
+- Etapa 60 — B42, cadeia release→build→runtime→installer;
+- Etapa 61 — B38, autorização/CSRF;
+- Etapa 62 — B34, string ↔ Enum;
+- Etapa 63 — B40, compare-and-set + `rowcount`;
 - Etapa 64 — B28, idempotência/retry;
-- Etapa 65 — B04, linhagem/vigência de versões e retificações;
-- Etapa 66 — B08, histórico estado/chamada com regressão explícita T L;
-- Etapa 67 — B36, planner read-only estado global → fonte;
-- Etapa 68 — B32, competência temporal/proveniência IRRF;
-- Etapa 69 — B06, handoff único runtime: código/config + SQLite separado + manifesto comum;
-- Etapa 70 — B06, launcher Windows parametrizado para executar o handoff em um comando;
-- Etapa 71 — B06, autodiscovery SQLite conservadora e `-Database` opcional somente quando a seleção for inequívoca;
-- Etapa 72 — B06, smoke end-to-end do launcher sob PowerShell no CI, com runtime e SQLite reais descartáveis e trigger obrigatório para `scripts/*.ps1`;
-- Etapa 73 — B01/B02/B03/B39, auditores executáveis para reprocessamento candidato, pureza GET, gate único de saída e reautorização backend de seleção manual.
+- Etapa 65 — B04, linhagem/vigência;
+- Etapa 66 — B08, histórico/chamada com regressão T L;
+- Etapa 67 — B36, migração global → fonte;
+- Etapa 68 — B32, IRRF temporal/proveniência;
+- Etapas 69–72 — B06, handoff único, launcher Windows, autodiscovery SQLite e smoke PowerShell real em CI;
+- Etapa 73 — B01/B02/B03/B39, candidato não destrutivo, GET puro, gate de saída e reautorização de IDs;
+- Etapa 74 — B07/B09/B10/B11/B37, universo operacional e semântica das máquinas de estado;
+- Etapa 75 — B12–B17/B50, composição multi-documento, identidade PF/CAEPF e identidade econômica;
+- Etapa 76 — B18–B27, decisão por fonte, aplicabilidade e eConsignado;
+- Etapa 77 — B29/B30/B31/B33, parser Domínio, saldo federal, proveniência e dezembro/13º;
+- Etapa 78 — B43/B44/B46/B47, contratos executáveis de UI para Pendências, A4, Monitor e Sintegra.
 
-Resultado da fase: **nenhum B permanece em mera inspeção sem critério executável**.
+Resultado da fase: **nenhum B permanece em inspeção ou apenas pronto para correção sem critério executável**.
 
 ## 3. Snapshot formal de estados
 
@@ -75,23 +69,23 @@ Fonte: `config/blocker_status_v8_current.json`.
 
 | Estado | Quantidade |
 |---|---:|
-| `PRONTO_PARA_CORRIGIR` | 30 |
+| `PRONTO_PARA_CORRIGIR` | 0 |
 | `INSPECAO_PENDENTE` | 0 |
-| `EM_CORRECAO` | 16 |
+| `EM_CORRECAO` | 46 |
 | `BLOQUEADO_POR_RUNTIME` | 4 |
 | `CORRIGIDO_TESTADO` | 0 |
 | `CORRIGIDO_HOMOLOGADO` | 0 |
 
-Em correção: B01, B02, B03, B04, B08, B28, B32, B34, B35, B36, B38, B39, B40, B41, B42 e B48.  
+Em correção: todos os bloqueadores exceto B05, B06, B45 e B49.  
 Bloqueados pelo runtime: B05, B06, B45 e B49.
 
 Regra permanente:
 
 **patch encontrado ≠ tooling verde ≠ correção integrada ≠ homologação.**
 
-## 4. B06 — gate estrutural atual
+## 4. B06 — gate estrutural/material atual
 
-Não implementar correções operacionais diretamente sobre uma fundação reduzida da `main` como se ela fosse o runtime final.
+A `main` continua sendo uma fundação reduzida e não pode ser tratada como se fosse automaticamente a instalação operacional integral.
 
 Tooling já preparado/testado:
 
@@ -100,115 +94,82 @@ Tooling já preparado/testado:
 - config segura e identidade de release;
 - auditor runtime ↔ repositório;
 - manifesto e hashes SHA-256;
-- E2E de reconciliação;
+- pipeline E2E de reconciliação em fixtures;
 - preflight causal 28/28;
 - cópia SQLite consistente via backup;
-- handoff único da Etapa 69 com ZIP de código/configuração + banco separado + relatório + manifesto comum;
+- handoff único com ZIP de código/configuração + banco separado + relatório + manifesto comum;
 - prova de não mutação da origem;
-- equivalência efetiva de schema origem × cópia testada;
-- launcher PowerShell da Etapa 70, parametrizado, sem drive hardcoded e sem comandos de remoção/movimentação;
-- autodiscovery da Etapa 71, limitada a exatamente um SQLite com cabeçalho válido; zero/múltiplos exigem caminho explícito e o manifesto registra `database_selection`;
-- smoke PowerShell da Etapa 72, executando o launcher real em CI e exigindo `POWERSHELL_B06_SMOKE_OK`.
+- launcher PowerShell parametrizado, sem drive hardcoded e sem remoção/movimentação;
+- autodiscovery limitada a exatamente um SQLite válido;
+- smoke PowerShell em CI com `POWERSHELL_B06_SMOKE_OK`.
 
-B06 continua `BLOQUEADO_POR_RUNTIME` até:
+B06 continua `BLOQUEADO_POR_RUNTIME` até executar essa cadeia contra a instalação Windows física e consumir os artefatos produzidos numa reconciliação verificável.
 
-1. executar o launcher contra a instalação Windows física real;
-2. materializar o ZIP seguro e a cópia SQLite real;
-3. auditar/reconciliar runtime ↔ repositório;
-4. executar os preflights estruturais sobre a fotografia real;
-5. estabelecer o baseline da mesma árvore que será corrigida e empacotada.
+## 5. Guardrails funcionais já preparados
 
-## 5. C01–C28 — gate causal
+### Reprocessamento, Conferência e saídas
 
-Mapa:
+B01/B02/B03/B39 possuem auditores para candidato não destrutivo, GET sem mutação, gate único de saída e reautorização backend de seleções manuais.
+
+### Fechamento, chamadas e estados
+
+B07/B08/B09/B10/B11/B37/B40 possuem contratos para universo operacional, separação de fechados/retificações, semântica de `PRONTA`, histórico de chamada e compare-and-set.
+
+### Documentos, identidade e composição
+
+B12–B17/B50 possuem planner que separa identidade física, lógica e econômica. A regressão Jair mantém federal consolidado uma vez e FGTS aditivo por matrícula; PF rural exige identidade CAEPF/unidade quando aplicável.
+
+### Decisão por fonte e aplicabilidade
+
+B18–B23/B36 impedem decisão global cega, tratam FGTS zero, MEI/DAE, deduções, afastamentos/faltas e impedimentos por obrigação.
+
+### eConsignado
+
+B24–B28 exigem Etapa 0 do orquestrador, universo da chamada, fotografia preservada, resultado externo separado da conclusão de negócio e idempotência/retry.
+
+### Parser e competência
+
+B29–B33 protegem diretor ≠ empregado, saldo federal autoritativo, proveniência, IRRF por competência de pagamento e tratamento especial de dezembro/13º.
+
+### Banco, segurança e release
+
+B34/B35/B38/B41/B42 possuem auditores/preflights para Enum/string, integridade/FKs/invariantes, auth/CSRF, rollback e cadeia de identidade de release.
+
+### UI operacional
+
+B43/B44/B46/B47 possuem política canônica em `config/operational_ui_contract_v8.json`:
+
+- Pendências por competência ativa, PROC secundário;
+- A4 retrato, cabeçalho repetível e controle de quebra;
+- Monitor com `status_operacional` canônico;
+- Sintegra exigindo separadamente backend configurado e `href` visível.
+
+### Escala, manutenção e acervo
+
+B45 depende de benchmark >600 no runtime; B48 possui fluxo de retenção não destrutivo; B49 possui auditoria banco↔filesystem bidirecional read-only.
+
+## 6. C01–C28
+
+Mapa canônico:
 
 `config/regression_case_blocker_map_v8_202608.json`
 
-O mapa cobre `28/28` casos. Nenhum caso pode ser marcado PASS enquanto seus bloqueadores estruturais associados permanecerem abertos.
+Cobertura causal: `28/28`.
 
-## 6. Diagnósticos críticos preservados
+Nenhum caso pode virar PASS enquanto seus bloqueadores estruturais associados não forem corrigidos/testados na árvore operacional reconciliada.
 
-### B01 — reprocessamento
+## 7. Ordem operacional após materialização do B06
 
-O padrão destrutivo observado no V8F2 agora possui auditor executável. Ele bloqueia remoção de interpretação vigente antes do candidato, `commit` prematuro, falta de promoção e recálculo fora de ordem. A correção operacional final ainda exige candidato isolado + promoção atômica na árvore reconciliada.
-
-### B02 — GET com efeito colateral
-
-O defeito histórico V6→V7 agora possui auditor de grafo de chamadas. GET que alcance mutador ou SQL de escrita, direta ou indiretamente, é bloqueado. A correção integrada ainda depende da árvore real.
-
-### B03/B39 — autorização de saída
-
-Existe tooling executável para exigir gate canônico nos caminhos de geração/impressão/entrega e reinterseção backend dos IDs selecionados. `PROCESSADO` isolado não autoriza saída. A aplicação real aos serviços depende do B06.
-
-### B07/B09/B10/B37
-
-A mesa operacional recuperada mistura universos/estados. Fechados e retificações não pertencem ao ciclo vivo; status persistido e status derivado precisam de fonte de verdade única.
-
-### B08/B40 — T L / concorrência
-
-A regressão `PRONTA/1 → ADIADA/2 → PRONTA/1` está cercada por teste e deve bloquear por queda de chamada/piso protegido. A causa real será determinada no histórico operacional e cruzada com compare-and-set/lost update.
-
-### B12–B17/B50
-
-Extrato/GFD não podem ser reduzidos ao último arquivo do tipo. Hash físico não substitui identidade documental/econômica nem composição multi-documento.
-
-### B18/B23/B36
-
-Decisão global por competência+cliente precisa migrar para fonte/obrigação. O planner B36 não replica decisão para múltiplas fontes sem política explícita.
-
-### B19–B23
-
-Aplicabilidade deve respeitar FGTS zero, MEI/DAE, deduções previdenciárias, afastamentos/faltas e responsabilidade Fiscal por fonte.
-
-### B24–B28
-
-eConsignado precisa integrar o orquestrador, usar universo elegível, cruzar contexto e operar com idempotência/retry controlados.
-
-### B29–B33
-
-Diretor ≠ empregado; federal autoritativo, proveniência de competência, IRRF temporal e dezembro/13º precisam permanecer explícitos e testáveis.
-
-### B34/B35/B38
-
-Contrato Enum/string, integridade/FKs/invariantes e autorização/CSRF possuem tooling de auditoria; falta execução/correção na árvore real reconciliada.
-
-### B41/B42
-
-Rollback/readiness e cadeia de identidade estão testados em staging. Instalação/rollback físico Windows continuam pendentes.
-
-### B43/B44/B46/B47
-
-Preservar melhorias válidas de Pendências e A4; simplificar monitor e restaurar atalhos Sintegra sem reverter a nova modelagem de inscrições.
-
-### B45
-
-Há paginação, mas persistem N+1, `status_sessao()` pesado e polling. Benchmark >600 clientes depende da árvore real.
-
-### B48/B49
-
-Retenção segue deliberadamente não destrutiva até política/acervo reais. Auditoria banco ↔ filesystem é bidirecional e read-only; execução real depende do handoff B06.
-
-## 7. Ordem após materialização do B06
-
-1. reconciliar árvore/runtime e fixar baseline;
-2. executar B35/B49 sobre a cópia real;
-3. aplicar B01 — candidato não destrutivo;
-4. aplicar B02 — GET puro + evento explícito de fechamento;
-5. aplicar B03/B39 — gate único de saída;
-6. B07/B09/B10/B11/B37 — universo e máquinas de estado;
-7. B40/B08 — CAS, concorrência e causa T L;
-8. B18/B36 + B05 — decisão por fonte/migração;
-9. B12/B13/B14/B17/B50 — composição multi-documento;
-10. B15/B16 — descoberta/identidade/vínculo;
-11. B19–B23 — aplicabilidade;
-12. B24–B28 — eConsignado;
-13. B29–B33 — parser/proveniência/13º;
-14. B34/B38 — bordas e segurança na árvore real;
-15. B43/B44/B46/B47 — UX/regressões;
-16. B45/B48 — benchmark/manutenção;
-17. C01–C28;
-18. build/proveniência final;
-19. instalação Windows + rollback comprovado.
+1. verificar e consumir o handoff real;
+2. reconciliar runtime ↔ repositório e fixar baseline;
+3. executar B35/B49 sobre a cópia SQLite/acervo real;
+4. aplicar os guardrails B01–B44/B46–B48/B50 sobre a árvore reconciliada;
+5. corrigir os achados reais por dependência causal;
+6. benchmark B45 com volume representativo;
+7. executar C01–C28 sobre casos reais/fixtures vinculadas;
+8. gerar build com proveniência final;
+9. instalar no Windows;
+10. comprovar rollback físico e smoke final.
 
 ## 8. Gate final
 
@@ -225,4 +186,4 @@ Modo final continua exigindo cumulativamente:
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-A auditoria/tooling avançou até a Etapa 73. O gargalo material continua sendo B06, mas as correções B01/B02/B03/B39 agora já possuem guardrails executáveis para aplicação imediata quando a árvore operacional for reconciliada.
+A auditoria/tooling avançou até a Etapa 78. O trabalho lógico preparatório não possui mais itens em mera inspeção ou apenas `PRONTO_PARA_CORRIGIR`. O gargalo material é B06: obter e consumir uma fotografia verificável da instalação Windows real sem tocar na origem operacional.
