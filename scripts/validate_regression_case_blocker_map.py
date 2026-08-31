@@ -49,7 +49,8 @@ def _blocker_ids(blocker_registry: dict) -> set[str]:
     for item in blockers:
         if not isinstance(item, dict):
             raise DependencyMapError("Bloqueador inválido no registry.")
-        blocker_id = str(item.get("id", "")).strip()
+        # O registry canônico usa blocker_id. Fixtures legadas podem usar id.
+        blocker_id = str(item.get("blocker_id", item.get("id", ""))).strip()
         if not BLOCKER_RE.fullmatch(blocker_id):
             raise DependencyMapError(f"ID de bloqueador inválido: {blocker_id!r}")
         if blocker_id in ids:
