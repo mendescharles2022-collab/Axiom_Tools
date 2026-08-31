@@ -6,14 +6,14 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33443562347",
-        "commit:1b5bae6ef30ec9a501cffb98785bfd0fecd5093f",
-        "result:253-tests-OK",
+        "github-actions:run/33443838223",
+        "commit:641fbf71ff144a4809a4054e445c8dee4bb37eea",
+        "result:261-tests-OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9777159518",
-        "artifact-sha256:c98fba7ecba54343a19cf486ccff2e62bb6b8b5a7e803550ef2a52d49abeec43"
+        "artifact:v8-release-preflight#9777258147",
+        "artifact-sha256:422e0586eac56df72edc9a4a793d3d49669dc667ebbd7949cee7368c58dfcfd9"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção não destrutiva, B35 database homologation preflight, B41 rollback readiness, B42 cadeia única de identidade, B38 segurança/autorização estática e B34 auditor de contrato classificacao_inativacao string↔Enum sem autofix. O run 33443562347 concluiu com 253 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui mapa causal, B06 reconciliation, B49 bidirecional, B48 retenção não destrutiva, B35 database homologation preflight, B41 rollback readiness, B42 cadeia única de identidade, B38 segurança/autorização estática, B34 contrato string↔Enum e B40 auditor de compare-and-set para transições SQLite. O run 33443838223 concluiu com 261 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Runtime ainda não reconciliado."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre cópia real de homologação."},
