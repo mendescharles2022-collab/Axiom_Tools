@@ -77,7 +77,7 @@
       "require_any": [
         {
           "rule_id": "backend_sintegra",
-          "regexes": ["sintegra_go_url", "sintegra_nacional_url"]
+          "regexes": ["sintegra_go_url\\s*=", "sintegra_nacional_url\\s*="]
         },
         {
           "rule_id": "atalho_visivel",
