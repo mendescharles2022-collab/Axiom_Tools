@@ -86,6 +86,16 @@ def candidate_keys(plan: dict) -> dict[tuple[str, str], dict]:
                 raise RetentionReviewError(
                     f"Path candidato inválido em {rule_id}: {rel!r}"
                 )
+            sha256 = str(item.get("sha256", "")).strip().upper()
+            mtime_ns = item.get("mtime_ns")
+            if not SHA_RE.fullmatch(sha256):
+                raise RetentionReviewError(
+                    f"Candidato sem SHA-256 válido em {rule_id}/{rel}."
+                )
+            if not isinstance(mtime_ns, int) or mtime_ns < 0:
+                raise RetentionReviewError(
+                    f"Candidato sem mtime_ns válido em {rule_id}/{rel}."
+                )
             key = (rule_id, rel)
             if key in result:
                 raise RetentionReviewError(
@@ -180,6 +190,8 @@ def review_plan(plan: dict, decisions_doc: dict) -> dict:
             "evidence": evidence,
             "size": int(item.get("size") or 0),
             "age_days": item.get("age_days"),
+            "mtime_ns": int(item["mtime_ns"]),
+            "sha256": str(item["sha256"]).upper(),
         }
 
     missing = [
