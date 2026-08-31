@@ -2,8 +2,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$RuntimeRoot,
 
-    [Parameter(Mandatory = $true)]
-    [string]$Database,
+    [string]$Database = "",
 
     [Parameter(Mandatory = $true)]
     [string]$OutputDir,
@@ -81,8 +80,12 @@ function Resolve-PythonCommand {
 $toolRoot = Get-FullPathSafe (Join-Path $PSScriptRoot "..")
 $pythonScript = Join-Path $PSScriptRoot "build_runtime_reconciliation_handoff.py"
 $runtime = Get-FullPathSafe $RuntimeRoot
-$databasePath = Get-FullPathSafe $Database
 $output = Get-FullPathSafe $OutputDir
+$databasePath = $null
+
+if ($Database) {
+    $databasePath = Get-FullPathSafe $Database
+}
 
 if (-not (Test-Path -LiteralPath $pythonScript -PathType Leaf)) {
     throw "Tooling B06 não encontrado: $pythonScript"
@@ -90,13 +93,13 @@ if (-not (Test-Path -LiteralPath $pythonScript -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $runtime -PathType Container)) {
     throw "RuntimeRoot não existe: $runtime"
 }
-if (-not (Test-Path -LiteralPath $databasePath -PathType Leaf)) {
-    throw "Banco SQLite não existe: $databasePath"
+if ($databasePath -and -not (Test-Path -LiteralPath $databasePath -PathType Leaf)) {
+    throw "Banco SQLite informado não existe: $databasePath"
 }
 if (Test-IsInside -Child $output -Parent $runtime) {
     throw "OutputDir deve ficar fora da árvore operacional do runtime."
 }
-if (Test-IsInside -Child $databasePath -Parent $output) {
+if ($databasePath -and (Test-IsInside -Child $databasePath -Parent $output)) {
     throw "O banco de origem não pode ficar dentro do OutputDir."
 }
 if ($Label -notmatch '^[A-Za-z0-9._-]+$') {
@@ -109,16 +112,23 @@ $python = Resolve-PythonCommand -ExplicitPython $PythonExe -Runtime $runtime -To
 Write-Host "Axiom Tools V8 - Handoff de reconciliação B06"
 Write-Host "Origem operacional será somente lida."
 Write-Host "Banco será clonado para artefato separado; não entra no ZIP de código."
+if ($databasePath) {
+    Write-Host "Banco: caminho informado explicitamente."
+} else {
+    Write-Host "Banco: autodiscovery conservadora; só prossegue se houver exatamente um SQLite válido."
+}
 
 $arguments = @()
 $arguments += $python.Prefix
 $arguments += @(
     $pythonScript,
     "--runtime-root", $runtime,
-    "--database", $databasePath,
     "--output-dir", $output,
     "--label", $Label
 )
+if ($databasePath) {
+    $arguments += @("--database", $databasePath)
+}
 
 & $python.Exe @arguments
 $exitCode = $LASTEXITCODE
@@ -149,6 +159,7 @@ if ($manifest.database_copy.kept_separate_from_code_zip -ne $true) {
 Write-Host ""
 Write-Host "RUNTIME_HANDOFF_WINDOWS_OK"
 Write-Host ("Diretório do handoff: " + $handoffDir)
+Write-Host ("Banco selecionado: " + $manifest.source.database_name + " [" + $manifest.source.database_selection + "]")
 Write-Host ("ZIP de código/config: " + $manifest.code_export.zip)
 Write-Host ("SQLite separado: " + $manifest.database_copy.file)
 Write-Host ("Manifesto SHA-256: " + $manifest.manifest_sha256)
