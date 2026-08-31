@@ -82,6 +82,7 @@ class RuntimeReconciliationHandoffTests(unittest.TestCase):
             self.assertFalse(any(name.endswith((".sqlite", ".sqlite3", ".db")) for name in names))
             self.assertFalse(result["manifest"]["code_export"]["database_in_code_zip"])
             self.assertTrue(result["manifest"]["database_copy"]["kept_separate_from_code_zip"])
+            self.assertEqual(result["manifest"]["source"]["database_selection"], "EXPLICIT")
 
     def test_manifest_hashes_match_generated_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -173,6 +174,119 @@ class RuntimeReconciliationHandoffTests(unittest.TestCase):
                 result["manifest"]["database_copy"]["schema_sha256"],
                 report["destination"]["schema_sha256"],
             )
+
+    def test_single_runtime_sqlite_is_auto_discovered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            runtime = base / "runtime"
+            output = base / "out"
+            database = runtime / "data" / "operational.sqlite3"
+            create_runtime(runtime)
+            create_db(database)
+
+            result = module.build_handoff(
+                runtime_root=runtime,
+                database=None,
+                output_dir=output,
+                label="audit-v8",
+            )
+
+            self.assertEqual(result["manifest"]["source"]["database_name"], "operational.sqlite3")
+            self.assertEqual(
+                result["manifest"]["source"]["database_selection"],
+                "AUTO_DISCOVERED_SINGLE",
+            )
+
+    def test_multiple_runtime_sqlites_block_auto_selection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            runtime = base / "runtime"
+            output = base / "out"
+            create_runtime(runtime)
+            create_db(runtime / "data" / "a.sqlite3")
+            create_db(runtime / "database" / "b.db")
+
+            with self.assertRaises(module.RuntimeHandoffError) as ctx:
+                module.build_handoff(
+                    runtime_root=runtime,
+                    database=None,
+                    output_dir=output,
+                    label="audit-v8",
+                )
+            message = str(ctx.exception)
+            self.assertIn("seleção automática bloqueada", message)
+            self.assertIn("data/a.sqlite3", message)
+            self.assertIn("database/b.db", message)
+            self.assertFalse((output / "audit-v8-handoff").exists())
+
+    def test_fake_sqlite_extension_is_ignored_by_autodiscovery(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            runtime = base / "runtime"
+            output = base / "out"
+            create_runtime(runtime)
+            write(runtime / "data" / "fake.sqlite3", "isto não é sqlite\n")
+            create_db(runtime / "database" / "live.sqlite3")
+
+            result = module.build_handoff(
+                runtime_root=runtime,
+                database=None,
+                output_dir=output,
+                label="audit-v8",
+            )
+            self.assertEqual(result["manifest"]["source"]["database_name"], "live.sqlite3")
+
+    def test_sqlite_inside_backup_directory_is_not_auto_selected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            runtime = base / "runtime"
+            output = base / "out"
+            create_runtime(runtime)
+            create_db(runtime / "backups" / "old.sqlite3")
+            create_db(runtime / "data" / "live.sqlite3")
+
+            result = module.build_handoff(
+                runtime_root=runtime,
+                database=None,
+                output_dir=output,
+                label="audit-v8",
+            )
+            self.assertEqual(result["manifest"]["source"]["database_name"], "live.sqlite3")
+
+    def test_autodiscovery_without_valid_sqlite_requires_explicit_database(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            runtime = base / "runtime"
+            output = base / "out"
+            create_runtime(runtime)
+            write(runtime / "data" / "fake.db", "texto\n")
+
+            with self.assertRaises(module.RuntimeHandoffError) as ctx:
+                module.build_handoff(
+                    runtime_root=runtime,
+                    database=None,
+                    output_dir=output,
+                    label="audit-v8",
+                )
+            self.assertIn("Nenhum SQLite válido", str(ctx.exception))
+
+    def test_explicit_database_requires_valid_sqlite_header(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            runtime = base / "runtime"
+            output = base / "out"
+            fake = base / "fake.sqlite3"
+            create_runtime(runtime)
+            write(fake, "texto\n")
+
+            with self.assertRaises(module.RuntimeHandoffError) as ctx:
+                module.build_handoff(
+                    runtime_root=runtime,
+                    database=fake,
+                    output_dir=output,
+                    label="audit-v8",
+                )
+            self.assertIn("cabeçalho SQLite válido", str(ctx.exception))
 
     def test_existing_handoff_is_never_overwritten(self):
         with tempfile.TemporaryDirectory() as tmp:
