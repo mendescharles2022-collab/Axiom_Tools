@@ -47,6 +47,10 @@ class RetentionPlannerTests(unittest.TestCase):
             report = module.plan_cleanup({"temp": root}, policy(), now)
             self.assertEqual(report["summary"]["candidate_files"], 1)
             self.assertEqual(report["summary"]["candidate_bytes"], 3)
+            item = report["rules"][0]["items"][0]
+            self.assertEqual(item["status"], "CANDIDATE")
+            self.assertEqual(len(item["sha256"]), 64)
+            self.assertIsInstance(item["mtime_ns"], int)
 
     def test_recent_file_kept(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -54,10 +58,10 @@ class RetentionPlannerTests(unittest.TestCase):
             now = 1_700_000_000
             write(root / "a.tmp", b"x", now - 2 * 86400)
             report = module.plan_cleanup({"temp": root}, policy(), now)
-            self.assertEqual(
-                report["rules"][0]["items"][0]["status"],
-                "KEEP_RECENT",
-            )
+            item = report["rules"][0]["items"][0]
+            self.assertEqual(item["status"], "KEEP_RECENT")
+            self.assertNotIn("sha256", item)
+            self.assertIsInstance(item["mtime_ns"], int)
 
     def test_extension_filter(self):
         with tempfile.TemporaryDirectory() as tmp:
