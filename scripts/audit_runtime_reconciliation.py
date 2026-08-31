@@ -59,11 +59,11 @@ class DiffRow:
 
 
 def sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest().upper()
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest().upper()
 
 
 def should_ignore(path: Path) -> bool:
@@ -75,12 +75,12 @@ def collect_files(root: Path) -> dict[str, Path]:
         return {}
     result: dict[str, Path] = {}
     for path in root.rglob("*"):
-        if path.is_symlink():
+        if path.is_symlink() or not path.is_file():
             continue
-        if not path.is_file() or should_ignore(path.relative_to(root)):
+        rel_path = path.relative_to(root)
+        if should_ignore(rel_path):
             continue
-        rel = path.relative_to(root).as_posix()
-        result[rel] = path
+        result[rel_path.as_posix()] = path
     return result
 
 
@@ -104,8 +104,7 @@ def find_forbidden(root: Path) -> list[str]:
         rel = path.relative_to(root)
         if path.is_symlink():
             violations.append(rel.as_posix() + " [symlink]")
-            continue
-        if forbidden_name(path):
+        elif forbidden_name(path):
             violations.append(rel.as_posix() + ("/" if path.is_dir() else ""))
     return sorted(set(violations))
 
@@ -121,17 +120,13 @@ def find_embedded_secrets(root: Path) -> list[str]:
             content = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-
         if PRIVATE_KEY_RE.search(content):
             suspicious.append(path.relative_to(root).as_posix())
             continue
-
         for match in ASSIGNMENT_RE.finditer(content):
-            value = match.group(2).strip()
-            if PLACEHOLDER_RE.search(value):
-                continue
-            suspicious.append(path.relative_to(root).as_posix())
-            break
+            if not PLACEHOLDER_RE.search(match.group(2).strip()):
+                suspicious.append(path.relative_to(root).as_posix())
+                break
     return sorted(set(suspicious))
 
 
@@ -139,22 +134,17 @@ def safe_manifest_target(runtime_root: Path, raw_relative: str) -> tuple[str, Pa
     rel = raw_relative.replace("\\", "/").strip()
     if not rel:
         return None
-
     pure = PurePosixPath(rel)
     if pure.is_absolute() or ".." in pure.parts or not pure.parts:
         return None
     if pure.parts[0].endswith(":") or "\x00" in rel:
         return None
-
     normalized = pure.as_posix()
     target = (runtime_root / Path(*pure.parts)).resolve()
-    root_resolved = runtime_root.resolve()
-
     try:
-        target.relative_to(root_resolved)
+        target.relative_to(runtime_root.resolve())
     except ValueError:
         return None
-
     return normalized, target
 
 
@@ -166,9 +156,8 @@ def verify_manifest(runtime_root: Path) -> tuple[bool, list[str]]:
     errors: list[str] = []
     expected_files: set[str] = set()
     seen_files: set[str] = set()
-
-    with manifest.open("r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
+    with manifest.open("r", encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
         required = {"RelativePath", "Length", "SHA256"}
         if not reader.fieldnames or not required.issubset(reader.fieldnames):
             return False, ["Manifesto sem colunas obrigatórias RelativePath/Length/SHA256"]
@@ -179,7 +168,6 @@ def verify_manifest(runtime_root: Path) -> tuple[bool, list[str]]:
             if safe is None:
                 errors.append(f"Caminho inválido no manifesto (linha {line_no}): {raw_rel!r}")
                 continue
-
             rel, path = safe
             if rel in RESERVED_EXPORT_FILES:
                 errors.append(f"Arquivo reservado não deve constar no manifesto: {rel}")
@@ -193,7 +181,6 @@ def verify_manifest(runtime_root: Path) -> tuple[bool, list[str]]:
             if not path.exists() or not path.is_file() or path.is_symlink():
                 errors.append(f"Arquivo do manifesto ausente/inválido: {rel}")
                 continue
-
             try:
                 expected_len = int(row.get("Length") or "0")
             except ValueError:
@@ -209,8 +196,7 @@ def verify_manifest(runtime_root: Path) -> tuple[bool, list[str]]:
             if not SHA256_RE.fullmatch(expected_hash):
                 errors.append(f"SHA256 inválido no manifesto: {rel}")
                 continue
-            actual_hash = sha256(path)
-            if expected_hash != actual_hash:
+            if expected_hash != sha256(path):
                 errors.append(f"SHA256 divergente: {rel}")
 
     actual_files = {
@@ -221,12 +207,10 @@ def verify_manifest(runtime_root: Path) -> tuple[bool, list[str]]:
         and path.relative_to(runtime_root).as_posix() not in RESERVED_EXPORT_FILES
         and not should_ignore(path.relative_to(runtime_root))
     }
-
     for rel in sorted(actual_files - expected_files):
         errors.append(f"Arquivo extra fora do manifesto: {rel}")
     for rel in sorted(expected_files - actual_files):
         errors.append(f"Arquivo listado no manifesto não encontrado: {rel}")
-
     return not errors, errors
 
 
@@ -234,19 +218,20 @@ def compare_area(area: str, runtime_dir: Path, repo_dir: Path) -> list[DiffRow]:
     runtime_files = collect_files(runtime_dir)
     repo_files = collect_files(repo_dir)
     rows: list[DiffRow] = []
-
     for rel in sorted(set(runtime_files) | set(repo_files)):
-        rp = runtime_files.get(rel)
-        gp = repo_files.get(rel)
-        if rp and gp:
-            r_hash = sha256(rp)
-            g_hash = sha256(gp)
-            status = "SAME" if r_hash == g_hash else "CHANGED"
-            rows.append(DiffRow(area, rel, status, r_hash, g_hash, rp.stat().st_size, gp.stat().st_size))
-        elif rp:
-            rows.append(DiffRow(area, rel, "RUNTIME_ONLY", sha256(rp), "", rp.stat().st_size, 0))
-        elif gp:
-            rows.append(DiffRow(area, rel, "REPO_ONLY", "", sha256(gp), 0, gp.stat().st_size))
+        runtime_file = runtime_files.get(rel)
+        repo_file = repo_files.get(rel)
+        if runtime_file and repo_file:
+            runtime_hash = sha256(runtime_file)
+            repo_hash = sha256(repo_file)
+            rows.append(DiffRow(
+                area, rel, "SAME" if runtime_hash == repo_hash else "CHANGED",
+                runtime_hash, repo_hash, runtime_file.stat().st_size, repo_file.stat().st_size,
+            ))
+        elif runtime_file:
+            rows.append(DiffRow(area, rel, "RUNTIME_ONLY", sha256(runtime_file), "", runtime_file.stat().st_size, 0))
+        elif repo_file:
+            rows.append(DiffRow(area, rel, "REPO_ONLY", "", sha256(repo_file), 0, repo_file.stat().st_size))
     return rows
 
 
@@ -260,21 +245,32 @@ def add_area_if_present(
         areas.append((area, runtime_dir, repo_dir))
 
 
+def compare_metadata_file(area: str, label: str, runtime_file: Path, repo_file: Path) -> DiffRow | None:
+    if not runtime_file.exists():
+        return None
+    if repo_file.exists():
+        runtime_hash = sha256(runtime_file)
+        repo_hash = sha256(repo_file)
+        return DiffRow(
+            area, label, "SAME" if runtime_hash == repo_hash else "CHANGED",
+            runtime_hash, repo_hash, runtime_file.stat().st_size, repo_file.stat().st_size,
+        )
+    return DiffRow(area, label, "RUNTIME_ONLY", sha256(runtime_file), "", runtime_file.stat().st_size, 0)
+
+
 def write_reports(rows: list[DiffRow], output_dir: Path, metadata: dict) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / "RECONCILIATION_DIFF.csv"
     json_path = output_dir / "RECONCILIATION_DIFF.json"
-
     fieldnames = [
         "area", "relative_path", "status", "runtime_sha256",
         "repo_sha256", "runtime_size", "repo_size",
     ]
-    with csv_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+    with csv_path.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
             writer.writerow(asdict(row))
-
     payload = {
         "metadata": metadata,
         "summary": {
@@ -286,30 +282,73 @@ def write_reports(rows: list[DiffRow], output_dir: Path, metadata: dict) -> None
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def build_areas(runtime_root: Path, repo_root: Path) -> list[tuple[str, Path, Path]]:
+    areas: list[tuple[str, Path, Path]] = []
+    add_area_if_present(areas, "src_app", runtime_root / "app" / "src", repo_root / "src")
+    add_area_if_present(areas, "src_root", runtime_root / "src", repo_root / "src")
+    add_area_if_present(areas, "tests_app", runtime_root / "app" / "tests", repo_root / "tests")
+    add_area_if_present(areas, "tests_root", runtime_root / "tests", repo_root / "tests")
+    add_area_if_present(areas, "scripts_app", runtime_root / "app" / "scripts", repo_root / "scripts")
+    add_area_if_present(areas, "scripts_root", runtime_root / "scripts", repo_root / "scripts")
+    add_area_if_present(areas, "migrations_app", runtime_root / "app" / "migrations", repo_root / "migrations")
+    add_area_if_present(areas, "migrations_root", runtime_root / "migrations", repo_root / "migrations")
+    add_area_if_present(areas, "alembic_app", runtime_root / "app" / "alembic", repo_root / "alembic")
+    add_area_if_present(areas, "alembic_root", runtime_root / "alembic", repo_root / "alembic")
+    add_area_if_present(areas, "templates_app", runtime_root / "app" / "templates", repo_root / "templates")
+    add_area_if_present(areas, "templates_root", runtime_root / "templates", repo_root / "templates")
+    add_area_if_present(areas, "static_app", runtime_root / "app" / "static", repo_root / "static")
+    add_area_if_present(areas, "static_root", runtime_root / "static", repo_root / "static")
+    add_area_if_present(areas, "config_app", runtime_root / "app" / "config", repo_root / "config")
+    add_area_if_present(areas, "config_root", runtime_root / "config", repo_root / "config")
+    return areas
+
+
+def audit_runtime(runtime_root: Path, repo_root: Path, output_dir: Path) -> tuple[list[DiffRow], dict]:
+    areas = build_areas(runtime_root, repo_root)
+    rows: list[DiffRow] = []
+    for area, runtime_dir, repo_dir in areas:
+        rows.extend(compare_area(area, runtime_dir, repo_dir))
+
+    metadata_pairs = [
+        ("app/pyproject.toml", runtime_root / "app/pyproject.toml", repo_root / "pyproject.toml"),
+        ("pyproject.toml", runtime_root / "pyproject.toml", repo_root / "pyproject.toml"),
+        ("app/requirements.txt", runtime_root / "app/requirements.txt", repo_root / "requirements.txt"),
+        ("requirements.txt", runtime_root / "requirements.txt", repo_root / "requirements.txt"),
+        ("app/requirements-dev.txt", runtime_root / "app/requirements-dev.txt", repo_root / "requirements-dev.txt"),
+        ("requirements-dev.txt", runtime_root / "requirements-dev.txt", repo_root / "requirements-dev.txt"),
+    ]
+    for label, runtime_file, repo_file in metadata_pairs:
+        row = compare_metadata_file("metadata", label, runtime_file, repo_file)
+        if row:
+            rows.append(row)
+
+    # Não registrar paths absolutos em artefatos que podem sair do servidor.
+    metadata = {
+        "runtime_layout": "app/src" if (runtime_root / "app" / "src").is_dir() else "src",
+        "manifest_ok": True,
+        "manifest_errors": [],
+        "areas_compared": [area for area, _, _ in areas],
+        "config_compared": any(area.startswith("config_") for area, _, _ in areas),
+        "release_identity_compared": any(
+            row.area.startswith("config_") and row.relative_path == "release_identity.toml"
+            for row in rows
+        ),
+    }
+    write_reports(rows, output_dir, metadata)
+    return rows, metadata
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Audita a reconciliação entre runtime exportado e repositório Axiom Tools."
-    )
-    parser.add_argument(
-        "--runtime-root", required=True, type=Path,
-        help="Pasta extraída do export seguro do runtime",
-    )
-    parser.add_argument(
-        "--repo-root", required=True, type=Path,
-        help="Raiz do clone/repositório Axiom_Tools",
-    )
-    parser.add_argument(
-        "--output-dir", type=Path, default=Path("reconciliation-report")
-    )
-    parser.add_argument(
-        "--fail-on-diff", action="store_true",
-        help="Retorna código 3 se houver qualquer diferença",
-    )
+    parser = argparse.ArgumentParser(description="Audita a reconciliação entre runtime exportado e repositório Axiom Tools.")
+    parser.add_argument("--runtime-root", required=True, type=Path, help="Pasta extraída do export seguro do runtime")
+    parser.add_argument("--repo-root", required=True, type=Path, help="Raiz do clone/repositório Axiom_Tools")
+    parser.add_argument("--output-dir", type=Path, default=Path("reconciliation-report"))
+    parser.add_argument("--fail-on-diff", action="store_true", help="Retorna código 3 se houver qualquer diferença")
     args = parser.parse_args()
 
     runtime_root = args.runtime_root.resolve()
     repo_root = args.repo_root.resolve()
-
+    output_dir = args.output_dir.resolve()
     if not runtime_root.is_dir():
         print(f"ERRO: runtime-root inválido: {runtime_root}", file=sys.stderr)
         return 2
@@ -338,82 +377,23 @@ def main() -> int:
             print(f" - {error}", file=sys.stderr)
         return 2
 
-    app_src = runtime_root / "app" / "src"
-    root_src = runtime_root / "src"
-    if not app_src.is_dir() and not root_src.is_dir():
+    if not (runtime_root / "app" / "src").is_dir() and not (runtime_root / "src").is_dir():
         print("ERRO: export não contém app/src nem src; reconciliação de código não é possível.", file=sys.stderr)
         return 2
 
-    areas: list[tuple[str, Path, Path]] = []
-    add_area_if_present(areas, "src_app", app_src, repo_root / "src")
-    add_area_if_present(areas, "src_root", root_src, repo_root / "src")
-    add_area_if_present(areas, "tests_app", runtime_root / "app" / "tests", repo_root / "tests")
-    add_area_if_present(areas, "tests_root", runtime_root / "tests", repo_root / "tests")
-    add_area_if_present(areas, "scripts_app", runtime_root / "app" / "scripts", repo_root / "scripts")
-    add_area_if_present(areas, "scripts_root", runtime_root / "scripts", repo_root / "scripts")
-    add_area_if_present(areas, "migrations_app", runtime_root / "app" / "migrations", repo_root / "migrations")
-    add_area_if_present(areas, "migrations_root", runtime_root / "migrations", repo_root / "migrations")
-    add_area_if_present(areas, "alembic_app", runtime_root / "app" / "alembic", repo_root / "alembic")
-    add_area_if_present(areas, "alembic_root", runtime_root / "alembic", repo_root / "alembic")
-    add_area_if_present(areas, "templates_app", runtime_root / "app" / "templates", repo_root / "templates")
-    add_area_if_present(areas, "templates_root", runtime_root / "templates", repo_root / "templates")
-    add_area_if_present(areas, "static_app", runtime_root / "app" / "static", repo_root / "static")
-    add_area_if_present(areas, "static_root", runtime_root / "static", repo_root / "static")
-
-    rows: list[DiffRow] = []
-    for area, runtime_dir, repo_dir in areas:
-        rows.extend(compare_area(area, runtime_dir, repo_dir))
-
-    metadata_pairs = [
-        ("app/pyproject.toml", runtime_root / "app/pyproject.toml", repo_root / "pyproject.toml"),
-        ("pyproject.toml", runtime_root / "pyproject.toml", repo_root / "pyproject.toml"),
-    ]
-    for label, runtime_file, repo_file in metadata_pairs:
-        if not runtime_file.exists():
-            continue
-        if repo_file.exists():
-            r_hash = sha256(runtime_file)
-            g_hash = sha256(repo_file)
-            rows.append(
-                DiffRow(
-                    "metadata", label,
-                    "SAME" if r_hash == g_hash else "CHANGED",
-                    r_hash, g_hash,
-                    runtime_file.stat().st_size, repo_file.stat().st_size,
-                )
-            )
-        else:
-            rows.append(
-                DiffRow(
-                    "metadata", label, "RUNTIME_ONLY",
-                    sha256(runtime_file), "", runtime_file.stat().st_size, 0,
-                )
-            )
-
-    metadata = {
-        "runtime_root": str(runtime_root),
-        "repo_root": str(repo_root),
-        "manifest_ok": True,
-        "manifest_errors": [],
-        "areas_compared": [area for area, _, _ in areas],
-    }
-    write_reports(rows, args.output_dir.resolve(), metadata)
-
+    rows, metadata = audit_runtime(runtime_root, repo_root, output_dir)
     summary = {
         status: sum(1 for row in rows if row.status == status)
         for status in ("SAME", "CHANGED", "RUNTIME_ONLY", "REPO_ONLY")
     }
-
     print("RECONCILIATION_AUDIT_OK")
     print("Manifesto: OK")
     print("Áreas:", ", ".join(metadata["areas_compared"]))
     for status, count in summary.items():
         print(f"{status}: {count}")
-    print(f"Relatório: {args.output_dir.resolve()}")
+    print(f"Relatório: {output_dir.name}")
 
-    if args.fail_on_diff and any(
-        summary[s] for s in ("CHANGED", "RUNTIME_ONLY", "REPO_ONLY")
-    ):
+    if args.fail_on_diff and any(summary[state] for state in ("CHANGED", "RUNTIME_ONLY", "REPO_ONLY")):
         return 3
     return 0
 
