@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "scripts/*.py"
+      - "scripts/*.ps1"
       - "config/*.json"
       - "config/*.toml"
       - "tests/test_*.py"
@@ -11,6 +12,7 @@ on:
   pull_request:
     paths:
       - "scripts/*.py"
+      - "scripts/*.ps1"
       - "config/*.json"
       - "config/*.toml"
       - "tests/test_*.py"
@@ -32,6 +34,36 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Smoke PowerShell B06 launcher
+        shell: pwsh
+        run: |
+          $runtime = Join-Path $env:RUNNER_TEMP "axiom-runtime-smoke"
+          $output = Join-Path $env:RUNNER_TEMP "axiom-handoff-smoke"
+          $sourceDir = Join-Path $runtime "app/src/pkg"
+          $database = Join-Path $runtime "data/operational.sqlite3"
+          New-Item -ItemType Directory -Force -Path $sourceDir | Out-Null
+          New-Item -ItemType Directory -Force -Path (Split-Path -Parent $database) | Out-Null
+          [System.IO.File]::WriteAllText((Join-Path $sourceDir "a.py"), "x = 1`n")
+          $env:AXIOM_SMOKE_DB = $database
+          python -c "import os, sqlite3; p=os.environ['AXIOM_SMOKE_DB']; c=sqlite3.connect(p); c.execute('CREATE TABLE smoke (id INTEGER PRIMARY KEY, status TEXT NOT NULL)'); c.execute('INSERT INTO smoke(status) VALUES (?)', ('OK',)); c.commit(); c.close()"
+          $pythonExe = (Get-Command python).Source
+          ./scripts/BUILD_RUNTIME_HANDOFF_V8.ps1 -RuntimeRoot $runtime -OutputDir $output -PythonExe $pythonExe -Label "ci-v8"
+          $manifestPath = Join-Path $output "ci-v8-handoff/RUNTIME_HANDOFF_MANIFEST.json"
+          if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+            throw "Smoke B06 não gerou manifesto."
+          }
+          $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ($manifest.source.database_selection -ne "AUTO_DISCOVERED_SINGLE") {
+            throw "Smoke B06 não comprovou autodiscovery inequívoca."
+          }
+          if ($manifest.source.source_mutation_performed -ne $false) {
+            throw "Smoke B06 não comprovou origem intacta."
+          }
+          if ($manifest.code_export.database_in_code_zip -ne $false) {
+            throw "Smoke B06 encontrou banco dentro do ZIP de código."
+          }
+          Write-Host "POWERSHELL_B06_SMOKE_OK"
 
       - name: Run audit tooling tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
