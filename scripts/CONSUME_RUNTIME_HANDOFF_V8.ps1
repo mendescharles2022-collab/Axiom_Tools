@@ -9,6 +9,7 @@ param(
     [string]$OutputDir,
 
     [string]$Invariants = "",
+    [string]$ReconciliationPolicy = "",
     [string]$PythonExe = "",
     [switch]$SkipRowCounts,
     [switch]$FailOnDiff,
@@ -94,6 +95,13 @@ if ($Invariants) {
     }
     $arguments += @("--invariants", $invariantPath)
 }
+if ($ReconciliationPolicy) {
+    $policyPath = Resolve-FullPath $ReconciliationPolicy
+    if (-not (Test-Path -LiteralPath $policyPath -PathType Leaf)) {
+        throw "Política de reconciliação não encontrada: $policyPath"
+    }
+    $arguments += @("--reconciliation-policy", $policyPath)
+}
 if ($SkipRowCounts) { $arguments += "--skip-row-counts" }
 if ($FailOnDiff) { $arguments += "--fail-on-diff" }
 if ($RequireDbOk) { $arguments += "--require-db-ok" }
@@ -106,10 +114,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $reportPath = Join-Path $output "RUNTIME_HANDOFF_CONSUMPTION.json"
+$planPath = Join-Path $output "RECONCILIATION_PLAN.json"
 if (-not (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
     throw "Relatório final de consumo não foi gerado."
 }
+if (-not (Test-Path -LiteralPath $planPath -PathType Leaf)) {
+    throw "Plano de reconciliação não foi gerado."
+}
 $report = Get-Content -LiteralPath $reportPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$plan = Get-Content -LiteralPath $planPath -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($report.handoff_unchanged -ne $true) {
     throw "Relatório não comprova handoff intacto."
 }
@@ -119,11 +132,23 @@ if ($report.internal_manifest_ok -ne $true) {
 if ($report.ready_for_reconciliation_review -ne $true) {
     throw "Relatório não liberou revisão de reconciliação."
 }
-if ($report.v8_homologated -ne $false) {
-    throw "Consumidor não pode marcar V8 como homologada."
+if ($report.automatic_reconciliation_write -ne $false) {
+    throw "Consumidor não pode permitir escrita automática de reconciliação."
+}
+if ($plan.automatic_write_allowed -ne $false) {
+    throw "Plano de reconciliação não pode permitir escrita automática."
+}
+if ($report.reconciliation_plan_sha256 -ne $plan.plan_sha256) {
+    throw "Hash do plano diverge do relatório de consumo."
+}
+if ($report.v8_homologated -ne $false -or $plan.v8_homologated -ne $false) {
+    throw "Consumidor/plano não podem marcar V8 como homologada."
 }
 
 Write-Host "RUNTIME_HANDOFF_CONSUMER_WINDOWS_OK"
 Write-Host "Handoff intacto: SIM"
+Write-Host "Plano: $([System.IO.Path]::GetFileName($planPath))"
+Write-Host "Revisão obrigatória: $($report.reconciliation_review_required)"
+Write-Host "Escrita automática: NÃO"
 Write-Host "Relatório: $([System.IO.Path]::GetFileName($reportPath))"
 Write-Host "V8 homologada: NÃO"
