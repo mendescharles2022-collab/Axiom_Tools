@@ -1,16 +1,16 @@
 # Rastreador canônico — Execução de correção V8
 
 Data: 31/08/2026  
-Status: **DIAGNÓSTICO B01–B50 REVISTO / 0 INSPEÇÕES PENDENTES / TOOLING ATÉ ETAPA 69 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
+Status: **DIAGNÓSTICO B01–B50 REVISTO / 0 INSPEÇÕES PENDENTES / TOOLING ATÉ ETAPA 70 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico atual do tooling
 
-GitHub Actions run `33445428234`  
-Commit `00d26ff0a19cec7bbb0e96687911590344876a58`  
+GitHub Actions run `33445712854`  
+Commit `57c9af8c54b5a2c8fd49534671cf43a6cad0e5a7`  
 Python `3.12.14`
 
 ```text
-Ran 321 tests in 1.455s
+Ran 328 tests in 1.416s
 OK
 ```
 
@@ -25,12 +25,12 @@ Preflight do mesmo marco:
 
 Artifact `v8-release-preflight`:
 
-- ID `9777823848`;
-- SHA-256 `bbcdb1b6a4e1e40441a8465ff5afd81abc7b49aaded9e8036a120f0412bc538e`.
+- ID `9777930296`;
+- SHA-256 `11c10192254f7de653a00c318e0de3b39910184b1a3f320a2fa6cb7e576f1a38`.
 
 Este é o marco de tooling. Ele **não** representa homologação da árvore operacional integral.
 
-## 2. Evolução canônica — Etapas 42–69
+## 2. Evolução canônica — Etapas 42–70
 
 A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patrimônio válido.
 
@@ -60,7 +60,8 @@ A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patri
 - Etapa 66 — B08, histórico estado/chamada com regressão explícita T L;
 - Etapa 67 — B36, planner read-only estado global → fonte;
 - Etapa 68 — B32, competência temporal/proveniência IRRF;
-- Etapa 69 — B06, handoff único runtime: código/config + SQLite separado + manifesto comum.
+- Etapa 69 — B06, handoff único runtime: código/config + SQLite separado + manifesto comum;
+- Etapa 70 — B06, launcher Windows parametrizado para executar o handoff em um comando.
 
 Resultado da fase: **nenhum B permanece em mera inspeção sem critério executável**.
 
@@ -98,13 +99,14 @@ Tooling já preparado/testado:
 - E2E de reconciliação;
 - preflight causal 28/28;
 - cópia SQLite consistente via backup;
-- **handoff único da Etapa 69** com ZIP de código/configuração + banco separado + relatório + manifesto comum;
+- handoff único da Etapa 69 com ZIP de código/configuração + banco separado + relatório + manifesto comum;
 - prova de não mutação da origem;
-- equivalência efetiva de schema origem × cópia testada.
+- equivalência efetiva de schema origem × cópia testada;
+- launcher Windows da Etapa 70, parametrizado, sem drive hardcoded e sem comandos de remoção/movimentação.
 
 B06 continua `BLOQUEADO_POR_RUNTIME` até:
 
-1. executar o handoff contra a instalação Windows real;
+1. executar o launcher contra a instalação Windows real;
 2. materializar o ZIP seguro e a cópia SQLite real;
 3. auditar/reconciliar runtime ↔ repositório;
 4. executar os preflights estruturais sobre a fotografia real;
@@ -217,4 +219,4 @@ Modo final continua exigindo cumulativamente:
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-A auditoria/tooling avançou até a Etapa 69. O gargalo agora não é mais “descobrir como medir”: é materializar com segurança a instalação Windows real via B06 e iniciar as correções integradas sobre a árvore operacional correta.
+A auditoria/tooling avançou até a Etapa 70. O gargalo agora é físico: executar o launcher B06 na instalação Windows real, materializar a fotografia segura e iniciar as correções integradas sobre a árvore operacional correta.
