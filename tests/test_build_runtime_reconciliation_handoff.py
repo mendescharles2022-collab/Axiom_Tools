@@ -156,7 +156,9 @@ class RuntimeReconciliationHandoffTests(unittest.TestCase):
                 output_dir=output,
                 label="audit-v8",
             )
-            copied = output / result["handoff_dir"] / result["database_copy"]
+            handoff = output / result["handoff_dir"]
+            copied = handoff / result["database_copy"]
+            report = json.loads((handoff / result["database_report"]).read_text(encoding="utf-8"))
             conn = sqlite3.connect(copied)
             try:
                 rows = conn.execute("SELECT id, status FROM jobs ORDER BY id").fetchall()
@@ -164,8 +166,12 @@ class RuntimeReconciliationHandoffTests(unittest.TestCase):
                 conn.close()
             self.assertEqual(rows, [(1, "OK")])
             self.assertEqual(
+                report["source"]["schema_sha256"],
+                report["destination"]["schema_sha256"],
+            )
+            self.assertEqual(
                 result["manifest"]["database_copy"]["schema_sha256"],
-                result["manifest"]["database_copy"]["schema_sha256"],
+                report["destination"]["schema_sha256"],
             )
 
     def test_existing_handoff_is_never_overwritten(self):
