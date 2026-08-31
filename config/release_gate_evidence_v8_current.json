@@ -13,8 +13,7 @@
         "artifact:v8-release-preflight#9777823848",
         "artifact-sha256:bbcdb1b6a4e1e40441a8465ff5afd81abc7b49aaded9e8036a120f0412bc538e"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui B04/B08/B28/B32/B34/B35/B36/B38/B40/B41/B42/B48/B49 em tooling/reconciliação, mapa causal 28/28 e o novo handoff único B06: export seguro de código/configuração, cópia SQLite consistente mantida separada, manifesto SHA-256 comum e prova de não mutação da origem. O run 33445428234 concluiu com 321 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS.",
-      "notes_runtime_limit": "O handoff B06 está testado em fixtures/CI, mas ainda não foi executado contra a instalação Windows real; portanto RUNTIME_BASELINE permanece NOT_RUN."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual inclui B04/B08/B28/B32/B34/B35/B36/B38/B40/B41/B42/B48/B49 em tooling/reconciliação, mapa causal 28/28 e o novo handoff único B06: export seguro de código/configuração, cópia SQLite consistente mantida separada, manifesto SHA-256 comum e prova de não mutação da origem. O run 33445428234 concluiu com 321 testes OK e preflight válido, mantendo 0/50 B homologados e 0/28 C PASS. O handoff está testado em fixtures/CI, mas ainda não foi executado contra a instalação Windows real."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Coletor/handoff B06 está testado, porém a instalação Windows real ainda não foi materializada e reconciliada."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
