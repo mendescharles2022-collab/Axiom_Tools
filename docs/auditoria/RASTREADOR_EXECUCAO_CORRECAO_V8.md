@@ -1,16 +1,16 @@
 # Rastreador canônico — Execução de correção V8
 
 Data: 31/08/2026  
-Status: **DIAGNÓSTICO B01–B50 REVISTO / TOOLING AVANÇADO ATÉ ETAPA 56 / RUNTIME INTEGRAL AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
+Status: **DIAGNÓSTICO B01–B50 REVISTO / TOOLING AVANÇADO ATÉ ETAPA 57 / RUNTIME INTEGRAL AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico atual do tooling
 
-GitHub Actions run `33439050816`  
-Commit `54fa9c798fc0e5edd633d7e337b5e03143a05019`  
+GitHub Actions run `33440070146`  
+Commit `0b980637de843fb1fbef61836da4a03b975dff2f`  
 Python `3.12.14`
 
 ```text
-Ran 189 tests in 1.052s
+Ran 215 tests in 0.899s
 OK
 ```
 
@@ -25,12 +25,12 @@ Preflight do mesmo marco:
 
 Artifact `v8-release-preflight`:
 
-- ID `9775507384`;
-- SHA-256 `e812bfce93067067c97c189583dbf2d693e8bd03be88251c6ed6165d74bd2bf9`.
+- ID `9775877239`;
+- SHA-256 `bee98e0797da5549b8d63cc0f2fd092d4cc9bcac031ef3dc07bf8c753a5cf8c4`.
 
 Este é o marco de tooling. Ele **não** representa homologação da árvore operacional integral.
 
-## 2. Etapas 42–56
+## 2. Etapas 42–57
 
 A auditoria foi retomada sem reiniciar trabalho anterior.
 
@@ -48,24 +48,25 @@ A auditoria foi retomada sem reiniciar trabalho anterior.
 - Etapa 53 — mapa causal C01–C28 → B01–B50;
 - Etapa 54 — validador causal e integração de governança;
 - Etapa 55 — config/release_identity no tooling B06/B42, preflight causal e recuperação de CI;
-- Etapa 56 — B49 bidirecional banco ↔ filesystem.
+- Etapa 56 — B49 bidirecional banco ↔ filesystem;
+- Etapa 57 — B48 retenção segura: Simular → Revisar → Confirmar → Revalidar, sem executor destrutivo.
 
 Com isso, B01–B50 possuem diagnóstico/restrição de evidência revisados e C01–C28 estão causalmente amarrados à matriz de bloqueadores.
 
 ## 3. Snapshot formal de estados
 
-O arquivo `config/blocker_status_v8_current.json` foi atualizado em 31/08 com notas de diagnóstico, sem promover estados por inspeção estática.
+O arquivo `config/blocker_status_v8_current.json` foi atualizado em 31/08 com notas de diagnóstico e avanço real de tooling, sem falsa homologação.
 
 | Estado | Quantidade |
 |---|---:|
 | `PRONTO_PARA_CORRIGIR` | 35 |
-| `INSPECAO_PENDENTE` | 8 |
-| `EM_CORRECAO` | 3 |
+| `INSPECAO_PENDENTE` | 7 |
+| `EM_CORRECAO` | 4 |
 | `BLOQUEADO_POR_RUNTIME` | 4 |
 | `CORRIGIDO_TESTADO` | 0 |
 | `CORRIGIDO_HOMOLOGADO` | 0 |
 
-Em correção: B35, B41, B42.  
+Em correção: B35, B41, B42, B48.  
 Bloqueados pelo runtime: B05, B06, B45, B49.
 
 Regra permanente:
@@ -128,7 +129,7 @@ Validador:
 
 `scripts/validate_regression_case_blocker_map.py`
 
-O preflight agora recusa mapa causal inválido.
+O preflight recusa mapa causal inválido.
 
 Nenhum C pode ser considerado PASS somente por resultado visual final quando seus bloqueadores estruturais associados ainda estão abertos.
 
@@ -257,13 +258,30 @@ Correção final deve restaurar apenas os botões, preservando a nova modelagem 
 
 ## 13. B48/B49
 
-### B48
+### B48 — retenção segura
 
-Planner dry-run existe, mas execução segura completa `Simular → revisar → confirmar → executar → relatório` ainda depende do acervo/política real.
+Tooling não destrutivo preparado e testado:
 
-### B49
+- `scripts/plan_retention_cleanup.py` — `DRY_RUN_ONLY`, com fingerprint de candidatos (`mtime_ns` + SHA-256);
+- `scripts/review_retention_plan.py` — decisão por item/categoria/evidência, vinculada ao hash do plano;
+- `scripts/authorize_retention_manifest.py` — confirmação explícita e manifesto autorizado, ainda `execution_performed=false`;
+- `scripts/revalidate_retention_manifest.py` — rechecagem read-only de raiz, path, reparse, existência, tamanho, `mtime_ns` e SHA-256.
 
-Tooling agora é bidirecional.
+Proteções:
+
+- originais, arquivos gerenciados, versões históricas, saídas finais e backups não podem ser marcados `ELIGIBLE`;
+- item elegível precisa ter evidência;
+- root lógico acompanha a cadeia;
+- arquivo substituído após a confirmação é bloqueado;
+- nenhum estágio implementado até aqui apaga ou move arquivo.
+
+A Etapa 57 registrou também o CI vermelho `33439569866`, que detectou referência com traversal (`../segredo`), e sua correção antes do marco verde final.
+
+B48 está `EM_CORRECAO`. O executor destrutivo foi deliberadamente adiado até existirem política/schema/acervo reais e prova de que os itens são transitórios/reconstruíveis.
+
+### B49 — banco ↔ filesystem
+
+Tooling é bidirecional.
 
 Banco → filesystem:
 
@@ -287,8 +305,6 @@ Cobertura inclui:
 - reparse/symlink;
 - bloqueio de SQL mutável;
 - prova de não mutação do SQLite.
-
-CI da Etapa 56: 189 testes OK.
 
 B49 continua bloqueado apenas pela falta de execução com schema/roots/banco/acervo reais.
 
@@ -348,4 +364,4 @@ Modo final exige:
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-A auditoria e o tooling avançaram até a Etapa 56. O maior gate estrutural continua sendo B06: reconciliar a árvore operacional integral antes de aplicar correções de domínio sobre uma fundação incompleta.
+A auditoria e o tooling avançaram até a Etapa 57. O maior gate estrutural continua sendo B06: reconciliar a árvore operacional integral antes de aplicar correções de domínio sobre uma fundação incompleta.
