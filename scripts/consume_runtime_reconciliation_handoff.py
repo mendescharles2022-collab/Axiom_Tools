@@ -11,9 +11,11 @@ from pathlib import Path, PurePosixPath
 
 import audit_runtime_reconciliation as reconciliation
 import build_database_homologation_preflight as database_preflight
+import plan_runtime_reconciliation as reconciliation_plan
 
 MANIFEST_NAME = "RUNTIME_HANDOFF_MANIFEST.json"
 REPORT_NAME = "RUNTIME_HANDOFF_CONSUMPTION.json"
+PLAN_NAME = "RECONCILIATION_PLAN.json"
 MAX_ZIP_FILES = 20_000
 MAX_ZIP_UNCOMPRESSED = 1_073_741_824
 
@@ -174,12 +176,23 @@ def assert_output_isolated(handoff_dir: Path, repo_root: Path, output_dir: Path)
         raise HandoffConsumptionError(f"Saída não pode ficar dentro do {label}.")
 
 
+def default_plan_policy(repo_root: Path) -> Path:
+    candidate = repo_root / "config/runtime_reconciliation_plan_policy_v8.json"
+    if candidate.is_file():
+        return candidate
+    bundled = Path(__file__).resolve().parents[1] / "config/runtime_reconciliation_plan_policy_v8.json"
+    if bundled.is_file():
+        return bundled
+    raise HandoffConsumptionError("Política canônica do plano de reconciliação não encontrada.")
+
+
 def consume_handoff(
     handoff_dir: Path,
     repo_root: Path,
     output_dir: Path,
     *,
     invariants_path: Path,
+    reconciliation_policy_path: Path | None = None,
     include_row_counts: bool = True,
 ) -> dict:
     handoff_dir = handoff_dir.resolve()
@@ -211,15 +224,21 @@ def consume_handoff(
         if not manifest_ok:
             raise HandoffConsumptionError("Manifesto interno inválido: " + "; ".join(manifest_errors))
 
-        rows, metadata = reconciliation.audit_runtime(
-            extracted,
-            repo_root,
-            output_dir / "reconciliation-report",
-        )
+        reconciliation_dir = output_dir / "reconciliation-report"
+        rows, metadata = reconciliation.audit_runtime(extracted, repo_root, reconciliation_dir)
         diff_summary = {
             status: sum(1 for row in rows if row.status == status)
             for status in ("SAME", "CHANGED", "RUNTIME_ONLY", "REPO_ONLY")
         }
+
+        policy_path = reconciliation_policy_path or default_plan_policy(repo_root)
+        diff_payload = reconciliation_plan.load_json(reconciliation_dir / "RECONCILIATION_DIFF.json")
+        plan_policy = reconciliation_plan.load_json(policy_path)
+        plan = reconciliation_plan.build_plan(diff_payload, plan_policy)
+        (output_dir / PLAN_NAME).write_text(
+            json.dumps(plan, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
 
         invariant_spec = database_preflight.load_json(invariants_path)
         db_report = database_preflight.build_database_preflight(
@@ -233,8 +252,7 @@ def consume_handoff(
         )
 
         after = snapshot_tree(handoff_dir)
-        handoff_unchanged = before == after
-        if not handoff_unchanged:
+        if before != after:
             raise HandoffConsumptionError("Handoff foi alterado durante o consumo.")
 
         result = {
@@ -246,6 +264,10 @@ def consume_handoff(
             "runtime_layout": metadata.get("runtime_layout"),
             "areas_compared": metadata.get("areas_compared", []),
             "diff_summary": diff_summary,
+            "reconciliation_plan_file": PLAN_NAME,
+            "reconciliation_plan_sha256": plan["plan_sha256"],
+            "reconciliation_review_required": plan["summary"]["review_required"],
+            "automatic_reconciliation_write": False,
             "database_preflight_ok": bool(db_report["summary"]["all_ok"]),
             "database_sha256": db_report["database_snapshot"]["before"]["sha256"],
             "ready_for_reconciliation_review": True,
@@ -275,6 +297,12 @@ def main() -> int:
         default=None,
         help="Especificação de invariantes; padrão: config/sqlite_invariants_closing_confirmed_v8.json do repositório.",
     )
+    parser.add_argument(
+        "--reconciliation-policy",
+        type=Path,
+        default=None,
+        help="Política do plano; padrão: config/runtime_reconciliation_plan_policy_v8.json.",
+    )
     parser.add_argument("--skip-row-counts", action="store_true")
     parser.add_argument("--fail-on-diff", action="store_true")
     parser.add_argument("--require-db-ok", action="store_true")
@@ -287,9 +315,16 @@ def main() -> int:
             args.repo_root,
             args.output_dir,
             invariants_path=invariants_path,
+            reconciliation_policy_path=args.reconciliation_policy,
             include_row_counts=not args.skip_row_counts,
         )
-    except (HandoffConsumptionError, database_preflight.DatabasePreflightError, OSError, zipfile.BadZipFile) as exc:
+    except (
+        HandoffConsumptionError,
+        database_preflight.DatabasePreflightError,
+        reconciliation_plan.ReconciliationPlanError,
+        OSError,
+        zipfile.BadZipFile,
+    ) as exc:
         print(f"RUNTIME_HANDOFF_CONSUMPTION_ERRO: {exc}", file=sys.stderr)
         return 2
 
@@ -297,6 +332,9 @@ def main() -> int:
     print(f"Handoff intacto: {'SIM' if result['handoff_unchanged'] else 'NÃO'}")
     for status, count in result["diff_summary"].items():
         print(f"{status}: {count}")
+    print(f"Plano: {result['reconciliation_plan_file']}")
+    print(f"Revisão obrigatória: {result['reconciliation_review_required']}")
+    print("Escrita automática: NÃO")
     print(f"Preflight DB: {'OK' if result['database_preflight_ok'] else 'FALHA'}")
     print(f"Relatório: {REPORT_NAME}")
     print("V8 homologada: NÃO")
