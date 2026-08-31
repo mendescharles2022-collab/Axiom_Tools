@@ -1,7 +1,7 @@
 # Guia — Handoff seguro do runtime para reconciliação V8
 
 Data: 31/08/2026  
-Status: **handoff B06 + launcher Windows testados / execução na instalação real ainda pendente**
+Status: **handoff B06 + launcher Windows + autodiscovery SQLite conservadora testados / execução na instalação real ainda pendente**
 
 ## 1. Objetivo
 
@@ -18,7 +18,17 @@ O banco **não entra** no ZIP de código.
 
 ## 2. Comando preferencial no Windows
 
-Executar em PowerShell a partir de uma cópia do tooling de auditoria:
+Primeira tentativa, sem precisar localizar manualmente o banco:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "<CAMINHO_DO_REPOSITORIO>\scripts\BUILD_RUNTIME_HANDOFF_V8.ps1" `
+  -RuntimeRoot "<RAIZ_OPERACIONAL_DO_AXIOM_TOOLS>" `
+  -OutputDir "<DIRETORIO_EXTERNO_AO_RUNTIME>"
+```
+
+A seleção automática do banco só acontece se houver **exatamente um SQLite válido** na árvore pesquisável do runtime.
+
+Se o tooling encontrar zero ou mais de um SQLite válido, ele interrompe a coleta e exige escolha explícita:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "<CAMINHO_DO_REPOSITORIO>\scripts\BUILD_RUNTIME_HANDOFF_V8.ps1" `
@@ -30,7 +40,8 @@ powershell -ExecutionPolicy Bypass -File "<CAMINHO_DO_REPOSITORIO>\scripts\BUILD
 Regras obrigatórias:
 
 - `OutputDir` deve ficar fora da árvore indicada em `RuntimeRoot`;
-- o banco de origem não pode ficar dentro de `OutputDir`;
+- quando `Database` for informado, o banco de origem não pode ficar dentro de `OutputDir`;
+- um banco explícito precisa possuir cabeçalho SQLite válido;
 - o launcher não possui drive do servidor codificado;
 - não é necessário informar Python quando `.venv`, `venv`, `py.exe` ou `python.exe` puder ser localizado com segurança;
 - se necessário, informar explicitamente `-PythonExe "<CAMINHO_DO_PYTHON>"`.
@@ -41,7 +52,23 @@ Opcionalmente, pode ser usado um label controlado:
 -Label "axiom-tools-runtime-v8"
 ```
 
-## 3. O que o launcher executa
+## 3. Autodiscovery conservadora do SQLite
+
+A descoberta automática aceita apenas arquivos `.sqlite`, `.sqlite3` ou `.db` que tenham o cabeçalho real:
+
+`SQLite format 3`
+
+A regra é deliberadamente conservadora:
+
+- um único SQLite válido → `AUTO_DISCOVERED_SINGLE`;
+- nenhum SQLite válido → falha e solicita `-Database`;
+- dois ou mais SQLite válidos → falha, lista os candidatos relativos e solicita `-Database`;
+- arquivo apenas com extensão de banco, mas conteúdo não SQLite → ignorado;
+- não existe desempate automático por nome, tamanho, data, pasta ou banco “mais novo”.
+
+A busca não segue symlinks e ignora áreas como backups, temporários, documentos, uploads, logs, certificados, caches e ambientes virtuais. Diretórios usuais de dados/banco (`data`, `database`, `db`) permanecem pesquisáveis.
+
+## 4. O que o launcher executa
 
 O arquivo:
 
@@ -53,18 +80,20 @@ chama exclusivamente o orquestrador canônico:
 
 O launcher:
 
-1. valida runtime, banco, saída e label;
+1. valida runtime, saída, label e banco quando explicitamente informado;
 2. resolve o Python sem caminho de servidor hardcoded;
 3. impede saída dentro do runtime;
-4. impede banco de origem dentro da saída;
-5. executa o handoff;
-6. exige `RUNTIME_HANDOFF_MANIFEST.json`;
-7. confirma no manifesto que a origem não foi alterada;
-8. confirma que o banco não entrou no ZIP de código;
-9. confirma que a cópia SQLite permaneceu separada;
-10. termina declarando explicitamente `V8 homologada: NÃO`.
+4. impede banco explícito de origem dentro da saída;
+5. deixa o Python aplicar a seleção SQLite inequívoca quando `-Database` for omitido;
+6. executa o handoff;
+7. exige `RUNTIME_HANDOFF_MANIFEST.json`;
+8. confirma no manifesto que a origem não foi alterada;
+9. confirma que o banco não entrou no ZIP de código;
+10. confirma que a cópia SQLite permaneceu separada;
+11. informa o banco selecionado e `database_selection`;
+12. termina declarando explicitamente `V8 homologada: NÃO`.
 
-## 4. Whitelist do ZIP de código/configuração
+## 5. Whitelist do ZIP de código/configuração
 
 Quando existirem, o exportador considera áreas versionáveis como:
 
@@ -82,7 +111,7 @@ Quando existirem, o exportador considera áreas versionáveis como:
 
 O script não faz espelhamento cego da instalação.
 
-## 5. Conteúdo proibido no ZIP de código
+## 6. Conteúdo proibido no ZIP de código
 
 O exportador remove/bloqueia:
 
@@ -102,12 +131,14 @@ O exportador remove/bloqueia:
 
 Também existe varredura textual para possíveis segredos hardcoded. Se houver material suspeito, a coleta falha em vez de publicá-lo silenciosamente.
 
-## 6. Tratamento do banco
+## 7. Tratamento do banco
 
 O SQLite é tratado em trilha separada.
 
 O handoff usa o tooling de backup/cópia consistente e registra:
 
+- nome do banco selecionado;
+- método `EXPLICIT` ou `AUTO_DISCOVERED_SINGLE`;
 - SHA-256 do banco de origem antes e depois;
 - schema SHA-256;
 - `user_version`;
@@ -117,13 +148,14 @@ O handoff usa o tooling de backup/cópia consistente e registra:
 
 A existência de divergência estrutural pode ser preservada para diagnóstico; ela **não** é convertida em homologação automática.
 
-## 7. Saída esperada
+## 8. Saída esperada
 
 Após sucesso do launcher:
 
 ```text
 RUNTIME_HANDOFF_WINDOWS_OK
 Diretório do handoff: <...>
+Banco selecionado: <...> [EXPLICIT|AUTO_DISCOVERED_SINGLE]
 ZIP de código/config: <...zip>
 SQLite separado: <...sqlite3>
 Manifesto SHA-256: <hash>
@@ -138,7 +170,7 @@ No diretório `<label>-handoff` devem existir, entre outros:
 - `RUNTIME_DATABASE_CLONE_REPORT.json`;
 - `RUNTIME_HANDOFF_MANIFEST.json`.
 
-## 8. Exportador legado de código
+## 9. Exportador legado de código
 
 O fluxo anterior permanece disponível para diagnóstico isolado:
 
@@ -148,21 +180,22 @@ O fluxo anterior permanece disponível para diagnóstico isolado:
 
 Porém, para remover o bloqueio B06, o **handoff único** é o caminho preferencial porque preserva na mesma fotografia a árvore versionável e uma cópia consistente do banco sem misturá-las.
 
-## 9. Verificação após a coleta real
+## 10. Verificação após a coleta real
 
 Antes de qualquer reconciliação ou commit:
 
 1. conferir `RUNTIME_HANDOFF_MANIFEST.json`;
-2. conferir os SHA-256;
-3. confirmar ausência de banco/documentos/certificados/credenciais no ZIP de código;
-4. manter a cópia SQLite fora do GitHub;
-5. auditar código/configuração/identidade runtime ↔ repositório;
-6. executar B35 e auditores estruturais sobre a cópia SQLite;
-7. configurar/executar B49 contra banco/acervo reais;
-8. inventariar módulos e suíte operacional;
-9. reconciliar apenas diferenças comprovadas, preservando trabalho válido.
+2. conferir `database_selection` e o banco selecionado;
+3. conferir os SHA-256;
+4. confirmar ausência de banco/documentos/certificados/credenciais no ZIP de código;
+5. manter a cópia SQLite fora do GitHub;
+6. auditar código/configuração/identidade runtime ↔ repositório;
+7. executar B35 e auditores estruturais sobre a cópia SQLite;
+8. configurar/executar B49 contra banco/acervo reais;
+9. inventariar módulos e suíte operacional;
+10. reconciliar apenas diferenças comprovadas, preservando trabalho válido.
 
-## 10. O que NÃO fazer
+## 11. O que NÃO fazer
 
 - não compactar manualmente a raiz inteira do servidor;
 - não subir o SQLite operacional ao GitHub;
@@ -170,9 +203,10 @@ Antes de qualquer reconciliação ou commit:
 - não substituir a `main` inteira sem comparação;
 - não apagar a fundação atual antes de inventariar diferenças;
 - não usar o diretório do runtime como `OutputDir`;
+- não escolher automaticamente entre dois bancos possíveis;
 - não declarar B06 resolvido somente porque o handoff foi gerado.
 
-## 11. Critério para B06 sair de `BLOQUEADO_POR_RUNTIME`
+## 12. Critério para B06 sair de `BLOQUEADO_POR_RUNTIME`
 
 B06 só avança quando:
 
@@ -185,17 +219,17 @@ B06 só avança quando:
 7. a árvore reconciliada iniciar e reproduzir o baseline esperado;
 8. dados reais permanecerem fora do repositório.
 
-## 12. Evidência do tooling
+## 13. Evidência do tooling
 
-Launcher Windows + handoff canônico foram validados no GitHub Actions run `33445712854`:
+Handoff, launcher Windows e autodiscovery conservadora foram validados no GitHub Actions run `33446139531`:
 
 ```text
-Ran 328 tests in 1.416s
+Ran 336 tests in 1.585s
 OK
 ```
 
 Isso valida o tooling, **não a instalação física**.
 
-## 13. Estado atual
+## 14. Estado atual
 
 **B06 BLOQUEADO_POR_RUNTIME / RUNTIME_BASELINE NOT_RUN / V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
