@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "temp_cache_7d",
+      "root": "temp",
+      "glob": "cache/**/*",
+      "older_than_days": 7
+    },
+    {
+      "id": "temp_work_7d",
+      "root": "temp",
+      "glob": "work/**/*",
+      "older_than_days": 7
+    },
+    {
+      "id": "temp_staging_7d",
+      "root": "temp",
+      "glob": "staging/**/*",
+      "older_than_days": 7
+    }
+  ]
+}
