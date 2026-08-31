@@ -35,11 +35,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Smoke PowerShell B06 launcher
+      - name: Smoke PowerShell B06 producer and consumer
         shell: pwsh
         run: |
           $runtime = Join-Path $env:RUNNER_TEMP "axiom-runtime-smoke"
           $output = Join-Path $env:RUNNER_TEMP "axiom-handoff-smoke"
+          $consumeOutput = Join-Path $env:RUNNER_TEMP "axiom-consume-smoke"
+          $invariants = Join-Path $env:RUNNER_TEMP "axiom-smoke-invariants.json"
           $sourceDir = Join-Path $runtime "app/src/pkg"
           $database = Join-Path $runtime "data/operational.sqlite3"
           New-Item -ItemType Directory -Force -Path $sourceDir | Out-Null
@@ -47,9 +49,24 @@ jobs:
           [System.IO.File]::WriteAllText((Join-Path $sourceDir "a.py"), "x = 1`n")
           $env:AXIOM_SMOKE_DB = $database
           python -c "import os, sqlite3; p=os.environ['AXIOM_SMOKE_DB']; c=sqlite3.connect(p); c.execute('CREATE TABLE smoke (id INTEGER PRIMARY KEY, status TEXT NOT NULL)'); c.execute('INSERT INTO smoke(status) VALUES (?)', ('OK',)); c.commit(); c.close()"
+          @'
+          {
+            "version": 1,
+            "invariants": [
+              {
+                "id": "smoke_status",
+                "description": "Smoke B06",
+                "severity": "error",
+                "sql": "SELECT id FROM smoke WHERE status <> 'OK'",
+                "max_rows": 10
+              }
+            ]
+          }
+          '@ | Set-Content -LiteralPath $invariants -Encoding UTF8
           $pythonExe = (Get-Command python).Source
           ./scripts/BUILD_RUNTIME_HANDOFF_V8.ps1 -RuntimeRoot $runtime -OutputDir $output -PythonExe $pythonExe -Label "ci-v8"
-          $manifestPath = Join-Path $output "ci-v8-handoff/RUNTIME_HANDOFF_MANIFEST.json"
+          $handoffDir = Join-Path $output "ci-v8-handoff"
+          $manifestPath = Join-Path $handoffDir "RUNTIME_HANDOFF_MANIFEST.json"
           if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
             throw "Smoke B06 não gerou manifesto."
           }
@@ -64,6 +81,23 @@ jobs:
             throw "Smoke B06 encontrou banco dentro do ZIP de código."
           }
           Write-Host "POWERSHELL_B06_SMOKE_OK"
+
+          ./scripts/CONSUME_RUNTIME_HANDOFF_V8.ps1 -HandoffDir $handoffDir -RepoRoot $PWD -OutputDir $consumeOutput -PythonExe $pythonExe -Invariants $invariants
+          $consumeReportPath = Join-Path $consumeOutput "RUNTIME_HANDOFF_CONSUMPTION.json"
+          if (-not (Test-Path -LiteralPath $consumeReportPath -PathType Leaf)) {
+            throw "Smoke B06 consumidor não gerou relatório."
+          }
+          $consumeReport = Get-Content -LiteralPath $consumeReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ($consumeReport.handoff_unchanged -ne $true) {
+            throw "Smoke B06 consumidor não preservou o handoff."
+          }
+          if ($consumeReport.database_preflight_ok -ne $true) {
+            throw "Smoke B06 consumidor não concluiu preflight SQLite."
+          }
+          if ($consumeReport.v8_homologated -ne $false) {
+            throw "Smoke B06 consumidor marcou homologação indevida."
+          }
+          Write-Host "POWERSHELL_B06_CONSUMER_SMOKE_OK"
 
       - name: Run audit tooling tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
