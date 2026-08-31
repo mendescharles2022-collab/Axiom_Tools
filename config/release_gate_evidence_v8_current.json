@@ -6,15 +6,15 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33447976729",
-        "commit:d3df113b297c86db72531c70537eceb5b1e9f6f6",
-        "result:414-tests-OK",
+        "github-actions:run/33448515415",
+        "commit:4aa402201fe7b5ed46d4b3ec317a0e4eeec5725f",
+        "result:478-tests-OK",
         "powershell-smoke:POWERSHELL_B06_SMOKE_OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9778709806",
-        "artifact-sha256:c341df455b483d37824709c8da1ddda75c3ea69130113b155edb867f90c59aaf"
+        "artifact:v8-release-preflight#9778892183",
+        "artifact-sha256:1e19c9b52c570cb88fd48c6e8d24a62e1a352de3032a64756bda879a92546c02"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual preserva os toolings anteriores e acrescenta planner de composição documental/econômica B12/B13/B14/B17/B50 e validador de descoberta/identidade/vínculo B15/B16. Há regressões explícitas para Jair, Leosmar, reemissão, versões, mensal+rescisório e PF/CAEPF. O run 33447976729 concluiu com 414 testes OK, POWERSHELL_B06_SMOKE_OK e preflight válido, mantendo 0/50 B homologados, 0/28 C PASS e mapa causal 28/28. A execução física contra o runtime Windows real ainda não ocorreu."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. Marco atual preserva os toolings anteriores e acrescenta decisões por fonte/obrigação B18/B23, aplicabilidade mensal B19-B22, contrato eConsignado B24-B27, validação do parser Domínio B29-B31 e calendário especial B33. Há regressões para FGTS zero, MEI/DAE, deduções, afastamentos/faltas, D A F Castro, D&L residual, P DA SILVA CARMO, 2A Peças, dezembro e 13º. O run 33448515415 concluiu com 478 testes OK, POWERSHELL_B06_SMOKE_OK e preflight válido, mantendo 0/50 B homologados, 0/28 C PASS e mapa causal 28/28. A execução física contra o runtime Windows real ainda não ocorreu."
     },
     {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Handoff B06, launcher, autodiscovery e smoke PowerShell estão testados, porém a instalação Windows física real ainda não foi materializada e reconciliada."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"Tooling consolidado está testado; falta executar sobre a cópia SQLite real produzida pelo handoff B06."},
