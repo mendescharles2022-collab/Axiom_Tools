@@ -8,6 +8,7 @@ from pathlib import Path
 
 import create_regression_results_skeleton as skeleton
 import validate_blocker_statuses as blockers
+import validate_regression_case_blocker_map as dependency_map
 import validate_regression_results as regression
 import validate_release_gate as release_gate
 
@@ -31,6 +32,7 @@ def build_current_preflight(repo_root: Path, output_dir: Path) -> dict:
         "blocker_registry": repo_root / "config" / "blocker_registry_v8.json",
         "blocker_status": repo_root / "config" / "blocker_status_v8_current.json",
         "regression_registry": repo_root / "config" / "regression_cases_v8_202608.json",
+        "regression_blocker_map": repo_root / "config" / "regression_case_blocker_map_v8_202608.json",
         "release_identity": repo_root / "config" / "release_identity.toml",
         "evidence_manifest": repo_root / "config" / "release_gate_evidence_v8_current.json",
     }
@@ -46,7 +48,15 @@ def build_current_preflight(repo_root: Path, output_dir: Path) -> dict:
 
     try:
         stage.mkdir(parents=True)
+
+        blocker_registry_doc = dependency_map.load_json(required["blocker_registry"])
         regression_doc = regression.load_json(required["regression_registry"])
+        causal_report = dependency_map.validate_dependency_map(
+            regression_doc,
+            blocker_registry_doc,
+            dependency_map.load_json(required["regression_blocker_map"]),
+        )
+
         regression_results = skeleton.build_skeleton(regression_doc)
         regression_path = stage / "REGRESSION_RESULTS_CURRENT.json"
         regression_path.write_text(
@@ -79,6 +89,10 @@ def build_current_preflight(repo_root: Path, output_dir: Path) -> dict:
             "evidence_pass": report["evidence"]["pass_count"],
             "evidence_required": report["evidence"]["required"],
             "build_ok": report["build_ok"],
+            "causal_map_ok": causal_report["ok"],
+            "causal_cases_mapped": causal_report["mapped_cases"],
+            "causal_known_blockers": causal_report["known_blockers"],
+            "causal_used_blockers": len(causal_report["used_blockers"]),
             "errors": report["errors"],
         }
         (stage / "PREFLIGHT_SUMMARY.json").write_text(
@@ -104,7 +118,13 @@ def main() -> int:
 
     try:
         summary = build_current_preflight(args.repo_root, args.output_dir)
-    except (CurrentPreflightError, blockers.BlockerValidationError, regression.RegressionValidationError, release_gate.ReleaseGateError) as exc:
+    except (
+        CurrentPreflightError,
+        blockers.BlockerValidationError,
+        dependency_map.DependencyMapError,
+        regression.RegressionValidationError,
+        release_gate.ReleaseGateError,
+    ) as exc:
         print(f"V8_PREFLIGHT_ERRO: {exc}", file=sys.stderr)
         return 2
 
@@ -112,6 +132,7 @@ def main() -> int:
     print(f"Final OK: {summary['final_ok']}")
     print(f"Bloqueadores homologados: {summary['blockers_homologated']}/50")
     print(f"Casos PASS: {summary['regression_pass']}/28")
+    print(f"Mapa causal: {summary['causal_cases_mapped']}/28")
     print(f"Evidências PASS: {summary['evidence_pass']}/{summary['evidence_required']}")
     print(f"Release READY: {summary['release_ready']}")
     print(f"Build OK: {summary['build_ok']}")
