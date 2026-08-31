@@ -1,17 +1,18 @@
 # Rastreador canônico — Execução de correção V8
 
 Data: 31/08/2026  
-Status: **B01–B50 REVISTOS / 0 INSPEÇÕES / 0 PRONTOS / TOOLING ATÉ ETAPA 78 / RUNTIME WINDOWS AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
+Status: **B01–B50 REVISTOS / 0 INSPEÇÕES / 0 PRONTOS / TOOLING ATÉ ETAPA 79 / RUNTIME WINDOWS FÍSICO AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico atual do tooling
 
-GitHub Actions run `33452021223`  
-Commit `47da595d2eed0d6a18176bc4eddb0cc2dd3e6891`  
+GitHub Actions run `33452559940`  
+Commit `9939b660d17c68c6848cb8d9cb5e24fffefd38dd`  
 Python `3.12.14`
 
 ```text
 POWERSHELL_B06_SMOKE_OK
-Ran 494 tests in 1.584s
+POWERSHELL_B06_CONSUMER_SMOKE_OK
+Ran 514 tests in 1.665s
 OK
 ```
 
@@ -26,12 +27,12 @@ Preflight do mesmo marco:
 
 Artifact `v8-release-preflight`:
 
-- ID `9780092100`;
-- SHA-256 `21010ecfbd5bf75d2fed3b691ba5a5a11c6e63de78878e6eafa0b40af4891db4`.
+- ID `9780276903`;
+- SHA-256 `511d75258d3f7f28a519708d61407963ef6bf2c0ecf8b74051252464b5432e1f`.
 
 Este é o marco de tooling. Ele **não** representa homologação da árvore operacional integral.
 
-## 2. Evolução canônica — Etapas 42–78
+## 2. Evolução canônica — Etapas 42–79
 
 A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patrimônio válido.
 
@@ -53,13 +54,14 @@ A auditoria foi retomada sem reiniciar o trabalho anterior e sem descartar patri
 - Etapa 66 — B08, histórico/chamada com regressão T L;
 - Etapa 67 — B36, migração global → fonte;
 - Etapa 68 — B32, IRRF temporal/proveniência;
-- Etapas 69–72 — B06, handoff único, launcher Windows, autodiscovery SQLite e smoke PowerShell real em CI;
+- Etapas 69–72 — B06, handoff único, launcher Windows, autodiscovery SQLite e smoke PowerShell do produtor;
 - Etapa 73 — B01/B02/B03/B39, candidato não destrutivo, GET puro, gate de saída e reautorização de IDs;
 - Etapa 74 — B07/B09/B10/B11/B37, universo operacional e semântica das máquinas de estado;
 - Etapa 75 — B12–B17/B50, composição multi-documento, identidade PF/CAEPF e identidade econômica;
 - Etapa 76 — B18–B27, decisão por fonte, aplicabilidade e eConsignado;
 - Etapa 77 — B29/B30/B31/B33, parser Domínio, saldo federal, proveniência e dezembro/13º;
-- Etapa 78 — B43/B44/B46/B47, contratos executáveis de UI para Pendências, A4, Monitor e Sintegra.
+- Etapa 78 — B43/B44/B46/B47, contratos executáveis de UI para Pendências, A4, Monitor e Sintegra;
+- Etapa 79 — B06, consumidor canônico do handoff: validação externa e interna, extração segura, diff runtime↔repo, preflight SQLite, wrapper PowerShell e smoke produtor+consumidor no mesmo CI.
 
 Resultado da fase: **nenhum B permanece em inspeção ou apenas pronto para correção sem critério executável**.
 
@@ -87,23 +89,33 @@ Regra permanente:
 
 A `main` continua sendo uma fundação reduzida e não pode ser tratada como se fosse automaticamente a instalação operacional integral.
 
-Tooling já preparado/testado:
+### Produtor já preparado/testado
 
 - exportador runtime por whitelist;
 - bloqueio de banco/documentos/segredos no ZIP de código;
 - config segura e identidade de release;
-- auditor runtime ↔ repositório;
 - manifesto e hashes SHA-256;
-- pipeline E2E de reconciliação em fixtures;
-- preflight causal 28/28;
 - cópia SQLite consistente via backup;
-- handoff único com ZIP de código/configuração + banco separado + relatório + manifesto comum;
+- ZIP de código/configuração + SQLite separado + relatório + manifesto comum;
 - prova de não mutação da origem;
-- launcher PowerShell parametrizado, sem drive hardcoded e sem remoção/movimentação;
+- launcher `BUILD_RUNTIME_HANDOFF_V8.ps1` parametrizado, sem drive hardcoded e sem remoção/movimentação;
 - autodiscovery limitada a exatamente um SQLite válido;
-- smoke PowerShell em CI com `POWERSHELL_B06_SMOKE_OK`.
+- `POWERSHELL_B06_SMOKE_OK` no CI.
 
-B06 continua `BLOQUEADO_POR_RUNTIME` até executar essa cadeia contra a instalação Windows física e consumir os artefatos produzidos numa reconciliação verificável.
+### Consumidor acrescentado na Etapa 79
+
+- `consume_runtime_reconciliation_handoff.py` valida o manifesto externo e seus hashes;
+- valida ZIP de código, SHA/tamanho da cópia SQLite e relatório da clonagem;
+- extrai ZIP apenas em staging isolado, bloqueando traversal, symlink e payload excessivo;
+- verifica novamente conteúdo proibido, possíveis segredos e o manifesto interno;
+- executa diff runtime ↔ repositório sem esconder `CHANGED`, `RUNTIME_ONLY` ou `REPO_ONLY`;
+- executa preflight SQLite sobre a cópia do handoff;
+- prova handoff intacto antes/depois;
+- nunca marca a V8 como homologada;
+- wrapper `CONSUME_RUNTIME_HANDOFF_V8.ps1` compatível com Windows PowerShell 5.1;
+- smoke CI executa produtor e consumidor na mesma cadeia e exige `POWERSHELL_B06_CONSUMER_SMOKE_OK`.
+
+B06 continua `BLOQUEADO_POR_RUNTIME` porque a instalação Windows física do escritório ainda não foi coletada e consumida. A diferença agora é que o caminho físico está integralmente preparado e testado.
 
 ## 5. Guardrails funcionais já preparados
 
@@ -158,10 +170,23 @@ Cobertura causal: `28/28`.
 
 Nenhum caso pode virar PASS enquanto seus bloqueadores estruturais associados não forem corrigidos/testados na árvore operacional reconciliada.
 
-## 7. Ordem operacional após materialização do B06
+## 7. Sequência física B06 preparada
 
-1. verificar e consumir o handoff real;
-2. reconciliar runtime ↔ repositório e fixar baseline;
+Quando a instalação Windows real estiver disponível para execução:
+
+1. executar `BUILD_RUNTIME_HANDOFF_V8.ps1` com saída externa à árvore operacional;
+2. preservar juntos manifesto, ZIP, SQLite e relatório, sem edição manual;
+3. levar o diretório de handoff ao ambiente de auditoria/reconciliação;
+4. executar `CONSUME_RUNTIME_HANDOFF_V8.ps1` com staging novo e externo ao repositório;
+5. revisar `RECONCILIATION.jsonl`, resumo e `DATABASE_HOMOLOGATION_PREFLIGHT.json`;
+6. classificar divergências e fixar o baseline antes de qualquer integração de código.
+
+A origem operacional não entra na área de escrita da auditoria.
+
+## 8. Ordem operacional após materialização do B06
+
+1. classificar/revisar o diff runtime ↔ repositório;
+2. fixar baseline reconciliado;
 3. executar B35/B49 sobre a cópia SQLite/acervo real;
 4. aplicar os guardrails B01–B44/B46–B48/B50 sobre a árvore reconciliada;
 5. corrigir os achados reais por dependência causal;
@@ -171,7 +196,7 @@ Nenhum caso pode virar PASS enquanto seus bloqueadores estruturais associados n�
 9. instalar no Windows;
 10. comprovar rollback físico e smoke final.
 
-## 8. Gate final
+## 9. Gate final
 
 Modo final continua exigindo cumulativamente:
 
@@ -182,8 +207,8 @@ Modo final continua exigindo cumulativamente:
 - build verificável;
 - dez gates externos PASS.
 
-## 9. Situação atual
+## 10. Situação atual
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-A auditoria/tooling avançou até a Etapa 78. O trabalho lógico preparatório não possui mais itens em mera inspeção ou apenas `PRONTO_PARA_CORRIGIR`. O gargalo material é B06: obter e consumir uma fotografia verificável da instalação Windows real sem tocar na origem operacional.
+A auditoria/tooling avançou até a Etapa 79. O produtor e o consumidor B06 estão testados ponta a ponta em CI. O gargalo material continua sendo obter a fotografia da instalação Windows física; o próximo trabalho lógico é transformar o diff produzido pelo consumidor em um plano de reconciliação revisável, nunca numa cópia automática de runtime sobre repositório.
