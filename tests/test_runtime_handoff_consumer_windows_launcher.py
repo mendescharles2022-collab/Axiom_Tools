@@ -46,7 +46,9 @@ class RuntimeHandoffConsumerWindowsLauncherTests(unittest.TestCase):
         self.assertNotIn("$IsWindows", self.text)
         self.assertIn("DirectorySeparatorChar -eq [char]92", self.text)
         self.assertIn('.venv\\Scripts\\python.exe', self.text)
-        self.assertIn("Get-Command py.exe", self.text)
+        self.assertIn('"py.exe"', self.text)
+        self.assertIn('"python.exe"', self.text)
+        self.assertIn("Get-Command $commandName", self.text)
 
     def test_launcher_validates_non_homologation_and_immutability(self):
         self.assertIn("handoff_unchanged", self.text)
