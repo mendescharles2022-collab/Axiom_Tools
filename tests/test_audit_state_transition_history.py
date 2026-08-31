@@ -120,8 +120,7 @@ class StateTransitionAuditTests(unittest.TestCase):
                     (3, "2026-08", 10, "PRONTA", "2"),
                 ],
             )
-            report = module.audit_database(db, policy())
-            self.assertTrue(report["ok"])
+            self.assertTrue(module.audit_database(db, policy())["ok"])
 
     def test_tl_regression_back_to_first_call_is_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -215,14 +214,40 @@ class StateTransitionAuditTests(unittest.TestCase):
             self.assertFalse(report["ok"])
             self.assertIn("CURRENT_HISTORY_MISMATCH", str(report["findings"]))
 
-    def test_current_without_history_is_blocked(self):
+    def test_current_without_valid_history_is_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "db.sqlite3"
             create_db(db, current=True)
             current(db, [("2026-08", 10, "PRONTA", "1")])
             report = module.audit_database(db, policy(current=True))
             self.assertFalse(report["ok"])
-            self.assertIn("CURRENT_WITHOUT_HISTORY", str(report["findings"]))
+            self.assertIn("CURRENT_WITHOUT_VALID_HISTORY", str(report["findings"]))
+
+    def test_invalid_current_call_is_reported_not_raised(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "db.sqlite3"
+            create_db(db, current=True)
+            history(db, [(1, "2026-08", 10, "ADIADA", "2")])
+            current(db, [("2026-08", 10, "ADIADA", "SEGUNDA")])
+            report = module.audit_database(db, policy(current=True))
+            self.assertFalse(report["ok"])
+            self.assertIn("CURRENT_INVALID_CALL_VALUE", str(report["findings"]))
+
+    def test_invalid_latest_history_does_not_crash_current_comparison(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "db.sqlite3"
+            create_db(db, current=True)
+            history(
+                db,
+                [
+                    (1, "2026-08", 10, "ADIADA", "2"),
+                    (2, "2026-08", 10, "PRONTA", "INVALIDA"),
+                ],
+            )
+            current(db, [("2026-08", 10, "ADIADA", "2")])
+            report = module.audit_database(db, policy(current=True))
+            self.assertFalse(report["ok"])
+            self.assertIn("INVALID_CALL_VALUE", str(report["findings"]))
 
     def test_audit_is_read_only(self):
         with tempfile.TemporaryDirectory() as tmp:
