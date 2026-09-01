@@ -115,14 +115,17 @@ if ($LASTEXITCODE -ne 0) {
 
 $reportPath = Join-Path $output "RUNTIME_HANDOFF_CONSUMPTION.json"
 $planPath = Join-Path $output "RECONCILIATION_PLAN.json"
-if (-not (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
-    throw "Relatório final de consumo não foi gerado."
+$reviewSkeletonPath = Join-Path $output "RECONCILIATION_REVIEW_SKELETON.json"
+foreach ($requiredPath in @($reportPath, $planPath, $reviewSkeletonPath)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw "Artefato obrigatório não foi gerado: $([System.IO.Path]::GetFileName($requiredPath))"
+    }
 }
-if (-not (Test-Path -LiteralPath $planPath -PathType Leaf)) {
-    throw "Plano de reconciliação não foi gerado."
-}
+
 $report = Get-Content -LiteralPath $reportPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $plan = Get-Content -LiteralPath $planPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$reviewSkeleton = Get-Content -LiteralPath $reviewSkeletonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+
 if ($report.handoff_unchanged -ne $true) {
     throw "Relatório não comprova handoff intacto."
 }
@@ -132,23 +135,45 @@ if ($report.internal_manifest_ok -ne $true) {
 if ($report.ready_for_reconciliation_review -ne $true) {
     throw "Relatório não liberou revisão de reconciliação."
 }
-if ($report.automatic_reconciliation_write -ne $false) {
-    throw "Consumidor não pode permitir escrita automática de reconciliação."
-}
-if ($plan.automatic_write_allowed -ne $false) {
-    throw "Plano de reconciliação não pode permitir escrita automática."
+if ($report.automatic_reconciliation_write -ne $false -or $plan.automatic_write_allowed -ne $false -or $reviewSkeleton.automatic_write_allowed -ne $false) {
+    throw "Consumidor/plano/esqueleto não podem permitir escrita automática."
 }
 if ($report.reconciliation_plan_sha256 -ne $plan.plan_sha256) {
     throw "Hash do plano diverge do relatório de consumo."
 }
-if ($report.v8_homologated -ne $false -or $plan.v8_homologated -ne $false) {
-    throw "Consumidor/plano não podem marcar V8 como homologada."
+if ($report.reconciliation_review_skeleton_sha256 -ne $reviewSkeleton.review_skeleton_sha256) {
+    throw "Hash do esqueleto de revisão diverge do relatório."
+}
+if ($reviewSkeleton.plan_sha256 -ne $plan.plan_sha256) {
+    throw "Esqueleto de revisão não está vinculado ao plano correto."
+}
+if ($report.reconciliation_review_pending -ne @($reviewSkeleton.items).Count) {
+    throw "Contagem de itens pendentes diverge do esqueleto."
+}
+if ($report.human_review_decisions_written -ne $false) {
+    throw "Consumidor não pode escrever decisões humanas."
+}
+if ($reviewSkeleton.review_complete -ne $false -or $reviewSkeleton.baseline_ready -ne $false) {
+    throw "Esqueleto automático não pode declarar revisão completa ou baseline pronto."
+}
+foreach ($item in @($reviewSkeleton.items)) {
+    if ($item.decision -ne "PENDING") {
+        throw "Esqueleto automático contém decisão humana preenchida."
+    }
+    if ($item.reviewer -ne "" -or $item.reason -ne "" -or @($item.evidence).Count -ne 0) {
+        throw "Esqueleto PENDING contém metadados de revisão preenchidos."
+    }
+}
+if ($report.v8_homologated -ne $false -or $plan.v8_homologated -ne $false -or $reviewSkeleton.v8_homologated -ne $false) {
+    throw "Consumidor/plano/esqueleto não podem marcar V8 como homologada."
 }
 
 Write-Host "RUNTIME_HANDOFF_CONSUMER_WINDOWS_OK"
 Write-Host "Handoff intacto: SIM"
 Write-Host "Plano: $([System.IO.Path]::GetFileName($planPath))"
+Write-Host "Esqueleto: $([System.IO.Path]::GetFileName($reviewSkeletonPath))"
 Write-Host "Revisão obrigatória: $($report.reconciliation_review_required)"
+Write-Host "Decisões humanas preenchidas: NÃO"
 Write-Host "Escrita automática: NÃO"
 Write-Host "Relatório: $([System.IO.Path]::GetFileName($reportPath))"
 Write-Host "V8 homologada: NÃO"
