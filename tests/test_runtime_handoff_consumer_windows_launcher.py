@@ -51,16 +51,29 @@ class RuntimeHandoffConsumerWindowsLauncherTests(unittest.TestCase):
         self.assertIn('"python.exe"', self.text)
         self.assertIn("Get-Command $commandName", self.text)
 
-    def test_launcher_validates_plan_non_homologation_and_immutability(self):
+    def test_launcher_validates_plan_review_skeleton_and_non_homologation(self):
         self.assertIn("handoff_unchanged", self.text)
         self.assertIn("internal_manifest_ok", self.text)
         self.assertIn("ready_for_reconciliation_review", self.text)
         self.assertIn("RECONCILIATION_PLAN.json", self.text)
+        self.assertIn("RECONCILIATION_REVIEW_SKELETON.json", self.text)
         self.assertIn("automatic_reconciliation_write", self.text)
         self.assertIn("automatic_write_allowed", self.text)
         self.assertIn("reconciliation_plan_sha256", self.text)
         self.assertIn("plan.plan_sha256", self.text)
+        self.assertIn("reconciliation_review_skeleton_sha256", self.text)
+        self.assertIn("reviewSkeleton.review_skeleton_sha256", self.text)
+        self.assertIn("reviewSkeleton.plan_sha256", self.text)
+        self.assertIn("reconciliation_review_pending", self.text)
+        self.assertIn("human_review_decisions_written", self.text)
+        self.assertIn("reviewSkeleton.review_complete", self.text)
+        self.assertIn("reviewSkeleton.baseline_ready", self.text)
+        self.assertIn('if ($item.decision -ne "PENDING")', self.text)
+        self.assertIn('$item.reviewer -ne ""', self.text)
+        self.assertIn('$item.reason -ne ""', self.text)
+        self.assertIn("@($item.evidence).Count -ne 0", self.text)
         self.assertIn("v8_homologated", self.text)
+        self.assertIn('Write-Host "Decisões humanas preenchidas: NÃO"', self.text)
         self.assertIn('Write-Host "Escrita automática: NÃO"', self.text)
         self.assertIn('Write-Host "V8 homologada: NÃO"', self.text)
 
@@ -69,15 +82,23 @@ class RuntimeHandoffConsumerWindowsLauncherTests(unittest.TestCase):
             re.search(r"(?i)\b[A-Z]:\\(?:Programas|Axiom|Users|ProgramData)\\", self.text)
         )
 
-    def test_ci_executes_consumer_and_plan_powershell_smoke(self):
-        self.assertIn("Smoke PowerShell B06 producer consumer and plan", self.workflow)
+    def test_ci_executes_consumer_plan_and_review_skeleton_smoke(self):
+        self.assertIn(
+            "Smoke PowerShell B06 producer consumer plan and review skeleton",
+            self.workflow,
+        )
         self.assertIn("./scripts/BUILD_RUNTIME_HANDOFF_V8.ps1", self.workflow)
         self.assertIn("./scripts/CONSUME_RUNTIME_HANDOFF_V8.ps1", self.workflow)
+        self.assertIn("RECONCILIATION_REVIEW_SKELETON.json", self.workflow)
         self.assertIn("POWERSHELL_B06_SMOKE_OK", self.workflow)
         self.assertIn("POWERSHELL_B06_CONSUMER_SMOKE_OK", self.workflow)
         self.assertIn("POWERSHELL_B06_PLAN_SMOKE_OK", self.workflow)
+        self.assertIn("POWERSHELL_B06_REVIEW_SKELETON_SMOKE_OK", self.workflow)
         self.assertIn("database_preflight_ok", self.workflow)
         self.assertIn("automatic_write_allowed", self.workflow)
+        self.assertIn("human_review_decisions_written", self.workflow)
+        self.assertIn("review_complete", self.workflow)
+        self.assertIn("baseline_ready", self.workflow)
 
 
 if __name__ == "__main__":
