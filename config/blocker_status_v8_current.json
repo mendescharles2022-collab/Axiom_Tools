@@ -9,7 +9,7 @@
     {"blocker_id":"B03","state":"EM_CORRECAO","notes":"Etapa 73: auditor de gate único de saída testado; falta integrar aos serviços reais."},
     {"blocker_id":"B04","state":"EM_CORRECAO","notes":"Etapa 65: auditor de linhagem/vigência de versões testado; falta executar no schema real."},
     {"blocker_id":"B05","state":"BLOQUEADO_POR_RUNTIME","notes":"Migração V8 depende do schema/runtime integral reconciliado."},
-    {"blocker_id":"B06","state":"BLOQUEADO_POR_RUNTIME","notes":"Etapas 69–82: produtor/consumidor do handoff, plano read-only, revisão humana e aceite imutável de baseline estão testados; falta coleta, revisão e reconciliação da instalação Windows física real."},
+    {"blocker_id":"B06","state":"BLOQUEADO_POR_RUNTIME","notes":"Etapas 69–83: produtor/consumidor do handoff, plano read-only, revisão humana, aceite imutável e materialização somente em staging estão testados; falta coleta, revisão e reconciliação da instalação Windows física real."},
     {"blocker_id":"B07","state":"EM_CORRECAO","notes":"Etapa 74: auditor de universo operacional/fachada Closing testado; falta centralizar consumidores reais."},
     {"blocker_id":"B08","state":"EM_CORRECAO","notes":"Etapa 66: regressão T L e histórico de chamada cercados; falta executar sobre histórico real e cruzar com CAS."},
     {"blocker_id":"B09","state":"EM_CORRECAO","notes":"Etapa 74: FECHADA na mesa viva é bloqueada por contrato; falta corrigir composição real."},
