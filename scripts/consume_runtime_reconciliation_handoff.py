@@ -11,11 +11,13 @@ from pathlib import Path, PurePosixPath
 
 import audit_runtime_reconciliation as reconciliation
 import build_database_homologation_preflight as database_preflight
+import create_reconciliation_review_skeleton as review_skeleton
 import plan_runtime_reconciliation as reconciliation_plan
 
 MANIFEST_NAME = "RUNTIME_HANDOFF_MANIFEST.json"
 REPORT_NAME = "RUNTIME_HANDOFF_CONSUMPTION.json"
 PLAN_NAME = "RECONCILIATION_PLAN.json"
+REVIEW_SKELETON_NAME = "RECONCILIATION_REVIEW_SKELETON.json"
 MAX_ZIP_FILES = 20_000
 MAX_ZIP_UNCOMPRESSED = 1_073_741_824
 
@@ -240,6 +242,12 @@ def consume_handoff(
             encoding="utf-8",
         )
 
+        skeleton = review_skeleton.build_skeleton(plan)
+        (output_dir / REVIEW_SKELETON_NAME).write_text(
+            json.dumps(skeleton, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
         invariant_spec = database_preflight.load_json(invariants_path)
         db_report = database_preflight.build_database_preflight(
             database_copy,
@@ -267,6 +275,10 @@ def consume_handoff(
             "reconciliation_plan_file": PLAN_NAME,
             "reconciliation_plan_sha256": plan["plan_sha256"],
             "reconciliation_review_required": plan["summary"]["review_required"],
+            "reconciliation_review_skeleton_file": REVIEW_SKELETON_NAME,
+            "reconciliation_review_skeleton_sha256": skeleton["review_skeleton_sha256"],
+            "reconciliation_review_pending": len(skeleton["items"]),
+            "human_review_decisions_written": False,
             "automatic_reconciliation_write": False,
             "database_preflight_ok": bool(db_report["summary"]["all_ok"]),
             "database_sha256": db_report["database_snapshot"]["before"]["sha256"],
@@ -322,6 +334,7 @@ def main() -> int:
         HandoffConsumptionError,
         database_preflight.DatabasePreflightError,
         reconciliation_plan.ReconciliationPlanError,
+        review_skeleton.ReconciliationReviewSkeletonError,
         OSError,
         zipfile.BadZipFile,
     ) as exc:
@@ -334,6 +347,8 @@ def main() -> int:
         print(f"{status}: {count}")
     print(f"Plano: {result['reconciliation_plan_file']}")
     print(f"Revisão obrigatória: {result['reconciliation_review_required']}")
+    print(f"Esqueleto de revisão: {result['reconciliation_review_skeleton_file']}")
+    print(f"Decisões humanas preenchidas: {'SIM' if result['human_review_decisions_written'] else 'NÃO'}")
     print("Escrita automática: NÃO")
     print(f"Preflight DB: {'OK' if result['database_preflight_ok'] else 'FALHA'}")
     print(f"Relatório: {REPORT_NAME}")
