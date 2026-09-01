@@ -27,8 +27,8 @@ class CurrentReleaseGateEvidenceTests(unittest.TestCase):
     def test_current_ci_evidence_is_traceable(self):
         report = gate.validate_evidence_manifest(self.document)
         evidence = report["gates"]["CI_TOOLING"]["evidence"]
-        self.assertIn("github-actions:run/33453077178", evidence)
-        self.assertIn("result:529-tests-OK", evidence)
+        self.assertIn("github-actions:run/33461512550", evidence)
+        self.assertIn("result:547-tests-OK", evidence)
         self.assertIn("powershell-smoke:POWERSHELL_B06_SMOKE_OK", evidence)
         self.assertIn(
             "powershell-consumer-smoke:POWERSHELL_B06_CONSUMER_SMOKE_OK",
@@ -38,14 +38,18 @@ class CurrentReleaseGateEvidenceTests(unittest.TestCase):
             "powershell-plan-smoke:POWERSHELL_B06_PLAN_SMOKE_OK",
             evidence,
         )
-        self.assertIn("causal-map:28-of-28", evidence)
         self.assertIn(
-            "commit:92bb4ee0d2cf05497231ca3ee469568d1c7c0413",
+            "powershell-review-skeleton-smoke:POWERSHELL_B06_REVIEW_SKELETON_SMOKE_OK",
             evidence,
         )
-        self.assertIn("artifact:v8-release-preflight#9780448410", evidence)
+        self.assertIn("causal-map:28-of-28", evidence)
         self.assertIn(
-            "artifact-sha256:707bab421adf2623da569a5664934281d92cb0982dc421ec673387b3636368c7",
+            "commit:dcb1544188a3abbd79c5e7ab74c14de2a46e0c94",
+            evidence,
+        )
+        self.assertIn("artifact:v8-release-preflight#9783312623", evidence)
+        self.assertIn(
+            "artifact-sha256:52f7ca6f8edd246efc500bfd6dc1ddb44e1687fce4f9fc7991af22c643a424dc",
             evidence,
         )
         for gate_id in gate.REQUIRED_EVIDENCE_GATES:
