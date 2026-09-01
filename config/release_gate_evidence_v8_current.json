@@ -6,18 +6,19 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33452559940",
-        "commit:9939b660d17c68c6848cb8d9cb5e24fffefd38dd",
-        "result:514-tests-OK",
+        "github-actions:run/33453077178",
+        "commit:92bb4ee0d2cf05497231ca3ee469568d1c7c0413",
+        "result:529-tests-OK",
         "powershell-smoke:POWERSHELL_B06_SMOKE_OK",
         "powershell-consumer-smoke:POWERSHELL_B06_CONSUMER_SMOKE_OK",
+        "powershell-plan-smoke:POWERSHELL_B06_PLAN_SMOKE_OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9780276903",
-        "artifact-sha256:511d75258d3f7f28a519708d61407963ef6bf2c0ecf8b74051252464b5432e1f"
+        "artifact:v8-release-preflight#9780448410",
+        "artifact-sha256:707bab421adf2623da569a5664934281d92cb0982dc421ec673387b3636368c7"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. A Etapa 79 completa em tooling a cadeia B06 produtor→consumidor: o mesmo smoke PowerShell produz o handoff, valida manifesto/autodiscovery/origem intacta, consome o handoff em staging isolado, valida hashes e manifesto interno, executa reconciliação runtime↔repositório e preflight SQLite, comprova handoff intacto e mantém V8 não homologada. O run 33452559940 concluiu com 514 testes OK, POWERSHELL_B06_SMOKE_OK, POWERSHELL_B06_CONSUMER_SMOKE_OK e preflight válido. O snapshot permanece com 0 PRONTO_PARA_CORRIGIR, 46 EM_CORRECAO e 4 BLOQUEADO_POR_RUNTIME. A instalação Windows física ainda não foi coletada/consumida, portanto RUNTIME_BASELINE e gates de banco continuam NOT_RUN no mundo real."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. A Etapa 80 completa a cadeia lógica B06 até o plano de revisão: o smoke PowerShell produz o handoff, consome em staging, valida hashes/manifestos, executa diff runtime↔repositório e preflight SQLite e gera RECONCILIATION_PLAN.json com ações propostas, proteção de áreas sensíveis e escrita automática obrigatoriamente desativada. O run 33453077178 concluiu com 529 testes OK e os marcadores POWERSHELL_B06_SMOKE_OK, POWERSHELL_B06_CONSUMER_SMOKE_OK e POWERSHELL_B06_PLAN_SMOKE_OK. O snapshot permanece 0 PRONTO_PARA_CORRIGIR, 46 EM_CORRECAO e 4 BLOQUEADO_POR_RUNTIME. A instalação Windows física ainda não foi coletada, portanto nenhum gate real de runtime/banco foi promovido."
     },
-    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Produtor e consumidor B06 estão testados ponta a ponta em runtime descartável, mas a instalação Windows física real ainda não foi coletada, consumida e reconciliada."},
+    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Produtor, consumidor e plano de reconciliação B06 estão testados ponta a ponta em runtime descartável, mas a instalação Windows física real ainda não foi coletada, revisada e reconciliada."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"O consumidor executa preflight SQLite sobre a cópia do handoff em testes; falta executar sobre a cópia SQLite da instalação física real."},
     {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"O consumidor executa preflight SQLite sobre a cópia do handoff em testes; falta executar sobre a cópia SQLite da instalação física real."},
     {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes e auditores estruturais estão integrados ao consumidor B06, mas ainda não executados contra a fotografia operacional física real."},
