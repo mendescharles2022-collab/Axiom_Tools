@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 import tempfile
@@ -86,7 +85,8 @@ class ReconciliationReviewWorkflowTests(unittest.TestCase):
 
     def test_tampered_plan_is_rejected_by_skeleton_builder(self):
         plan = make_plan()
-        plan["entries"][0]["status"] = "CHANGED"
+        target = next(item for item in plan["entries"] if item["relative_path"] == "same.py")
+        target["status"] = "CHANGED"
         with self.assertRaisesRegex(skeleton_mod.ReconciliationReviewSkeletonError, "plan_sha256"):
             skeleton_mod.build_skeleton(plan)
 
