@@ -1,12 +1,12 @@
 # Rastreador canônico — Execução de correção V8
 
 Data: 31/08/2026  
-Status: **B01–B50 REVISTOS / 0 INSPEÇÕES / 0 PRONTOS / TOOLING ATÉ ETAPA 82 / RUNTIME WINDOWS FÍSICO AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
+Status: **B01–B50 REVISTOS / 0 INSPEÇÕES / 0 PRONTOS / TOOLING ATÉ ETAPA 83 / RUNTIME WINDOWS FÍSICO AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico atual do tooling
 
-GitHub Actions run `33461787567`  
-Commit `8929aeb07140fa0a52c160725e274b97c3011d71`  
+GitHub Actions run `33462096429`  
+Commit `6a9d9f9096f1a98e550fa9a39019fe3c1df2d8b5`  
 Python `3.12.14`
 
 ```text
@@ -14,7 +14,7 @@ POWERSHELL_B06_SMOKE_OK
 POWERSHELL_B06_CONSUMER_SMOKE_OK
 POWERSHELL_B06_PLAN_SMOKE_OK
 POWERSHELL_B06_REVIEW_SKELETON_SMOKE_OK
-Ran 559 tests in 2.667s
+Ran 571 tests in 1.908s
 OK
 ```
 
@@ -29,12 +29,12 @@ Preflight do mesmo marco:
 
 Artifact `v8-release-preflight`:
 
-- ID `9783408220`;
-- SHA-256 `8871c62216d587d2156e62ae348515f3a84f2efddc53086a1cd9106cb05fb679`.
+- ID `9783514548`;
+- SHA-256 `9530f6de0f7950f326be67614dbc03db6d03fe6c58507c7e38190ab056790c02`.
 
 Este é o marco de tooling. Ele **não** representa homologação da árvore operacional integral.
 
-## 2. Evolução canônica — Etapas 42–82
+## 2. Evolução canônica — Etapas 42–83
 
 - Etapas 42–52 — auditoria causal B01–B50 e isolamento dos defeitos na base/deltas disponíveis;
 - Etapas 53–68 — mapa causal, governança e toolings de banco, segurança, concorrência, versões, chamadas, estados e proveniência;
@@ -48,7 +48,8 @@ Este é o marco de tooling. Ele **não** representa homologação da árvore ope
 - Etapa 79 — B06 consumidor: validação externa/interna, extração segura, diff runtime↔repo, preflight SQLite e wrapper Windows;
 - Etapa 80 — B06 plano read-only: `RECONCILIATION_PLAN.json`, ações propostas, proteção de conteúdo sensível e proibição de escrita automática;
 - Etapa 81 — B06 revisão humana: `RECONCILIATION_REVIEW_SKELETON.json` integralmente `PENDING`, validador separado, evidência obrigatória e distinção entre revisão completa e baseline pronto;
-- Etapa 82 — B06 aceite: `RECONCILIATION_BASELINE_ACCEPTANCE.json` só pode nascer de revisão `review_complete=true` e `baseline_ready=true`, com hashes vinculados e `execution_performed=false`.
+- Etapa 82 — B06 aceite: `RECONCILIATION_BASELINE_ACCEPTANCE.json` só pode nascer de revisão `review_complete=true` e `baseline_ready=true`, com hashes vinculados e `execution_performed=false`;
+- Etapa 83 — B06 materialização: baseline aceito só é aplicado em staging novo e isolado; fontes são revalidadas por hash e runtime/repositório permanecem intactos.
 
 Resultado: **nenhum B permanece em inspeção ou apenas pronto para correção sem critério executável**.
 
@@ -71,11 +72,11 @@ Regra permanente:
 
 **patch encontrado ≠ tooling verde ≠ correção integrada ≠ homologação.**
 
-## 4. B06 — cadeia preparada até aceite do baseline
+## 4. B06 — cadeia preparada até staging reconciliado
 
 A `main` continua sendo fundação reduzida e não substitui a instalação operacional.
 
-### Produtor e consumidor
+### Handoff e consumo
 
 A cadeia `BUILD_RUNTIME_HANDOFF_V8.ps1` → `CONSUME_RUNTIME_HANDOFF_V8.ps1`:
 
@@ -84,46 +85,33 @@ A cadeia `BUILD_RUNTIME_HANDOFF_V8.ps1` → `CONSUME_RUNTIME_HANDOFF_V8.ps1`:
 - mantém banco fora do ZIP;
 - clona SQLite via backup consistente;
 - gera manifesto/hashes;
-- extrai apenas em staging seguro;
+- extrai somente em staging seguro;
 - bloqueia traversal, symlink, payload excessivo, conteúdo proibido e possíveis segredos;
 - executa diff runtime↔repo e preflight SQLite;
 - comprova handoff intacto.
 
-### Plano da Etapa 80
+### Plano, revisão e aceite
 
-`plan_runtime_reconciliation.py`:
+- Etapa 80: `plan_runtime_reconciliation.py` transforma diferenças em ações de revisão e mantém escrita automática desativada;
+- Etapa 81: esqueleto nasce todo `PENDING`; decisão humana exige revisor + motivo + evidência; itens sensíveis têm proteção reforçada;
+- Etapa 82: `build_reconciliation_baseline_acceptance.py` só registra baseline se revisão estiver completa e pronta, sempre com `execution_performed=false`.
 
-- transforma diferenças em ações propostas de revisão;
-- eleva conteúdo sensível para `SECURITY_REVIEW_REQUIRED`;
-- mantém `automatic_write_allowed = false`.
+### Materialização da Etapa 83
 
-### Revisão da Etapa 81
+`materialize_reconciled_staging.py`:
 
-`create_reconciliation_review_skeleton.py` + `validate_reconciliation_review.py`:
+- recebe apenas aceite válido;
+- revalida `acceptance_sha256`;
+- revalida os hashes do runtime e repo antes de criar saída;
+- detecta colisões de destinos entre layouts equivalentes;
+- cria staging fora de runtime e repo e recusa sobrescrita;
+- `ADOPT_RUNTIME`, `KEEP_REPO` e `EXCLUDE_WITH_REASON` atuam só na árvore nova;
+- bloqueia symlink, conteúdo proibido e possível segredo;
+- remove somente staging parcial em caso de falha;
+- gera `RECONCILED_STAGING_REPORT.json` com lista/hash de arquivos e `tree_sha256`;
+- declara `repository_write_performed=false`, `runtime_write_performed=false`, `operational_deployment_performed=false` e `v8_homologated=false`.
 
-- esqueleto nasce integralmente `PENDING`;
-- automação não preenche revisor, motivo ou evidência;
-- decisão humana real exige revisor + motivo + evidência;
-- metadados do plano não podem ser alterados;
-- `CRITICAL` não pode adotar runtime diretamente;
-- `MERGE_REQUIRED` e `SECURITY_REVIEW_REQUIRED` não liberam baseline.
-
-### Aceite da Etapa 82
-
-`build_reconciliation_baseline_acceptance.py`:
-
-- revalida plano e revisão usando o validador canônico da Etapa 81;
-- só aceita revisão completa e baseline pronto;
-- rejeita `PENDING`, `MERGE_REQUIRED` e `SECURITY_REVIEW_REQUIRED`;
-- registra hashes do plano, revisão, validação e do próprio aceite;
-- preserva hashes runtime/repo por decisão;
-- registra revisor, motivo e evidências;
-- declara `automatic_write_allowed = false`;
-- declara `execution_performed = false`;
-- declara `v8_homologated = false`;
-- não foi acoplado ao pipeline automático, evitando autoaprovação.
-
-B06 continua `BLOQUEADO_POR_RUNTIME` porque a fotografia física real ainda não foi produzida, revisada e reconciliada.
+B06 continua `BLOQUEADO_POR_RUNTIME` porque a fotografia física real ainda não foi produzida, revisada, aceita e materializada.
 
 ## 5. Guardrails funcionais preservados
 
@@ -158,9 +146,10 @@ Quando a instalação Windows real for coletada:
 5. preencher humanamente cada decisão necessária, com motivo e evidência;
 6. validar a revisão contra o plano original;
 7. gerar o aceite imutável somente se o baseline estiver pronto;
-8. materializar primeiro uma árvore reconciliada em staging isolado;
-9. verificar novamente essa árvore antes de qualquer integração controlada;
-10. somente depois aplicar correções de runtime.
+8. materializar uma árvore reconciliada em staging isolado;
+9. verificar independentemente relatório, árvore e decisões materializadas;
+10. executar os guardrails sobre a árvore reconciliada;
+11. somente depois integrar correções controladas.
 
 A origem operacional não entra na área de escrita da auditoria.
 
@@ -179,4 +168,4 @@ Exige cumulativamente:
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-O tooling avançou até a Etapa 82. O próximo avanço seguro é materializar, apenas em staging isolado, uma árvore reconciliada derivada de um aceite válido, sem escrever diretamente na instalação operacional nem na `main`.
+O tooling avançou até a Etapa 83. O próximo avanço seguro é verificar independentemente a árvore materializada antes de executar qualquer auditor/guardrail sobre ela.
