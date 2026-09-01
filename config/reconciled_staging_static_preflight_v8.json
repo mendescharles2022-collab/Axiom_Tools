@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "audit": "V8",
+  "mode": "RECONCILED_STAGING_STATIC_PREFLIGHT_POLICY",
+  "policies": {
+    "B01": {
+      "reprocess_name_patterns": ["reprocess"],
+      "candidate_markers": ["candidato", "candidate"],
+      "promotion_markers": ["promover", "promote"],
+      "recalc_markers": ["recalcular", "conferencia", "recompute"],
+      "current_tables": ["processamento_arquivo", "processamento_item_pessoa"],
+      "require_target": false,
+      "require_candidate": true,
+      "require_promotion": true,
+      "require_recalc_after_promotion": true
+    },
+    "B02": {
+      "mutator_markers": ["sincronizar", "salvar", "fechar", "promover", "recalcular", "commit", "flush"],
+      "require_get_route": false,
+      "max_call_depth": 8
+    },
+    "B03": {
+      "entrypoint_patterns": ["gerar", "imprimir", "entregar", "saida", "output"],
+      "generator_markers": ["gerar_pdf", "gerar_saida", "imprimir", "entregar"],
+      "gate_markers": ["autorizar_saida", "output_gate", "gate_saida"],
+      "forbidden_auth_literals": ["PROCESSADO"],
+      "required_auth_literals": ["FECHADA"],
+      "require_entrypoint": false,
+      "max_call_depth": 8
+    },
+    "B07_B09_B10": {
+      "closing_table": "fechamento_mensal_cliente",
+      "allowed_direct_sql_prefixes": ["src/modules/closing"],
+      "live_scope_patterns": ["conferencia", "mesa", "chamada_atual", "clientes_conferencia"],
+      "forbidden_live_statuses": ["FECHADA", "RETIFICACAO"],
+      "facade_markers": ["closing_scope", "closing.scope", "closing_service"],
+      "require_facade_usage": false,
+      "require_target": false
+    },
+    "B11_B37": {
+      "forbidden_mappings": [
+        {"id": "B11_PRONTA_CONFERENCIA", "source": "PRONTA", "target_regex": "confer"}
+      ],
+      "forbidden_function_pairs": [
+        {"id": "B37_DUAL_SESSION_TRUTH", "left": "COM_PENDENCIAS", "right": "PROCESSAMENTO_CONCLUIDO"}
+      ],
+      "require_mapping_target": false
+    },
+    "B34": {
+      "version": 1,
+      "field_name": "classificacao_inativacao",
+      "canonical_representation": "ENUM_MEMBER",
+      "enum_types": ["ClassificacaoInativacao"],
+      "allow_raw_string_literals": false,
+      "allow_none": true,
+      "allow_dynamic": false
+    },
+    "B38": {
+      "auth_decorators": ["login_required"],
+      "csrf_exempt_decorators": ["csrf.exempt"]
+    },
+    "B39": {
+      "selection_markers": ["selecion", "selected", "ids", "clientes_ids", "documentos_ids"],
+      "generator_markers": ["gerar", "imprimir", "entregar", "saida"],
+      "guard_markers": ["filtrar_autorizados", "intersect", "validar_selecao", "autorizar_saida_lote", "gate_saida"],
+      "require_target": false,
+      "max_call_depth": 6
+    },
+    "B40": {
+      "version": 1,
+      "block_unresolved_execute": false,
+      "tables": [
+        {
+          "table": "fechamento_mensal_cliente",
+          "key_columns": ["competencia", "cliente_id"],
+          "cas_columns": ["status", "chamada", "revisao"],
+          "require_rowcount_check": true
+        }
+      ]
+    }
+  },
+  "external_policies": {
+    "B43_B44_B46_B47": "config/operational_ui_contract_v8.json"
+  }
+}
