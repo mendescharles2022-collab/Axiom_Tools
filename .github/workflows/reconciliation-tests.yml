@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Smoke PowerShell B06 producer consumer and plan
+      - name: Smoke PowerShell B06 producer consumer plan and review skeleton
         shell: pwsh
         run: |
           $runtime = Join-Path $env:RUNNER_TEMP "axiom-runtime-smoke"
@@ -85,31 +85,44 @@ jobs:
           ./scripts/CONSUME_RUNTIME_HANDOFF_V8.ps1 -HandoffDir $handoffDir -RepoRoot $PWD -OutputDir $consumeOutput -PythonExe $pythonExe -Invariants $invariants
           $consumeReportPath = Join-Path $consumeOutput "RUNTIME_HANDOFF_CONSUMPTION.json"
           $planPath = Join-Path $consumeOutput "RECONCILIATION_PLAN.json"
-          if (-not (Test-Path -LiteralPath $consumeReportPath -PathType Leaf)) {
-            throw "Smoke B06 consumidor não gerou relatório."
-          }
-          if (-not (Test-Path -LiteralPath $planPath -PathType Leaf)) {
-            throw "Smoke B06 consumidor não gerou plano."
+          $reviewSkeletonPath = Join-Path $consumeOutput "RECONCILIATION_REVIEW_SKELETON.json"
+          foreach ($requiredPath in @($consumeReportPath, $planPath, $reviewSkeletonPath)) {
+            if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+              throw "Smoke B06 não gerou artefato: $([System.IO.Path]::GetFileName($requiredPath))"
+            }
           }
           $consumeReport = Get-Content -LiteralPath $consumeReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
           $plan = Get-Content -LiteralPath $planPath -Raw -Encoding UTF8 | ConvertFrom-Json
+          $reviewSkeleton = Get-Content -LiteralPath $reviewSkeletonPath -Raw -Encoding UTF8 | ConvertFrom-Json
           if ($consumeReport.handoff_unchanged -ne $true) {
             throw "Smoke B06 consumidor não preservou o handoff."
           }
           if ($consumeReport.database_preflight_ok -ne $true) {
             throw "Smoke B06 consumidor não concluiu preflight SQLite."
           }
-          if ($consumeReport.automatic_reconciliation_write -ne $false -or $plan.automatic_write_allowed -ne $false) {
+          if ($consumeReport.automatic_reconciliation_write -ne $false -or $plan.automatic_write_allowed -ne $false -or $reviewSkeleton.automatic_write_allowed -ne $false) {
             throw "Smoke B06 permitiu escrita automática de reconciliação."
           }
           if ($consumeReport.reconciliation_plan_sha256 -ne $plan.plan_sha256) {
             throw "Smoke B06 encontrou divergência no hash do plano."
           }
-          if ($consumeReport.v8_homologated -ne $false -or $plan.v8_homologated -ne $false) {
-            throw "Smoke B06 consumidor/plano marcaram homologação indevida."
+          if ($consumeReport.reconciliation_review_skeleton_sha256 -ne $reviewSkeleton.review_skeleton_sha256 -or $reviewSkeleton.plan_sha256 -ne $plan.plan_sha256) {
+            throw "Smoke B06 encontrou divergência no esqueleto de revisão."
+          }
+          if ($consumeReport.human_review_decisions_written -ne $false -or $reviewSkeleton.review_complete -ne $false -or $reviewSkeleton.baseline_ready -ne $false) {
+            throw "Smoke B06 fabricou decisão humana ou baseline pronto."
+          }
+          foreach ($item in @($reviewSkeleton.items)) {
+            if ($item.decision -ne "PENDING" -or $item.reviewer -ne "" -or $item.reason -ne "" -or @($item.evidence).Count -ne 0) {
+              throw "Smoke B06 encontrou decisão humana preenchida no esqueleto."
+            }
+          }
+          if ($consumeReport.v8_homologated -ne $false -or $plan.v8_homologated -ne $false -or $reviewSkeleton.v8_homologated -ne $false) {
+            throw "Smoke B06 consumidor/plano/esqueleto marcaram homologação indevida."
           }
           Write-Host "POWERSHELL_B06_CONSUMER_SMOKE_OK"
           Write-Host "POWERSHELL_B06_PLAN_SMOKE_OK"
+          Write-Host "POWERSHELL_B06_REVIEW_SKELETON_SMOKE_OK"
 
       - name: Run audit tooling tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
