@@ -6,20 +6,20 @@
       "gate_id": "CI_TOOLING",
       "status": "PASS",
       "evidence": [
-        "github-actions:run/33461512550",
-        "commit:dcb1544188a3abbd79c5e7ab74c14de2a46e0c94",
-        "result:547-tests-OK",
+        "github-actions:run/33461787567",
+        "commit:8929aeb07140fa0a52c160725e274b97c3011d71",
+        "result:559-tests-OK",
         "powershell-smoke:POWERSHELL_B06_SMOKE_OK",
         "powershell-consumer-smoke:POWERSHELL_B06_CONSUMER_SMOKE_OK",
         "powershell-plan-smoke:POWERSHELL_B06_PLAN_SMOKE_OK",
         "powershell-review-skeleton-smoke:POWERSHELL_B06_REVIEW_SKELETON_SMOKE_OK",
         "causal-map:28-of-28",
-        "artifact:v8-release-preflight#9783312623",
-        "artifact-sha256:52f7ca6f8edd246efc500bfd6dc1ddb44e1687fce4f9fc7991af22c643a424dc"
+        "artifact:v8-release-preflight#9783408220",
+        "artifact-sha256:8871c62216d587d2156e62ae348515f3a84f2efddc53086a1cd9106cb05fb679"
       ],
-      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. A Etapa 81 completa a preparação da revisão B06 sem fabricar decisão humana: o smoke PowerShell produz o handoff, consome em staging, valida hashes/manifestos, executa diff e preflight SQLite, gera RECONCILIATION_PLAN.json e RECONCILIATION_REVIEW_SKELETON.json. O esqueleto nasce integralmente PENDING, sem reviewer/reason/evidence, com review_complete=false, baseline_ready=false, human_review_decisions_written=false, escrita automática desativada e V8 não homologada. O run 33461512550 concluiu com 547 testes OK e os quatro marcadores B06. O snapshot permanece 0 PRONTO_PARA_CORRIGIR, 46 EM_CORRECAO e 4 BLOQUEADO_POR_RUNTIME. A instalação Windows física ainda não foi coletada, portanto nenhum gate real de runtime/banco foi promovido."
+      "notes": "GitHub Actions V8 Audit Tooling Tests, Python 3.12.14. A Etapa 82 adiciona o aceite imutável de baseline pós-revisão humana. O aceite revalida plano+revisão, só nasce quando review_complete=true e baseline_ready=true, preserva hashes do plano/revisão/validação e declara automatic_write_allowed=false, execution_performed=false e v8_homologated=false. O pipeline automático continua terminando no esqueleto PENDING e não se autoaprova. O run 33461787567 concluiu com 559 testes OK e os quatro marcadores B06. O snapshot permanece 0 PRONTO_PARA_CORRIGIR, 46 EM_CORRECAO e 4 BLOQUEADO_POR_RUNTIME. A instalação Windows física ainda não foi coletada, portanto nenhum gate real de runtime/banco foi promovido."
     },
-    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Produtor, consumidor, plano e esqueleto de revisão B06 estão testados ponta a ponta em runtime descartável, mas a instalação Windows física real ainda não foi coletada, revisada e reconciliada."},
+    {"gate_id":"RUNTIME_BASELINE","status":"NOT_RUN","evidence":[],"notes":"Produtor, consumidor, plano, revisão e aceite de baseline estão cercados por tooling, mas a instalação Windows física real ainda não foi coletada, revisada e reconciliada."},
     {"gate_id":"DATABASE_INTEGRITY","status":"NOT_RUN","evidence":[],"notes":"O consumidor executa preflight SQLite sobre a cópia do handoff em testes; falta executar sobre a cópia SQLite da instalação física real."},
     {"gate_id":"DATABASE_FOREIGN_KEYS","status":"NOT_RUN","evidence":[],"notes":"O consumidor executa preflight SQLite sobre a cópia do handoff em testes; falta executar sobre a cópia SQLite da instalação física real."},
     {"gate_id":"DATABASE_INVARIANTS","status":"NOT_RUN","evidence":[],"notes":"Invariantes e auditores estruturais estão integrados ao consumidor B06, mas ainda não executados contra a fotografia operacional física real."},
