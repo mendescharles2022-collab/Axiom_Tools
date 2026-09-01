@@ -58,7 +58,12 @@ def fixture(base: Path, repo_text: str) -> tuple[Path, Path, Path]:
         }),
         encoding="utf-8",
     )
-    built = builder.build_handoff(runtime, database, output, label="plan-v8")
+    built = builder.build_handoff(
+        runtime_root=runtime,
+        database=database,
+        output_dir=output,
+        label="plan-v8",
+    )
     return output / built["handoff_dir"], repo, invariants
 
 
