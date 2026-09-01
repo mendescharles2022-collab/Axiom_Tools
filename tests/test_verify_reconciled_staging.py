@@ -128,7 +128,10 @@ class VerifyReconciledStagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             staging, acceptance = build_fixture(Path(tmp))
             write(staging / "src/changed.py", "tampered = True\n")
-            with self.assertRaisesRegex(verifier.StagingVerificationError, "SHA-256 divergente"):
+            with self.assertRaisesRegex(
+                verifier.StagingVerificationError,
+                "Tamanho divergente|SHA-256 divergente",
+            ):
                 verifier.verify_staging(staging, acceptance)
 
     def test_extra_file_is_detected(self):
