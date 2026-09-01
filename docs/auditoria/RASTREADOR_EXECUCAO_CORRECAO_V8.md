@@ -1,19 +1,20 @@
 # Rastreador canônico — Execução de correção V8
 
 Data: 31/08/2026  
-Status: **B01–B50 REVISTOS / 0 INSPEÇÕES / 0 PRONTOS / TOOLING ATÉ ETAPA 80 / RUNTIME WINDOWS FÍSICO AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
+Status: **B01–B50 REVISTOS / 0 INSPEÇÕES / 0 PRONTOS / TOOLING ATÉ ETAPA 81 / RUNTIME WINDOWS FÍSICO AINDA NÃO RECONCILIADO / V8 NÃO HOMOLOGADA**
 
 ## 1. Marco canônico atual do tooling
 
-GitHub Actions run `33453077178`  
-Commit `92bb4ee0d2cf05497231ca3ee469568d1c7c0413`  
+GitHub Actions run `33461512550`  
+Commit `dcb1544188a3abbd79c5e7ab74c14de2a46e0c94`  
 Python `3.12.14`
 
 ```text
 POWERSHELL_B06_SMOKE_OK
 POWERSHELL_B06_CONSUMER_SMOKE_OK
 POWERSHELL_B06_PLAN_SMOKE_OK
-Ran 529 tests in 1.664s
+POWERSHELL_B06_REVIEW_SKELETON_SMOKE_OK
+Ran 547 tests in 1.711s
 OK
 ```
 
@@ -28,12 +29,12 @@ Preflight do mesmo marco:
 
 Artifact `v8-release-preflight`:
 
-- ID `9780448410`;
-- SHA-256 `707bab421adf2623da569a5664934281d92cb0982dc421ec673387b3636368c7`.
+- ID `9783312623`;
+- SHA-256 `52f7ca6f8edd246efc500bfd6dc1ddb44e1687fce4f9fc7991af22c643a424dc`.
 
 Este é o marco de tooling. Ele **não** representa homologação da árvore operacional integral.
 
-## 2. Evolução canônica — Etapas 42–80
+## 2. Evolução canônica — Etapas 42–81
 
 - Etapas 42–52 — auditoria causal B01–B50 e isolamento dos defeitos na base/deltas disponíveis;
 - Etapas 53–68 — mapa causal, governança e toolings de banco, segurança, concorrência, versões, chamadas, estados e proveniência;
@@ -45,7 +46,8 @@ Este é o marco de tooling. Ele **não** representa homologação da árvore ope
 - Etapa 77 — B29/B30/B31/B33: parser Domínio, saldo federal, proveniência e dezembro/13º;
 - Etapa 78 — B43/B44/B46/B47: contratos executáveis de UI;
 - Etapa 79 — B06 consumidor: validação externa/interna, extração segura, diff runtime↔repo, preflight SQLite e wrapper Windows;
-- Etapa 80 — B06 plano read-only: `RECONCILIATION_PLAN.json`, ações propostas, proteção de conteúdo sensível e proibição de escrita automática.
+- Etapa 80 — B06 plano read-only: `RECONCILIATION_PLAN.json`, ações propostas, proteção de conteúdo sensível e proibição de escrita automática;
+- Etapa 81 — B06 revisão humana: `RECONCILIATION_REVIEW_SKELETON.json` integralmente `PENDING`, validador separado, evidência obrigatória e distinção entre revisão completa e baseline pronto.
 
 Resultado: **nenhum B permanece em inspeção ou apenas pronto para correção sem critério executável**.
 
@@ -68,7 +70,7 @@ Regra permanente:
 
 **patch encontrado ≠ tooling verde ≠ correção integrada ≠ homologação.**
 
-## 4. B06 — cadeia preparada até a revisão
+## 4. B06 — cadeia preparada até a revisão humana
 
 A `main` continua sendo fundação reduzida e não substitui a instalação operacional.
 
@@ -108,9 +110,20 @@ A `main` continua sendo fundação reduzida e não substitui a instalação oper
 - `automatic_write_allowed = false`;
 - nenhuma ação proposta executa escrita.
 
-O consumidor gera `RECONCILIATION_PLAN.json`, vincula seu hash ao relatório e o wrapper Windows recusa plano que permita escrita automática.
+### Revisão da Etapa 81
 
-B06 continua `BLOQUEADO_POR_RUNTIME` porque a fotografia física real ainda não foi produzida e revisada.
+`create_reconciliation_review_skeleton.py` + `validate_reconciliation_review.py`:
+
+- consumidor gera `RECONCILIATION_REVIEW_SKELETON.json` ligado ao `plan_sha256`;
+- toda decisão automática nasce `PENDING`;
+- automação não preenche revisor, motivo ou evidência;
+- decisão humana real exige revisor + motivo + evidência;
+- metadados do plano não podem ser alterados durante a revisão;
+- itens `CRITICAL` não podem adotar runtime diretamente;
+- `MERGE_REQUIRED` e `SECURITY_REVIEW_REQUIRED` não liberam baseline;
+- escrita automática e homologação permanecem proibidas.
+
+B06 continua `BLOQUEADO_POR_RUNTIME` porque a fotografia física real ainda não foi produzida, revisada e reconciliada.
 
 ## 5. Guardrails funcionais preservados
 
@@ -141,10 +154,11 @@ Quando a instalação Windows real for coletada:
 1. produzir o handoff fora da árvore operacional;
 2. transportar o diretório sem editar seus artefatos;
 3. consumir em staging novo;
-4. obter diff + `RECONCILIATION_PLAN.json` + preflight SQLite;
-5. revisar explicitamente cada divergência;
-6. fixar o baseline reconciliado;
-7. somente então aplicar as correções de runtime.
+4. obter diff + `RECONCILIATION_PLAN.json` + `RECONCILIATION_REVIEW_SKELETON.json` + preflight SQLite;
+5. preencher humanamente cada decisão necessária, com motivo e evidência;
+6. validar a revisão contra o plano original;
+7. somente com revisão completa e baseline pronto registrar a aceitação do baseline reconciliado;
+8. somente depois aplicar correções na árvore reconciliada.
 
 A origem operacional não entra na área de escrita da auditoria.
 
@@ -163,4 +177,4 @@ Exige cumulativamente:
 
 **V8 NÃO HOMOLOGADA / PACOTE FINAL NÃO AUTORIZADO.**
 
-O tooling avançou até a Etapa 80. O próximo avanço seguro é criar um artefato separado de revisão humana, vinculado ao `plan_sha256`, para que cada divergência do runtime real tenha decisão explícita antes de qualquer baseline ser admitido.
+O tooling avançou até a Etapa 81. O próximo avanço seguro é criar um manifesto imutável de aceitação do baseline que só possa nascer de uma revisão humana já validada como `review_complete = true` e `baseline_ready = true`, continuando sem executar qualquer cópia, merge ou alteração automática.
