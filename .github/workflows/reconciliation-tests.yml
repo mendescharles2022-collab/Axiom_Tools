@@ -136,4 +136,4 @@ jobs:
           name: v8-release-preflight
           path: audit_artifacts/
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
