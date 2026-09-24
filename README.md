@@ -11,6 +11,18 @@ Este repositório permanece preservado como **origem histórica, técnica, de au
 
 Aplicação operacional local para Departamento Pessoal, organização documental, processamento inteligente, conferência mensal, entregas, impressão e integrações assistidas.
 
+
+## Patrimônio histórico consolidado — 23/09/2026
+
+Foi criado um levantamento patrimonial transversal do Axiom Tools a partir das conversas históricas do projeto, decisões aprovadas, uso real, canônicos, sprints, auditorias e limitações conhecidas do runtime/GitHub.
+
+Entrada obrigatória para qualquer recuperação, reconstrução ou migração futura:
+
+- [docs/patrimonio_historico/README.md](docs/patrimonio_historico/README.md) — índice e regra de autoridade;
+- documentos 01–08 da mesma pasta — arquitetura, Storage/pastas/grafia, cadastro/integrações, motores, fechamento/casos reais, UX/saídas, infraestrutura/homologação e lacunas.
+
+Importante: esse patrimônio separa explicitamente **canônico**, **homologado no uso**, **decisão histórica aprovada**, **implementação observada**, **provisório V8** e **pendente de prova física**. A V8 continua não homologada e não deve ser usada isoladamente como baseline.
+
 ## Estado operacional do legado
 
 - **Referência estável confirmada:** V5.6.14V7 — instalada em 26/08/2026.
