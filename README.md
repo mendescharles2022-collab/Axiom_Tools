@@ -19,7 +19,7 @@ Foi criado um levantamento patrimonial transversal do Axiom Tools a partir das c
 Entrada obrigatória para qualquer recuperação, reconstrução ou migração futura:
 
 - [docs/patrimonio_historico/README.md](docs/patrimonio_historico/README.md) — índice e regra de autoridade;
-- documentos 01–08 da mesma pasta — arquitetura, Storage/pastas/grafia, cadastro/integrações, motores, fechamento/casos reais, UX/saídas, infraestrutura/homologação e lacunas.
+- documentos 01–09 da mesma pasta — arquitetura, Storage/pastas/grafia, cadastro/integrações, motores, fechamento/casos reais, UX/saídas, infraestrutura/homologação e lacunas.
 
 Importante: esse patrimônio separa explicitamente **canônico**, **homologado no uso**, **decisão histórica aprovada**, **implementação observada**, **provisório V8** e **pendente de prova física**. A V8 continua não homologada e não deve ser usada isoladamente como baseline.
 
