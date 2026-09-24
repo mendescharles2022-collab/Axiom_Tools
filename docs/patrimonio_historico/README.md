@@ -46,6 +46,9 @@ Regra central: **V8 não homologada não é baseline funcional.** Em conflito, p
 8. **08_LACUNAS_CONTRADICOES_E_PLANO_DE_PRESERVACAO.md**  
    O que não está integralmente no Git, divergências entre branches/runtime, artefatos que ainda exigem coleta física e regras de preservação.
 
+9. **09_LINHA_DO_TEMPO_RECUPERADA_DOS_CHATS.md**  
+   Linha do tempo das conversas, mudanças de direção, homologações declaradas, reinícios documentais, evolução V5/V8 e reaproveitamento patrimonial.
+
 ## 3. Fontes cruzadas
 
 O levantamento cruza, sem tratar uma fonte isolada como suficiente:
