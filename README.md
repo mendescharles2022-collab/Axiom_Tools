@@ -1,3 +1,5 @@
+> **Governança de agentes limitados:** antes de delegar trabalho a Codex/Grok, leia [AGENT_CAPACITY_POLICY.md](AGENT_CAPACITY_POLICY.md). A regra é consolidar sprints completas, exigir entrega ponta a ponta, testes e autoauditoria, e minimizar chamadas corretivas.
+
 # Axiom Tools
 
 > **Direção vigente desde 04/09/2026:** o Axiom Tools será incorporado ao **Axiom Enterprise**. O nome **Axiom Tools 2.0** identifica o programa de migração e reconstrução por domínio; não haverá nova aplicação independente nem um módulo monolítico `Tools` no Enterprise.
